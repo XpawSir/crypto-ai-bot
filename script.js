@@ -17,10 +17,9 @@ let priceFetchInterval = null;
 
 let balance = 10000.00;
 let pnl = 0.00;
-let currentPrice = 67420.50; // Standardstartpris om API segar
+let currentPrice = 67420.50;
 let selectedSymbol = cryptoSelect.value;
 
-// Startpriser för olika valutor om API:t inte svarar direkt
 const defaultPrices = {
     "BTCUSDT": 67420.50,
     "ETHUSDT": 3520.10,
@@ -31,14 +30,14 @@ const defaultPrices = {
 let candles = [];
 const maxCandles = 20;
 
-// Initiera Candlesticks
+// Initiera realistiska candlesticks
 function initCandles(basePrice) {
     candles = [];
     let p = basePrice * 0.98;
     for (let i = 0; i < maxCandles; i++) {
         let open = p;
-        let change = (Math.random() - 0.48) * (basePrice * 0.005);
-        let close = open + change;
+        let variation = basePrice * 0.004;
+        let close = open + (Math.random() - 0.48) * variation;
         let high = Math.max(open, close) + Math.random() * (basePrice * 0.002);
         let low = Math.min(open, close) - Math.random() * (basePrice * 0.002);
         candles.push({ open, close, high, low });
@@ -46,7 +45,7 @@ function initCandles(basePrice) {
     }
 }
 
-// Rendera ut Candlesticks med vekar
+// Rendera ut proffsiga Candlesticks
 function renderChart() {
     chartCandles.innerHTML = '';
     if (candles.length === 0) return;
@@ -58,28 +57,36 @@ function renderChart() {
 
     candles.forEach((candle) => {
         const isGreen = candle.close >= candle.open;
-        const colorClass = isGreen ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500 shadow-rose-500/20';
+        
+        // Färgval för grön/röd
+        const colorClass = isGreen ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-rose-500 shadow-lg shadow-rose-500/20';
         const wickColor = isGreen ? 'bg-emerald-400' : 'bg-rose-400';
 
-        let topPercent = ((maxVal - Math.max(candle.open, candle.close)) / range) * 100;
-        let heightPercent = (Math.abs(candle.close - candle.open) / range) * 100;
-        if (heightPercent < 2) heightPercent = 2;
-
+        // Beräkna topp och höjd för veken (high till low)
         let wickTop = ((maxVal - candle.high) / range) * 100;
         let wickHeight = ((candle.high - candle.low) / range) * 100;
 
-        const candleWrapper = document.createElement('div');
-        candleWrapper.className = 'flex-1 h-full relative flex flex-col items-center justify-center';
+        // Beräkna topp och höjd för kroppen (open till close)
+        let bodyTopVal = Math.max(candle.open, candle.close);
+        let bodyBottomVal = Math.min(candle.open, candle.close);
+        
+        let bodyTop = ((maxVal - bodyTopVal) / range) * 100;
+        let bodyHeight = Math.max(((bodyTopVal - bodyBottomVal) / range) * 100, 4); // Minst 4% synlighet
 
+        const candleWrapper = document.createElement('div');
+        candleWrapper.className = 'flex-1 h-full relative flex flex-col items-center justify-center mx-0.5';
+
+        // Veken (tunn linje i bakgrunden)
         const wick = document.createElement('div');
         wick.className = `absolute w-[2px] ${wickColor} rounded-full`;
-        wick.style.top = `${wickTop}%`;
-        wick.style.height = `${wickHeight}%`;
+        wick.style.top = `${Math.max(wickTop, 0)}%`;
+        wick.style.height = `${Math.min(wickHeight, 100)}%`;
 
+        // Kroppen (rektangeln)
         const body = document.createElement('div');
-        body.className = `absolute w-3/4 rounded-sm ${colorClass} shadow-sm z-10`;
-        body.style.top = `${topPercent}%`;
-        body.style.height = `${heightPercent}%`;
+        body.className = `absolute w-4/5 rounded-[2px] ${colorClass} z-10 candle-body`;
+        body.style.top = `${Math.max(bodyTop, 0)}%`;
+        body.style.height = `${Math.min(bodyHeight, 100)}%`;
 
         candleWrapper.appendChild(wick);
         candleWrapper.appendChild(body);
@@ -87,7 +94,6 @@ function renderChart() {
     });
 }
 
-// Uppdatera pris i UI
 function updatePriceUI(price, changePct) {
     currentPrice = price;
     let decimals = currentPrice < 10 ? 4 : 2;
@@ -98,7 +104,6 @@ function updatePriceUI(price, changePct) {
     cryptoChangeEl.className = `text-xs font-semibold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`;
 }
 
-// Hämta live-pris från Binance med felskydd
 async function fetchLivePrice() {
     try {
         const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${selectedSymbol}`);
@@ -124,8 +129,6 @@ async function fetchLivePrice() {
         renderChart();
 
     } catch (error) {
-        // Fallback-simulator om Binance är blockerat
-        console.warn("Använder intern marknadsimulator pga nätverksbegränsning.");
         if (candles.length === 0) {
             initCandles(defaultPrices[selectedSymbol] || 100);
         }
@@ -143,7 +146,6 @@ async function fetchLivePrice() {
     }
 }
 
-// Byt kryptovaluta
 cryptoSelect.addEventListener('change', (e) => {
     selectedSymbol = e.target.value;
     currentPrice = defaultPrices[selectedSymbol] || 100;
@@ -170,23 +172,24 @@ function addLog(message, type = 'info') {
     aiLog.scrollTop = aiLog.scrollHeight;
 }
 
-// Starta direkt
 currentPrice = defaultPrices[selectedSymbol];
 initCandles(currentPrice);
 fetchLivePrice();
 priceFetchInterval = setInterval(fetchLivePrice, 3000);
 
-// AI Trading-logik
 function runAiTradeCycle() {
     const risk = parseInt(riskRange.value);
     const strategy = document.getElementById('strategy-select').value;
     const rand = Math.random() * 10;
     
-    // Skapa ny candlestick vid varje cykel för att grafen ska röra sig levande
+    // Skapa en ny candlestick vid varje cykel för att fyllas på i grafen
     let open = currentPrice;
     let close = currentPrice * (1 + (Math.random() - 0.47) * 0.003);
+    let high = Math.max(open, close) * 1.0015;
+    let low = Math.min(open, close) * 0.9985;
+    
     candles.shift();
-    candles.push({ open, close, high: Math.max(open, close) * 1.0015, low: Math.min(open, close) * 0.9985 });
+    candles.push({ open, close, high, low });
     renderChart();
 
     if (rand < 3.5) {
@@ -213,7 +216,6 @@ function runAiTradeCycle() {
     }
 }
 
-// Starta / Stoppa boten
 toggleBtn.addEventListener('click', () => {
     isRunning = !isRunning;
 
