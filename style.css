@@ -1,4 +1,8 @@
-/* Anpassad scrollbar för loggar och snygga animationer */
+/* Trading Chart Styles */
+.candle-body {
+    transition: all 0.2s ease-in-out;
+}
+
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -15,13 +19,4 @@
 
 ::-webkit-scrollbar-thumb:hover {
     background: #334155;
-}
-
-@keyframes pulse-slow {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-}
-
-.animate-pulse-slow {
-    animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
