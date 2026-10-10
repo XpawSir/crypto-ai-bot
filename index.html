@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CryptoAI - Autonom Kryptotrading</title>
-    <!-- Tailwind CSS för modern design -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
-    <!-- FontAwesome för ikoner -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
@@ -32,7 +30,7 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 py-8 flex-grow grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
         
-        <!-- Vänsterkolumn: Kontrollpanel & AI-robot -->
+        <!-- Vänsterkolumn: Kontrollpanel -->
         <div class="lg:col-span-1 space-y-6">
             
             <!-- Robot Kontroll -->
@@ -88,27 +86,35 @@
 
         </div>
 
-        <!-- Högerkolumn: Live Graf & Aktivitetslogg -->
+        <!-- Högerkolumn: Live Candlestick-Graf & Logg -->
         <div class="lg:col-span-2 space-y-6 flex flex-col">
             
-            <!-- Simulering / Live Marknadsimitation -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex-grow flex flex-col">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <div>
-                        <h2 class="text-lg font-bold flex items-center gap-2">
-                            <i class="fa-solid fa-chart-line text-cyan-400"></i> Live AI Marknadsanalys (BTC/USDT)
-                        </h2>
-                        <p class="text-xs text-slate-400 mt-0.5">Realtidsdata simulerad av AI-motorn</p>
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-lg font-bold flex items-center gap-2">
+                                <i class="fa-solid fa-chart-candlestick text-cyan-400"></i> Live AI Marknadsanalys
+                            </h2>
+                            <!-- Valuta-väljare -->
+                            <select id="crypto-select" class="bg-slate-950 border border-slate-800 text-cyan-400 font-bold text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500">
+                                <option value="BTCUSDT">BTC/USDT</option>
+                                <option value="ETHUSDT">ETH/USDT</option>
+                                <option value="SOLUSDT">SOL/USDT</option>
+                                <option value="XRPUSDT">XRP/USDT</option>
+                            </select>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">Realtidsdata hämtad från Binance API</p>
                     </div>
                     <div class="text-right">
-                        <div id="btc-price" class="text-xl font-mono font-bold text-white">$67,420.50</div>
-                        <div id="btc-change" class="text-xs font-semibold text-emerald-400">+2.34% (24h)</div>
+                        <div id="crypto-price" class="text-xl font-mono font-bold text-white">$0.00</div>
+                        <div id="crypto-change" class="text-xs font-semibold text-emerald-400">0.00% (24h)</div>
                     </div>
                 </div>
 
-                <!-- Simulerad graf-animation / vågform -->
-                <div class="bg-slate-950 rounded-xl border border-slate-800/60 p-4 h-48 flex items-end justify-between gap-1 mb-6 relative overflow-hidden" id="chart-bars">
-                    <!-- Fylls dynamiskt av JS -->
+                <!-- Candlestick-graf container -->
+                <div class="bg-slate-950 rounded-xl border border-slate-800/60 p-4 h-56 flex items-end justify-between gap-1.5 mb-6 relative overflow-hidden" id="chart-candles">
+                    <!-- Fylls dynamiskt av JS med ljusdiagram -->
                 </div>
 
                 <!-- AI Aktivitetslogg -->
@@ -116,8 +122,8 @@
                     <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-terminal text-cyan-400"></i> AI Handlingslogg
                     </h3>
-                    <div id="ai-log" class="bg-slate-950 rounded-xl border border-slate-800/60 p-4 h-40 overflow-y-auto font-mono text-xs space-y-2 text-slate-300">
-                        <div class="text-slate-500">[System] AI-motorn är redo. Väntar på startkommando...</div>
+                    <div id="ai-log" class="bg-slate-950 rounded-xl border border-slate-800/60 p-4 h-36 overflow-y-auto font-mono text-xs space-y-2 text-slate-300">
+                        <div class="text-slate-500">[System] Systemet är redo. Välj kryptovaluta och starta boten...</div>
                     </div>
                 </div>
             </div>
@@ -126,13 +132,10 @@
 
     </main>
 
-    <!-- Footer -->
     <footer class="border-t border-slate-800 py-4 text-center text-xs text-slate-500">
-        CryptoAI Dashboard &copy; 2026. Skapad för GitHub.
+        CryptoAI Dashboard &copy; 2026.
     </footer>
 
     <script src="script.js"></script>
 </body>
 </html>
-
-
