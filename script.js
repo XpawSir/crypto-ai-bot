@@ -1,9 +1,9 @@
-// Element från DOM
 const toggleBtn = document.getElementById('toggle-bot-btn');
 const botStatusBadge = document.getElementById('bot-status-badge');
 const aiLog = document.getElementById('ai-log');
 const riskRange = document.getElementById('risk-range');
 const riskValue = document.getElementById('risk-value');
+const maxSpendInput = document.getElementById('max-spend-input');
 const cryptoPriceEl = document.getElementById('crypto-price');
 const cryptoChangeEl = document.getElementById('crypto-change');
 const totalBalanceEl = document.getElementById('total-balance');
@@ -30,7 +30,6 @@ const defaultPrices = {
 let candles = [];
 const maxCandles = 20;
 
-// Initiera realistiska candlesticks
 function initCandles(basePrice) {
     candles = [];
     let p = basePrice * 0.98;
@@ -45,7 +44,6 @@ function initCandles(basePrice) {
     }
 }
 
-// Rendera ut proffsiga Candlesticks
 function renderChart() {
     chartCandles.innerHTML = '';
     if (candles.length === 0) return;
@@ -57,34 +55,27 @@ function renderChart() {
 
     candles.forEach((candle) => {
         const isGreen = candle.close >= candle.open;
-        
-        // Färgval för grön/röd
         const colorClass = isGreen ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-rose-500 shadow-lg shadow-rose-500/20';
         const wickColor = isGreen ? 'bg-emerald-400' : 'bg-rose-400';
 
-        // Beräkna topp och höjd för veken (high till low)
         let wickTop = ((maxVal - candle.high) / range) * 100;
         let wickHeight = ((candle.high - candle.low) / range) * 100;
-
-        // Beräkna topp och höjd för kroppen (open till close)
         let bodyTopVal = Math.max(candle.open, candle.close);
         let bodyBottomVal = Math.min(candle.open, candle.close);
         
         let bodyTop = ((maxVal - bodyTopVal) / range) * 100;
-        let bodyHeight = Math.max(((bodyTopVal - bodyBottomVal) / range) * 100, 4); // Minst 4% synlighet
+        let bodyHeight = Math.max(((bodyTopVal - bodyBottomVal) / range) * 100, 4);
 
         const candleWrapper = document.createElement('div');
         candleWrapper.className = 'flex-1 h-full relative flex flex-col items-center justify-center mx-0.5';
 
-        // Veken (tunn linje i bakgrunden)
         const wick = document.createElement('div');
         wick.className = `absolute w-[2px] ${wickColor} rounded-full`;
         wick.style.top = `${Math.max(wickTop, 0)}%`;
         wick.style.height = `${Math.min(wickHeight, 100)}%`;
 
-        // Kroppen (rektangeln)
         const body = document.createElement('div');
-        body.className = `absolute w-4/5 rounded-[2px] ${colorClass} z-10 candle-body`;
+        body.className = `absolute w-4/5 rounded-[2px] ${colorClass} z-10`;
         body.style.top = `${Math.max(bodyTop, 0)}%`;
         body.style.height = `${Math.min(bodyHeight, 100)}%`;
 
@@ -113,10 +104,7 @@ async function fetchLivePrice() {
         const newPrice = parseFloat(data.lastPrice);
         const priceChangePercent = parseFloat(data.priceChangePercent);
 
-        if (candles.length === 0) {
-            initCandles(newPrice);
-        }
-
+        if (candles.length === 0) initCandles(newPrice);
         updatePriceUI(newPrice, priceChangePercent);
 
         if (candles.length > 0) {
@@ -125,14 +113,9 @@ async function fetchLivePrice() {
             if (newPrice > lastCandle.high) lastCandle.high = newPrice;
             if (newPrice < lastCandle.low) lastCandle.low = newPrice;
         }
-
         renderChart();
-
     } catch (error) {
-        if (candles.length === 0) {
-            initCandles(defaultPrices[selectedSymbol] || 100);
-        }
-        
+        if (candles.length === 0) initCandles(defaultPrices[selectedSymbol] || 100);
         let fluctuation = (Math.random() - 0.48) * (currentPrice * 0.002);
         let simulatedPrice = currentPrice + fluctuation;
         updatePriceUI(simulatedPrice, 2.15);
@@ -141,7 +124,6 @@ async function fetchLivePrice() {
         lastCandle.close = simulatedPrice;
         if (simulatedPrice > lastCandle.high) lastCandle.high = simulatedPrice;
         if (simulatedPrice < lastCandle.low) lastCandle.low = simulatedPrice;
-
         renderChart();
     }
 }
@@ -180,9 +162,9 @@ priceFetchInterval = setInterval(fetchLivePrice, 3000);
 function runAiTradeCycle() {
     const risk = parseInt(riskRange.value);
     const strategy = document.getElementById('strategy-select').value;
+    const maxAllowedSpend = parseFloat(maxSpendInput.value) || 1000;
     const rand = Math.random() * 10;
     
-    // Skapa en ny candlestick vid varje cykel för att fyllas på i grafen
     let open = currentPrice;
     let close = currentPrice * (1 + (Math.random() - 0.47) * 0.003);
     let high = Math.max(open, close) * 1.0015;
@@ -193,10 +175,12 @@ function runAiTradeCycle() {
     renderChart();
 
     if (rand < 3.5) {
-        const tradeSize = (balance * (risk / 100)).toFixed(2);
-        addLog(`🤖 [AI - ${selectedSymbol}]: Identifierar köpläge (${strategy}). Investerar $${tradeSize}`, 'success');
+        let calculatedSize = balance * (risk / 100);
+        let tradeSize = Math.min(calculatedSize, maxAllowedSpend).toFixed(2);
+        addLog(`🤖 [AI - ${selectedSymbol}]: Köpläge (${strategy}). Satsar $${tradeSize} (Max tillåtet: $${maxAllowedSpend})`, 'success');
     } else if (rand > 6.5) {
-        const profitOrLoss = (Math.random() * (risk * 15) - (risk * 5)).toFixed(2);
+        let impactFactor = maxAllowedSpend / 1000;
+        const profitOrLoss = (Math.random() * (risk * 12 * impactFactor) - (risk * 4 * impactFactor)).toFixed(2);
         const numPnL = parseFloat(profitOrLoss);
         
         pnl += numPnL;
@@ -212,7 +196,7 @@ function runAiTradeCycle() {
         dailyPnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
         dailyPnlEl.className = `text-sm font-semibold ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
     } else {
-        addLog(`🔍 [AI SCANNER]: Analyserar orderboken för ${selectedSymbol}. Avvaktar...`, 'info');
+        addLog(`🔍 [AI SCANNER]: Analyserar ${selectedSymbol}. Avvaktar...`, 'info');
     }
 }
 
@@ -226,7 +210,7 @@ toggleBtn.addEventListener('click', () => {
         botStatusBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5";
         botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv (${selectedSymbol})`;
 
-        addLog(`AI-roboten startad för ${selectedSymbol}.`, "success");
+        addLog(`AI-roboten startad. Max insats per trade: $${maxSpendInput.value}.`, "success");
         tradeInterval = setInterval(runAiTradeCycle, 4000);
 
     } else {
