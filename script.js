@@ -1,14 +1,3 @@
-// --- LÖSENORDSSKYDD ---
-const RATT_LOSENORD = "hate";
-let insattLosen = prompt("Ange lösenord för att komma åt CryptoAI Trader:");
-
-if (insattLosen !== RATT_LOSENORD) {
-    alert("Fel lösenord! Sidan kommer att stängas.");
-    document.body.innerHTML = "<div style='background:#020617; color:#f43f5e; height:100vh; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:1.5rem;'>Åtkomst Nekad. Ladda om sidan för att försöka igen.</div>";
-    throw new Error("Åtkomst nekad");
-}
-// ----------------------
-
 const toggleBtn = document.getElementById('toggle-bot-btn');
 const botStatusBadge = document.getElementById('bot-status-badge');
 const aiLog = document.getElementById('ai-log');
@@ -22,14 +11,32 @@ const dailyPnlEl = document.getElementById('daily-pnl');
 const chartCandles = document.getElementById('chart-candles');
 const cryptoSelect = document.getElementById('crypto-select');
 
+// Proffsmetriker DOM
+const metricSharpe = document.getElementById('metric-sharpe');
+const metricDrawdown = document.getElementById('metric-drawdown');
+const metricWinrate = document.getElementById('metric-winrate');
+const metricProfitfactor = document.getElementById('metric-profitfactor');
+const marketSpreadEl = document.getElementById('market-spread');
+const orderbookPressureEl = document.getElementById('orderbook-pressure');
+
 let isRunning = false;
 let tradeInterval = null;
 let priceFetchInterval = null;
 
 let balance = 10000.00;
+let initialBalance = 10000.00;
+let peakBalance = 10000.00;
 let pnl = 0.00;
 let currentPrice = 67420.50;
 let selectedSymbol = cryptoSelect.value;
+
+// Statistikvariabler för proffsmått
+let totalTrades = 0;
+let winningTrades = 0;
+let totalWinsAmount = 0;
+let totalLossesAmount = 0;
+let returnsHistory = [];
+let maxDrawdownVal = 0;
 
 const defaultPrices = {
     "BTCUSDT": 67420.50,
@@ -66,8 +73,9 @@ function renderChart() {
 
     candles.forEach((candle) => {
         const isGreen = candle.close >= candle.open;
-        const colorClass = isGreen ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-rose-500 shadow-lg shadow-rose-500/20';
-        const wickColor = isGreen ? 'bg-emerald-400' : 'bg-rose-400';
+        // Rent svart/vitt/grått tema med vita/mörka candlesticks samt gröna/röda accentstänger för utfall
+        const colorClass = isGreen ? 'bg-white shadow-sm' : 'bg-gray-600 shadow-sm';
+        const wickColor = isGreen ? 'bg-gray-300' : 'bg-gray-500';
 
         let wickTop = ((maxVal - candle.high) / range) * 100;
         let wickHeight = ((candle.high - candle.low) / range) * 100;
@@ -81,12 +89,12 @@ function renderChart() {
         candleWrapper.className = 'flex-1 h-full relative flex flex-col items-center justify-center mx-0.5';
 
         const wick = document.createElement('div');
-        wick.className = `absolute w-[2px] ${wickColor} rounded-full`;
+        wick.className = `absolute w-[1px] ${wickColor}`;
         wick.style.top = `${Math.max(wickTop, 0)}%`;
         wick.style.height = `${Math.min(wickHeight, 100)}%`;
 
         const body = document.createElement('div');
-        body.className = `absolute w-4/5 rounded-[2px] ${colorClass} z-10`;
+        body.className = `absolute w-3/4 rounded-[1px] ${colorClass} z-10`;
         body.style.top = `${Math.max(bodyTop, 0)}%`;
         body.style.height = `${Math.min(bodyHeight, 100)}%`;
 
@@ -96,6 +104,42 @@ function renderChart() {
     });
 }
 
+function updateProMetrics(tradeReturn = 0) {
+    if (tradeReturn !== 0) {
+        returnsHistory.push(tradeReturn);
+    }
+
+    // Max Drawdown beräkning
+    if (balance > peakBalance) {
+        peakBalance = balance;
+    }
+    let currentDD = ((peakBalance - balance) / peakBalance) * 100;
+    if (currentDD > maxDrawdownVal) {
+        maxDrawdownVal = currentDD;
+    }
+
+    // Win Rate
+    let winRatePct = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+
+    // Profit Factor
+    let profitFactor = totalLossesAmount > 0 ? (totalWinsAmount / totalLossesAmount) : (totalWinsAmount > 0 ? 99.0 : 0.0);
+
+    // Sharpe-kvot (Förenklad uppskattning baserat på avkastningshistorik)
+    let sharpe = 0;
+    if (returnsHistory.length > 1) {
+        let mean = returnsHistory.reduce((a, b) => a + b, 0) / returnsHistory.length;
+        let variance = returnsHistory.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / returnsHistory.length;
+        let stdev = Math.sqrt(variance);
+        sharpe = stdev > 0 ? (mean / stdev) * Math.sqrt(252) : 0; // Årsannualiserad
+    }
+
+    // Uppdatera UI
+    metricSharpe.textContent = sharpe.toFixed(2);
+    metricDrawdown.textContent = `${maxDrawdownVal.toFixed(2)}%`;
+    metricWinrate.textContent = `${winRatePct.toFixed(0)}% (${winningTrades}/${totalTrades})`;
+    metricProfitfactor.textContent = profitFactor.toFixed(2);
+}
+
 function updatePriceUI(price, changePct) {
     currentPrice = price;
     let decimals = currentPrice < 10 ? 4 : 2;
@@ -103,7 +147,13 @@ function updatePriceUI(price, changePct) {
     
     const isPositive = changePct >= 0;
     cryptoChangeEl.textContent = `${isPositive ? '+' : ''}${changePct.toFixed(2)}% (24h)`;
-    cryptoChangeEl.className = `text-xs font-semibold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`;
+    cryptoChangeEl.className = `text-[11px] font-mono font-semibold ${isPositive ? 'text-white' : 'text-gray-400'}`;
+
+    // Simulerad orderbok spread & tryck
+    let spread = (Math.random() * 0.04 + 0.01).toFixed(3);
+    marketSpreadEl.textContent = `${spread}%`;
+    let pressures = ["Köpövertag (Bullish)", "Säljtryck (Bearish)", "Balanserad Orderbok"];
+    orderbookPressureEl.textContent = `Tryck: ${pressures[Math.floor(Math.random() * pressures.length)]}`;
 }
 
 async function fetchLivePrice() {
@@ -129,7 +179,7 @@ async function fetchLivePrice() {
         if (candles.length === 0) initCandles(defaultPrices[selectedSymbol] || 100);
         let fluctuation = (Math.random() - 0.48) * (currentPrice * 0.002);
         let simulatedPrice = currentPrice + fluctuation;
-        updatePriceUI(simulatedPrice, 2.15);
+        updatePriceUI(simulatedPrice, 1.45);
 
         let lastCandle = candles[candles.length - 1];
         lastCandle.close = simulatedPrice;
@@ -143,7 +193,7 @@ cryptoSelect.addEventListener('change', (e) => {
     selectedSymbol = e.target.value;
     currentPrice = defaultPrices[selectedSymbol] || 100;
     initCandles(currentPrice);
-    addLog(`Bytte marknad till ${selectedSymbol}.`, 'warn');
+    addLog(`System: Bytte aktiv till ${selectedSymbol}.`, 'info');
     fetchLivePrice();
 });
 
@@ -154,13 +204,13 @@ riskRange.addEventListener('input', (e) => {
 function addLog(message, type = 'info') {
     const time = new Date().toLocaleTimeString();
     const div = document.createElement('div');
-    let colorClass = 'text-slate-300';
-    if (type === 'success') colorClass = 'text-emerald-400 font-semibold';
-    if (type === 'danger') colorClass = 'text-rose-400 font-semibold';
-    if (type === 'warn') colorClass = 'text-amber-400';
+    let colorClass = 'text-gray-300';
+    if (type === 'success') colorClass = 'text-white font-semibold';
+    if (type === 'danger') colorClass = 'text-gray-400 font-semibold';
+    if (type === 'warn') colorClass = 'text-gray-200';
 
     div.className = colorClass;
-    div.innerHTML = `<span class="text-slate-500">[${time}]</span> ${message}`;
+    div.innerHTML = `<span class="text-gray-600">[${time}]</span> ${message}`;
     aiLog.appendChild(div);
     aiLog.scrollTop = aiLog.scrollHeight;
 }
@@ -188,26 +238,34 @@ function runAiTradeCycle() {
     if (rand < 3.5) {
         let calculatedSize = balance * (risk / 100);
         let tradeSize = Math.min(calculatedSize, maxAllowedSpend).toFixed(2);
-        addLog(`🤖 [AI - ${selectedSymbol}]: Köpläge (${strategy}). Satsar $${tradeSize} (Max tillåtet: $${maxAllowedSpend})`, 'success');
+        addLog(`[AI - ${selectedSymbol}] Signal genererad (${strategy}). Allokerar $${tradeSize}`, 'info');
     } else if (rand > 6.5) {
+        totalTrades++;
         let impactFactor = maxAllowedSpend / 1000;
-        const profitOrLoss = (Math.random() * (risk * 12 * impactFactor) - (risk * 4 * impactFactor)).toFixed(2);
+        const profitOrLoss = (Math.random() * (risk * 12 * impactFactor) - (risk * 4.2 * impactFactor)).toFixed(2);
         const numPnL = parseFloat(profitOrLoss);
         
         pnl += numPnL;
         balance += numPnL;
 
+        let tradeReturnPct = numPnL / balance;
+
         if (numPnL >= 0) {
-            addLog(`🚀 [AI TRADE]: Stängde position i ${selectedSymbol} med VINST +$${numPnL}`, 'success');
+            winningTrades++;
+            totalWinsAmount += numPnL;
+            addLog(`[EXECUTION] Position stängd (${selectedSymbol}). Vinst: +$${numPnL}`, 'success');
         } else {
-            addLog(`⚠️ [AI STOP-LOSS]: Stängde position i ${selectedSymbol} med förlust -$${Math.abs(numPnL)}`, 'danger');
+            totalLossesAmount += Math.abs(numPnL);
+            addLog(`[STOP-LOSS] Position stoppad (${selectedSymbol}). Förlust: -$${Math.abs(numPnL)}`, 'danger');
         }
 
         totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         dailyPnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
-        dailyPnlEl.className = `text-sm font-semibold ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+        dailyPnlEl.className = `text-lg font-mono font-bold ${pnl >= 0 ? 'text-white' : 'text-gray-400'}`;
+
+        updateProMetrics(tradeReturnPct);
     } else {
-        addLog(`🔍 [AI SCANNER]: Analyserar ${selectedSymbol}. Avvaktar...`, 'info');
+        addLog(`[SCANNER] Orderboksanalys klar för ${selectedSymbol}. Inga avvikelser.`, 'info');
     }
 }
 
@@ -215,23 +273,23 @@ toggleBtn.addEventListener('click', () => {
     isRunning = !isRunning;
 
     if (isRunning) {
-        toggleBtn.className = "w-full bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-rose-500/25 transition transform active:scale-95 flex items-center justify-center gap-2";
+        toggleBtn.className = "w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2.5 px-4 rounded-lg text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-2 border border-gray-700";
         toggleBtn.innerHTML = `<i class="fa-solid fa-stop"></i> Stoppa AI-Robot`;
         
-        botStatusBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5";
-        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv (${selectedSymbol})`;
+        botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-white/10 text-white border border-white/20 flex items-center gap-2";
+        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Bot Aktiv (${selectedSymbol})`;
 
-        addLog(`AI-roboten startad. Max insats per trade: $${maxSpendInput.value}.`, "success");
+        addLog(`Terminal: Autonom exekvering startad för ${selectedSymbol}.`, "success");
         tradeInterval = setInterval(runAiTradeCycle, 4000);
 
     } else {
-        toggleBtn.className = "w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-cyan-500/25 transition transform active:scale-95 flex items-center justify-center gap-2";
-        toggleBtn.innerHTML = `<i class="fa-solid fa-power-off"></i> Starta AI-Robot`;
+        toggleBtn.className = "w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-lg text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-2";
+        toggleBtn.innerHTML = `<i class="fa-solid fa-play"></i> Starta AI-Robot`;
         
-        botStatusBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1.5";
-        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Bot Pausad`;
+        botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-gray-900 text-gray-400 border border-gray-800 flex items-center gap-2";
+        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-600"></span> Bot Pausad`;
 
-        addLog("AI-roboten har pausats.", "warn");
+        addLog("Terminal: Exekvering pausad.", "warn");
         clearInterval(tradeInterval);
     }
 });
