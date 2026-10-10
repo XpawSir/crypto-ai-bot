@@ -4,49 +4,161 @@ const botStatusBadge = document.getElementById('bot-status-badge');
 const aiLog = document.getElementById('ai-log');
 const riskRange = document.getElementById('risk-range');
 const riskValue = document.getElementById('risk-value');
-const btcPriceEl = document.getElementById('btc-price');
-const btcChangeEl = document.getElementById('btc-change');
+const cryptoPriceEl = document.getElementById('crypto-price');
+const cryptoChangeEl = document.getElementById('crypto-change');
 const totalBalanceEl = document.getElementById('total-balance');
 const dailyPnlEl = document.getElementById('daily-pnl');
-const chartBars = document.getElementById('chart-bars');
+const chartCandles = document.getElementById('chart-candles');
+const cryptoSelect = document.getElementById('crypto-select');
 
 let isRunning = false;
 let tradeInterval = null;
 let priceFetchInterval = null;
 
-// Låtsas-konto (Simulerat saldo)
-let balance = 10000.00; // Startkapital $10,000
+let balance = 10000.00;
 let pnl = 0.00;
-let currentBtcPrice = 0;
-let previousBtcPrice = 0;
+let currentPrice = 67420.50; // Standardstartpris om API segar
+let selectedSymbol = cryptoSelect.value;
 
-// Uppdatera visning av risk
+// Startpriser för olika valutor om API:t inte svarar direkt
+const defaultPrices = {
+    "BTCUSDT": 67420.50,
+    "ETHUSDT": 3520.10,
+    "SOLUSDT": 145.80,
+    "XRPUSDT": 0.58
+};
+
+let candles = [];
+const maxCandles = 20;
+
+// Initiera Candlesticks
+function initCandles(basePrice) {
+    candles = [];
+    let p = basePrice * 0.98;
+    for (let i = 0; i < maxCandles; i++) {
+        let open = p;
+        let change = (Math.random() - 0.48) * (basePrice * 0.005);
+        let close = open + change;
+        let high = Math.max(open, close) + Math.random() * (basePrice * 0.002);
+        let low = Math.min(open, close) - Math.random() * (basePrice * 0.002);
+        candles.push({ open, close, high, low });
+        p = close;
+    }
+}
+
+// Rendera ut Candlesticks med vekar
+function renderChart() {
+    chartCandles.innerHTML = '';
+    if (candles.length === 0) return;
+
+    let allPrices = candles.flatMap(c => [c.high, c.low]);
+    let minVal = Math.min(...allPrices);
+    let maxVal = Math.max(...allPrices);
+    let range = maxVal - minVal || 1;
+
+    candles.forEach((candle) => {
+        const isGreen = candle.close >= candle.open;
+        const colorClass = isGreen ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500 shadow-rose-500/20';
+        const wickColor = isGreen ? 'bg-emerald-400' : 'bg-rose-400';
+
+        let topPercent = ((maxVal - Math.max(candle.open, candle.close)) / range) * 100;
+        let heightPercent = (Math.abs(candle.close - candle.open) / range) * 100;
+        if (heightPercent < 2) heightPercent = 2;
+
+        let wickTop = ((maxVal - candle.high) / range) * 100;
+        let wickHeight = ((candle.high - candle.low) / range) * 100;
+
+        const candleWrapper = document.createElement('div');
+        candleWrapper.className = 'flex-1 h-full relative flex flex-col items-center justify-center';
+
+        const wick = document.createElement('div');
+        wick.className = `absolute w-[2px] ${wickColor} rounded-full`;
+        wick.style.top = `${wickTop}%`;
+        wick.style.height = `${wickHeight}%`;
+
+        const body = document.createElement('div');
+        body.className = `absolute w-3/4 rounded-sm ${colorClass} shadow-sm z-10`;
+        body.style.top = `${topPercent}%`;
+        body.style.height = `${heightPercent}%`;
+
+        candleWrapper.appendChild(wick);
+        candleWrapper.appendChild(body);
+        chartCandles.appendChild(candleWrapper);
+    });
+}
+
+// Uppdatera pris i UI
+function updatePriceUI(price, changePct) {
+    currentPrice = price;
+    let decimals = currentPrice < 10 ? 4 : 2;
+    cryptoPriceEl.textContent = `$${currentPrice.toLocaleString('en-US', {minimumFractionDigits: decimals, maximumFractionDigits: decimals})}`;
+    
+    const isPositive = changePct >= 0;
+    cryptoChangeEl.textContent = `${isPositive ? '+' : ''}${changePct.toFixed(2)}% (24h)`;
+    cryptoChangeEl.className = `text-xs font-semibold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`;
+}
+
+// Hämta live-pris från Binance med felskydd
+async function fetchLivePrice() {
+    try {
+        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${selectedSymbol}`);
+        if (!response.ok) throw new Error("API-fel");
+        const data = await response.json();
+        
+        const newPrice = parseFloat(data.lastPrice);
+        const priceChangePercent = parseFloat(data.priceChangePercent);
+
+        if (candles.length === 0) {
+            initCandles(newPrice);
+        }
+
+        updatePriceUI(newPrice, priceChangePercent);
+
+        if (candles.length > 0) {
+            let lastCandle = candles[candles.length - 1];
+            lastCandle.close = newPrice;
+            if (newPrice > lastCandle.high) lastCandle.high = newPrice;
+            if (newPrice < lastCandle.low) lastCandle.low = newPrice;
+        }
+
+        renderChart();
+
+    } catch (error) {
+        // Fallback-simulator om Binance är blockerat
+        console.warn("Använder intern marknadsimulator pga nätverksbegränsning.");
+        if (candles.length === 0) {
+            initCandles(defaultPrices[selectedSymbol] || 100);
+        }
+        
+        let fluctuation = (Math.random() - 0.48) * (currentPrice * 0.002);
+        let simulatedPrice = currentPrice + fluctuation;
+        updatePriceUI(simulatedPrice, 2.15);
+
+        let lastCandle = candles[candles.length - 1];
+        lastCandle.close = simulatedPrice;
+        if (simulatedPrice > lastCandle.high) lastCandle.high = simulatedPrice;
+        if (simulatedPrice < lastCandle.low) lastCandle.low = simulatedPrice;
+
+        renderChart();
+    }
+}
+
+// Byt kryptovaluta
+cryptoSelect.addEventListener('change', (e) => {
+    selectedSymbol = e.target.value;
+    currentPrice = defaultPrices[selectedSymbol] || 100;
+    initCandles(currentPrice);
+    addLog(`Bytte marknad till ${selectedSymbol}.`, 'warn');
+    fetchLivePrice();
+});
+
 riskRange.addEventListener('input', (e) => {
     riskValue.textContent = `${e.target.value} / 10`;
 });
 
-// Skapa visualisering för diagram
-const barsCount = 24;
-let barValues = Array.from({length: barsCount}, () => Math.floor(Math.random() * 40) + 30);
-
-function renderChart() {
-    chartBars.innerHTML = '';
-    const maxVal = Math.max(...barValues, 1);
-    barValues.forEach((val) => {
-        const bar = document.createElement('div');
-        const heightPercent = (val / maxVal) * 100;
-        bar.className = 'flex-1 bg-gradient-to-t from-cyan-600/40 to-cyan-400 rounded-t transition-all duration-300';
-        bar.style.height = `${Math.max(heightPercent, 10)}%`;
-        chartBars.appendChild(bar);
-    });
-}
-renderChart();
-
-// Lägg till meddelande i AI-loggen
 function addLog(message, type = 'info') {
     const time = new Date().toLocaleTimeString();
     const div = document.createElement('div');
-    
     let colorClass = 'text-slate-300';
     if (type === 'success') colorClass = 'text-emerald-400 font-semibold';
     if (type === 'danger') colorClass = 'text-rose-400 font-semibold';
@@ -58,56 +170,29 @@ function addLog(message, type = 'info') {
     aiLog.scrollTop = aiLog.scrollHeight;
 }
 
-// Hämta RIKTIGT live-pris direkt från Binance Krypto-börs API
-async function fetchLiveBtcPrice() {
-    try {
-        const response = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT');
-        const data = await response.json();
-        
-        previousBtcPrice = currentBtcPrice;
-        currentBtcPrice = parseFloat(data.lastPrice);
-        const priceChangePercent = parseFloat(data.priceChangePercent);
+// Starta direkt
+currentPrice = defaultPrices[selectedSymbol];
+initCandles(currentPrice);
+fetchLivePrice();
+priceFetchInterval = setInterval(fetchLivePrice, 3000);
 
-        // Uppdatera UI
-        btcPriceEl.textContent = `$${currentBtcPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        
-        const isPositive = priceChangePercent >= 0;
-        btcChangeEl.textContent = `${isPositive ? '+' : ''}${priceChangePercent.toFixed(2)}% (24h)`;
-        btcChangeEl.className = `text-xs font-semibold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`;
-
-        // Uppdatera diagrammet
-        barValues.shift();
-        barValues.push(Math.floor(currentBtcPrice % 100));
-        renderChart();
-
-    } catch (error) {
-        console.error("Kunde inte hämta pris från Binance:", error);
-    }
-}
-
-// Starta hämtning av riktiga marknadsdata direkt
-fetchLiveBtcPrice();
-priceFetchInterval = setInterval(fetchLiveBtcPrice, 3000); // Uppdatera priser var 3:e sekund
-
-// AI Trading-logik (Simulerad handel baserad på live-pris)
+// AI Trading-logik
 function runAiTradeCycle() {
-    if (currentBtcPrice === 0) return;
-
     const risk = parseInt(riskRange.value);
     const strategy = document.getElementById('strategy-select').value;
-    
-    // Slumpa/beräkna AI-beslut
     const rand = Math.random() * 10;
     
-    if (rand < 3.5) {
-        // AI KÖPER
-        const tradeSize = (balance * (risk / 100)).toFixed(2);
-        if (parseFloat(tradeSize) < 10) return;
+    // Skapa ny candlestick vid varje cykel för att grafen ska röra sig levande
+    let open = currentPrice;
+    let close = currentPrice * (1 + (Math.random() - 0.47) * 0.003);
+    candles.shift();
+    candles.push({ open, close, high: Math.max(open, close) * 1.0015, low: Math.min(open, close) * 0.9985 });
+    renderChart();
 
-        addLog(`🤖 [AI ANALYS - ${strategy.toUpperCase()}]: Positiv volym mätt på Binance! Köper BTC för $${tradeSize} (Live-kurs: $${currentBtcPrice.toFixed(2)})`, 'success');
-        
+    if (rand < 3.5) {
+        const tradeSize = (balance * (risk / 100)).toFixed(2);
+        addLog(`🤖 [AI - ${selectedSymbol}]: Identifierar köpläge (${strategy}). Investerar $${tradeSize}`, 'success');
     } else if (rand > 6.5) {
-        // AI SÄLJER & RÄKNAR VINST/FÖRLUST
         const profitOrLoss = (Math.random() * (risk * 15) - (risk * 5)).toFixed(2);
         const numPnL = parseFloat(profitOrLoss);
         
@@ -115,23 +200,20 @@ function runAiTradeCycle() {
         balance += numPnL;
 
         if (numPnL >= 0) {
-            addLog(`🚀 [AI TRADE SÅLD]: Stängde position med VINST +$${numPnL} på levande marknadsdata!`, 'success');
+            addLog(`🚀 [AI TRADE]: Stängde position i ${selectedSymbol} med VINST +$${numPnL}`, 'success');
         } else {
-            addLog(`⚠️ [AI STOP-LOSS]: Utlöste säkerhetsspärr. Stängde position med förlust -$${Math.abs(numPnL)}`, 'danger');
+            addLog(`⚠️ [AI STOP-LOSS]: Stängde position i ${selectedSymbol} med förlust -$${Math.abs(numPnL)}`, 'danger');
         }
 
-        // Uppdatera saldo
         totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         dailyPnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
         dailyPnlEl.className = `text-sm font-semibold ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-
     } else {
-        // AI VÄNTAR
-        addLog(`🔍 [AI SCANNER]: Analyserar Binance orderbok. Inget tydligt läge just nu, avvaktar...`, 'info');
+        addLog(`🔍 [AI SCANNER]: Analyserar orderboken för ${selectedSymbol}. Avvaktar...`, 'info');
     }
 }
 
-// Starta / Stoppa AI-roboten
+// Starta / Stoppa boten
 toggleBtn.addEventListener('click', () => {
     isRunning = !isRunning;
 
@@ -140,11 +222,9 @@ toggleBtn.addEventListener('click', () => {
         toggleBtn.innerHTML = `<i class="fa-solid fa-stop"></i> Stoppa AI-Robot`;
         
         botStatusBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5";
-        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv (Kopplad till Binance API)`;
+        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv (${selectedSymbol})`;
 
-        addLog("Kopplingen till Binance är bekräftad. AI-roboten börjar analysera live-flödet...", "success");
-
-        // Kör AI-logik var 4:e sekund
+        addLog(`AI-roboten startad för ${selectedSymbol}.`, "success");
         tradeInterval = setInterval(runAiTradeCycle, 4000);
 
     } else {
