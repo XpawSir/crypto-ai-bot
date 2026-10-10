@@ -3,131 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoAI - Autonom Kryptotrading</title>
+    <title>CryptoAI - Professional Trading Terminal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+<body class="bg-[#090a0f] text-gray-100 font-sans min-h-screen flex flex-col selection:bg-gray-700 selection:text-white">
 
     <!-- Header -->
-    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+    <header class="border-b border-gray-800 bg-[#0c0e14]/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3">
-                <div class="bg-gradient-to-r from-cyan-500 to-blue-600 p-2.5 rounded-xl shadow-lg shadow-cyan-500/20">
-                    <i class="fa-solid fa-robot text-white text-xl"></i>
+                <div class="bg-gray-800 border border-gray-700 p-2 rounded-lg">
+                    <i class="fa-solid fa-terminal text-white text-base"></i>
                 </div>
-                <span class="text-xl font-bold tracking-wider bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">CryptoAI Trader</span>
+                <div>
+                    <span class="text-base font-bold tracking-wide text-white">CryptoAI <span class="text-gray-400 font-normal text-xs uppercase ml-1 bg-gray-800/80 px-2 py-0.5 rounded">Pro Terminal</span></span>
+                </div>
             </div>
-            <div class="flex items-center space-x-4">
-                <span id="bot-status-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Bot Pausad
+            <div class="flex items-center space-x-3">
+                <span id="bot-status-badge" class="px-3 py-1 rounded-md text-xs font-semibold bg-gray-900 text-gray-400 border border-gray-800 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-gray-600"></span> Bot Pausad
                 </span>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
+    <!-- Main Grid -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow grid grid-cols-1 lg:grid-cols-4 gap-6 w-full">
         
-        <!-- Vänsterkolumn: Kontrollpanel -->
+        <!-- Vänsterkolumn: Kontrollpanel & Risk -->
         <div class="lg:col-span-1 space-y-6">
             
-            <!-- Robot Kontroll -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-cyan-400"></i> AI-Robot Inställningar
+            <!-- Robot Inställningar -->
+            <div class="bg-[#111318] border border-gray-800/80 rounded-xl p-5 shadow-2xl">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-gray-300"></i> AI Konfiguration
                 </h2>
                 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2">Välj Strategi</label>
-                        <select id="strategy-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition">
-                            <option value="scalping">⚡ Högfrekvent Scalping (Aggressiv)</option>
-                            <option value="swing">📈 Swing Trading (Balanserad)</option>
-                            <option value="hodl">🛡️ Säker Akkumulering (Konservativ)</option>
+                        <label class="block text-[11px] uppercase tracking-wider text-gray-400 mb-1.5">Algoritmisk Strategi</label>
+                        <select id="strategy-select" class="w-full bg-[#08090d] border border-gray-800 rounded-lg px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-gray-600 transition">
+                            <option value="scalping">⚡ Högfrekvent Momentum Scalping</option>
+                            <option value="swing">📈 Multi-Timeframe Swing</option>
+                            <option value="hodl">🛡️ Risk-Parity Akkumulering</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2">Riskprofil</label>
-                        <input type="range" min="1" max="10" value="5" id="risk-range" class="w-full accent-cyan-500 bg-slate-800 rounded-lg h-2 cursor-pointer">
-                        <div class="flex justify-between text-xs text-slate-500 mt-1">
+                        <label class="block text-[11px] uppercase tracking-wider text-gray-400 mb-1.5">Riskprofil (Volatilitet)</label>
+                        <input type="range" min="1" max="10" value="4" id="risk-range" class="w-full accent-gray-300 bg-gray-800 rounded-lg h-1.5 cursor-pointer">
+                        <div class="flex justify-between text-[11px] text-gray-400 mt-1">
                             <span>Låg (1)</span>
-                            <span id="risk-value" class="text-cyan-400 font-bold">5 / 10</span>
+                            <span id="risk-value" class="text-white font-mono font-bold">4 / 10</span>
                             <span>Hög (10)</span>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2">Max belopp per trade ($)</label>
-                        <input type="number" id="max-spend-input" value="1000" min="50" max="10000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-cyan-400 font-bold focus:outline-none focus:border-cyan-500 transition">
+                        <label class="block text-[11px] uppercase tracking-wider text-gray-400 mb-1.5">Max Kapital / Trade ($)</label>
+                        <input type="number" id="max-spend-input" value="1000" min="50" max="10000" class="w-full bg-[#08090d] border border-gray-800 rounded-lg px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-gray-600 transition">
                     </div>
 
-                    <div class="pt-4 border-t border-slate-800">
-                        <button id="toggle-bot-btn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-cyan-500/25 transition transform active:scale-95 flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-power-off"></i> Starta AI-Robot
+                    <div class="pt-3 border-t border-gray-800/80">
+                        <button id="toggle-bot-btn" class="w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-lg text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> Starta AI-Robot
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Portföljöversikt -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-wallet text-cyan-400"></i> Portföljsaldo
+            <!-- Proffsmetriker (Sharpe, Drawdown, Win Rate) -->
+            <div class="bg-[#111318] border border-gray-800/80 rounded-xl p-5 shadow-2xl">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-gray-300"></i> Risk & Prestanda (Pro)
                 </h2>
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center bg-slate-950 p-3.5 rounded-xl border border-slate-800/60">
-                        <span class="text-slate-400 text-sm">Totalt Värde</span>
-                        <span id="total-balance" class="text-lg font-bold text-white">$10,000.00</span>
+                <div class="space-y-3 font-mono text-xs">
+                    <div class="flex justify-between items-center bg-[#08090d] p-2.5 rounded-lg border border-gray-800/60">
+                        <span class="text-gray-400 font-sans text-[11px]">Sharpe-kvot</span>
+                        <span id="metric-sharpe" class="text-white font-bold">0.00</span>
                     </div>
-                    <div class="flex justify-between items-center bg-slate-950 p-3.5 rounded-xl border border-slate-800/60">
-                        <span class="text-slate-400 text-sm">Idag Vinst/Förlust</span>
-                        <span id="daily-pnl" class="text-sm font-semibold text-emerald-400">$0.00</span>
+                    <div class="flex justify-between items-center bg-[#08090d] p-2.5 rounded-lg border border-gray-800/60">
+                        <span class="text-gray-400 font-sans text-[11px]">Max Drawdown</span>
+                        <span id="metric-drawdown" class="text-gray-300 font-bold">0.00%</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-[#08090d] p-2.5 rounded-lg border border-gray-800/60">
+                        <span class="text-gray-400 font-sans text-[11px]">Win Rate</span>
+                        <span id="metric-winrate" class="text-white font-bold">0% (0/0)</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-[#08090d] p-2.5 rounded-lg border border-gray-800/60">
+                        <span class="text-gray-400 font-sans text-[11px]">Profit Factor</span>
+                        <span id="metric-profitfactor" class="text-white font-bold">0.00</span>
                     </div>
                 </div>
             </div>
 
         </div>
 
-        <!-- Högerkolumn: Live Candlestick-Graf & Logg -->
-        <div class="lg:col-span-2 space-y-6 flex flex-col">
+        <!-- Mitten & Höger: Graf, Saldo & Orderbok -->
+        <div class="lg:col-span-3 space-y-6 flex flex-col">
             
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex-grow flex flex-col">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <div>
-                        <div class="flex items-center gap-3">
-                            <h2 class="text-lg font-bold flex items-center gap-2">
-                                <i class="fa-solid fa-chart-candlestick text-cyan-400"></i> Live AI Marknadsanalys
-                            </h2>
-                            <select id="crypto-select" class="bg-slate-950 border border-slate-800 text-cyan-400 font-bold text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500">
-                                <option value="BTCUSDT">BTC/USDT</option>
-                                <option value="ETHUSDT">ETH/USDT</option>
-                                <option value="SOLUSDT">SOL/USDT</option>
-                                <option value="XRPUSDT">XRP/USDT</option>
-                            </select>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-0.5">Realtidsdata hämtad från Binance API</p>
+            <!-- Övre rad: Saldo & Marknadstryck -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-[#111318] border border-gray-800/80 rounded-xl p-4 shadow-xl">
+                    <span class="text-gray-400 text-[11px] uppercase tracking-wider block mb-1">Portföljsaldo</span>
+                    <div id="total-balance" class="text-lg font-mono font-bold text-white">$10,000.00</div>
+                    <div class="text-[10px] text-gray-500 mt-0.5">Simulerat kapital</div>
+                </div>
+                <div class="bg-[#111318] border border-gray-800/80 rounded-xl p-4 shadow-xl">
+                    <span class="text-gray-400 text-[11px] uppercase tracking-wider block mb-1">Realiserat PnL</span>
+                    <div id="daily-pnl" class="text-lg font-mono font-bold text-gray-300">$0.00</div>
+                    <div class="text-[10px] text-gray-500 mt-0.5">Dagens avkastning</div>
+                </div>
+                <div class="bg-[#111318] border border-gray-800/80 rounded-xl p-4 shadow-xl">
+                    <span class="text-gray-400 text-[11px] uppercase tracking-wider block mb-1">Orderbok Spread</span>
+                    <div id="market-spread" class="text-lg font-mono font-bold text-gray-200">0.02%</div>
+                    <div class="text-[10px] text-gray-500 mt-0.5" id="orderbook-pressure">Tryck: Neutral</div>
+                </div>
+            </div>
+
+            <!-- Candlestick Graf -->
+            <div class="bg-[#111318] border border-gray-800/80 rounded-xl p-5 shadow-xl flex-grow flex flex-col">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                    <div class="flex items-center gap-3">
+                        <select id="crypto-select" class="bg-[#08090d] border border-gray-800 text-white font-mono font-bold text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-gray-600">
+                            <option value="BTCUSDT">BTC/USDT</option>
+                            <option value="ETHUSDT">ETH/USDT</option>
+                            <option value="SOLUSDT">SOL/USDT</option>
+                            <option value="XRPUSDT">XRP/USDT</option>
+                        </select>
+                        <span class="text-[11px] text-gray-400 font-mono">Binance WebSocket / REST</span>
                     </div>
                     <div class="text-right">
-                        <div id="crypto-price" class="text-xl font-mono font-bold text-white">$0.00</div>
-                        <div id="crypto-change" class="text-xs font-semibold text-emerald-400">0.00% (24h)</div>
+                        <div id="crypto-price" class="text-lg font-mono font-bold text-white">$0.00</div>
+                        <div id="crypto-change" class="text-[11px] font-mono font-semibold text-gray-300">0.00% (24h)</div>
                     </div>
                 </div>
 
-                <!-- Candlestick-graf container -->
-                <div class="bg-slate-950 rounded-xl border border-slate-800/60 p-4 h-56 flex items-end justify-between gap-1 mb-6 relative overflow-hidden" id="chart-candles">
-                    <!-- Fylls dynamiskt av JS -->
+                <!-- Graf Container -->
+                <div class="bg-[#08090d] rounded-lg border border-gray-800/60 p-4 h-52 flex items-end justify-between gap-1 mb-6 relative overflow-hidden" id="chart-candles">
+                    <!-- Fylls dynamiskt -->
                 </div>
 
-                <!-- AI Aktivitetslogg -->
+                <!-- AI Logg -->
                 <div>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                        <i class="fa-solid fa-terminal text-cyan-400"></i> AI Handlingslogg
+                    <h3 class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-code text-gray-300"></i> Exekveringslogg
                     </h3>
-                    <div id="ai-log" class="bg-slate-950 rounded-xl border border-slate-800/60 p-4 h-36 overflow-y-auto font-mono text-xs space-y-2 text-slate-300">
-                        <div class="text-slate-500">[System] Systemet är redo. Starta boten för att börja handla...</div>
+                    <div id="ai-log" class="bg-[#08090d] rounded-lg border border-gray-800/60 p-3 h-32 overflow-y-auto font-mono text-[11px] space-y-1.5 text-gray-300">
+                        <div class="text-gray-500">[System] Terminal initialiserad. Klar för exekvering...</div>
                     </div>
                 </div>
             </div>
@@ -136,8 +161,8 @@
 
     </main>
 
-    <footer class="border-t border-slate-800 py-4 text-center text-xs text-slate-500">
-        CryptoAI Dashboard &copy; 2026.
+    <footer class="border-t border-gray-800/80 py-3 text-center text-[11px] text-gray-500 font-mono">
+        CryptoAI Terminal &copy; 2026. Sandbox Environment.
     </footer>
 
     <script src="script.js"></script>
