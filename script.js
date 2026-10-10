@@ -1,3 +1,14 @@
+// --- LÖSENORDSSKYDD ---
+const RATT_LOSENORD = "hate";
+let insattLosen = prompt("Ange lösenord för att komma åt CryptoAI Trader:");
+
+if (insattLosen !== RATT_LOSENORD) {
+    alert("Fel lösenord! Sidan kommer att stängas.");
+    document.body.innerHTML = "<div style='background:#020617; color:#f43f5e; height:100vh; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:1.5rem;'>Åtkomst Nekad. Ladda om sidan för att försöka igen.</div>";
+    throw new Error("Åtkomst nekad");
+}
+// ----------------------
+
 const toggleBtn = document.getElementById('toggle-bot-btn');
 const botStatusBadge = document.getElementById('bot-status-badge');
 const aiLog = document.getElementById('ai-log');
