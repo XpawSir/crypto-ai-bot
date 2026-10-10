@@ -48,6 +48,40 @@ const defaultPrices = {
 let candles = [];
 const maxCandles = 20;
 
+// ==========================================
+// KOPPLING TILL LOKAL BACKEND SERVER (BINANCE)
+// ==========================================
+async function hamtaRiktigtSaldo() {
+    try {
+        const response = await fetch('http://localhost:5000/api/balance');
+        if (!response.ok) throw new Error("Kunde inte nå servern");
+        const data = await response.json();
+        
+        console.log("Riktigt saldo från Binance-servern:", data);
+
+        // Exempel: Om servern skickar ett totalvärde eller en specifik tillgång, 
+        // uppdaterar vi 'balance' här. Anpassa beroende på hur din server.js skickar datan.
+        // Här kollar vi om data innehåller en summa eller objekt:
+        if (data && data.totalBalance) {
+            balance = parseFloat(data.totalBalance);
+            peakBalance = balance;
+            initialBalance = balance;
+        } else if (typeof data === 'number') {
+            balance = data;
+            peakBalance = balance;
+            initialBalance = balance;
+        }
+
+        // Uppdatera UI med det riktiga saldot
+        totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        addLog("System: Ansluten till lokal Binance-server för saldo.", "success");
+
+    } catch (error) {
+        console.error("Serverfel:", error);
+        addLog("Varning: Kunde inte nå den lokala backend-servern på port 5000.", "warn");
+    }
+}
+
 function initCandles(basePrice) {
     candles = [];
     let p = basePrice * 0.98;
@@ -73,7 +107,6 @@ function renderChart() {
 
     candles.forEach((candle) => {
         const isGreen = candle.close >= candle.open;
-        // Rent svart/vitt/grått tema med vita/mörka candlesticks samt gröna/röda accentstänger för utfall
         const colorClass = isGreen ? 'bg-white shadow-sm' : 'bg-gray-600 shadow-sm';
         const wickColor = isGreen ? 'bg-gray-300' : 'bg-gray-500';
 
@@ -109,7 +142,6 @@ function updateProMetrics(tradeReturn = 0) {
         returnsHistory.push(tradeReturn);
     }
 
-    // Max Drawdown beräkning
     if (balance > peakBalance) {
         peakBalance = balance;
     }
@@ -118,22 +150,17 @@ function updateProMetrics(tradeReturn = 0) {
         maxDrawdownVal = currentDD;
     }
 
-    // Win Rate
     let winRatePct = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-
-    // Profit Factor
     let profitFactor = totalLossesAmount > 0 ? (totalWinsAmount / totalLossesAmount) : (totalWinsAmount > 0 ? 99.0 : 0.0);
 
-    // Sharpe-kvot (Förenklad uppskattning baserat på avkastningshistorik)
     let sharpe = 0;
     if (returnsHistory.length > 1) {
         let mean = returnsHistory.reduce((a, b) => a + b, 0) / returnsHistory.length;
         let variance = returnsHistory.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / returnsHistory.length;
         let stdev = Math.sqrt(variance);
-        sharpe = stdev > 0 ? (mean / stdev) * Math.sqrt(252) : 0; // Årsannualiserad
+        sharpe = stdev > 0 ? (mean / stdev) * Math.sqrt(252) : 0;
     }
 
-    // Uppdatera UI
     metricSharpe.textContent = sharpe.toFixed(2);
     metricDrawdown.textContent = `${maxDrawdownVal.toFixed(2)}%`;
     metricWinrate.textContent = `${winRatePct.toFixed(0)}% (${winningTrades}/${totalTrades})`;
@@ -149,7 +176,6 @@ function updatePriceUI(price, changePct) {
     cryptoChangeEl.textContent = `${isPositive ? '+' : ''}${changePct.toFixed(2)}% (24h)`;
     cryptoChangeEl.className = `text-[11px] font-mono font-semibold ${isPositive ? 'text-white' : 'text-gray-400'}`;
 
-    // Simulerad orderbok spread & tryck
     let spread = (Math.random() * 0.04 + 0.01).toFixed(3);
     marketSpreadEl.textContent = `${spread}%`;
     let pressures = ["Köpövertag (Bullish)", "Säljtryck (Bearish)", "Balanserad Orderbok"];
@@ -219,6 +245,9 @@ currentPrice = defaultPrices[selectedSymbol];
 initCandles(currentPrice);
 fetchLivePrice();
 priceFetchInterval = setInterval(fetchLivePrice, 3000);
+
+// Anropa servern direkt när sidan laddas för att hämta det riktiga saldot
+hamtaRiktigtSaldo();
 
 function runAiTradeCycle() {
     const risk = parseInt(riskRange.value);
