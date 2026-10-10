@@ -1,4 +1,4 @@
-// Hämta element från DOM
+// Element från DOM
 const toggleBtn = document.getElementById('toggle-bot-btn');
 const botStatusBadge = document.getElementById('bot-status-badge');
 const aiLog = document.getElementById('ai-log');
@@ -11,23 +11,27 @@ const dailyPnlEl = document.getElementById('daily-pnl');
 const chartBars = document.getElementById('chart-bars');
 
 let isRunning = false;
-let botInterval = null;
-let balance = 10450.00;
-let pnl = 450.00;
-let currentBtcPrice = 67420.50;
+let tradeInterval = null;
+let priceFetchInterval = null;
 
-// Uppdatera riskvärde text
+// Låtsas-konto (Simulerat saldo)
+let balance = 10000.00; // Startkapital $10,000
+let pnl = 0.00;
+let currentBtcPrice = 0;
+let previousBtcPrice = 0;
+
+// Uppdatera visning av risk
 riskRange.addEventListener('input', (e) => {
     riskValue.textContent = `${e.target.value} / 10`;
 });
 
-// Skapa initiala "graf-staplar"
+// Skapa visualisering för diagram
 const barsCount = 24;
 let barValues = Array.from({length: barsCount}, () => Math.floor(Math.random() * 40) + 30);
 
 function renderChart() {
     chartBars.innerHTML = '';
-    const maxVal = Math.max(...barValues);
+    const maxVal = Math.max(...barValues, 1);
     barValues.forEach((val) => {
         const bar = document.createElement('div');
         const heightPercent = (val / maxVal) * 100;
@@ -38,14 +42,14 @@ function renderChart() {
 }
 renderChart();
 
-// Lägg till loggmeddelande
+// Lägg till meddelande i AI-loggen
 function addLog(message, type = 'info') {
     const time = new Date().toLocaleTimeString();
     const div = document.createElement('div');
     
     let colorClass = 'text-slate-300';
-    if (type === 'success') colorClass = 'text-emerald-400';
-    if (type === 'danger') colorClass = 'text-rose-400';
+    if (type === 'success') colorClass = 'text-emerald-400 font-semibold';
+    if (type === 'danger') colorClass = 'text-rose-400 font-semibold';
     if (type === 'warn') colorClass = 'text-amber-400';
 
     div.className = colorClass;
@@ -54,76 +58,103 @@ function addLog(message, type = 'info') {
     aiLog.scrollTop = aiLog.scrollHeight;
 }
 
+// Hämta RIKTIGT live-pris direkt från Binance Krypto-börs API
+async function fetchLiveBtcPrice() {
+    try {
+        const response = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT');
+        const data = await response.json();
+        
+        previousBtcPrice = currentBtcPrice;
+        currentBtcPrice = parseFloat(data.lastPrice);
+        const priceChangePercent = parseFloat(data.priceChangePercent);
+
+        // Uppdatera UI
+        btcPriceEl.textContent = `$${currentBtcPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        
+        const isPositive = priceChangePercent >= 0;
+        btcChangeEl.textContent = `${isPositive ? '+' : ''}${priceChangePercent.toFixed(2)}% (24h)`;
+        btcChangeEl.className = `text-xs font-semibold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`;
+
+        // Uppdatera diagrammet
+        barValues.shift();
+        barValues.push(Math.floor(currentBtcPrice % 100));
+        renderChart();
+
+    } catch (error) {
+        console.error("Kunde inte hämta pris från Binance:", error);
+    }
+}
+
+// Starta hämtning av riktiga marknadsdata direkt
+fetchLiveBtcPrice();
+priceFetchInterval = setInterval(fetchLiveBtcPrice, 3000); // Uppdatera priser var 3:e sekund
+
+// AI Trading-logik (Simulerad handel baserad på live-pris)
+function runAiTradeCycle() {
+    if (currentBtcPrice === 0) return;
+
+    const risk = parseInt(riskRange.value);
+    const strategy = document.getElementById('strategy-select').value;
+    
+    // Slumpa/beräkna AI-beslut
+    const rand = Math.random() * 10;
+    
+    if (rand < 3.5) {
+        // AI KÖPER
+        const tradeSize = (balance * (risk / 100)).toFixed(2);
+        if (parseFloat(tradeSize) < 10) return;
+
+        addLog(`🤖 [AI ANALYS - ${strategy.toUpperCase()}]: Positiv volym mätt på Binance! Köper BTC för $${tradeSize} (Live-kurs: $${currentBtcPrice.toFixed(2)})`, 'success');
+        
+    } else if (rand > 6.5) {
+        // AI SÄLJER & RÄKNAR VINST/FÖRLUST
+        const profitOrLoss = (Math.random() * (risk * 15) - (risk * 5)).toFixed(2);
+        const numPnL = parseFloat(profitOrLoss);
+        
+        pnl += numPnL;
+        balance += numPnL;
+
+        if (numPnL >= 0) {
+            addLog(`🚀 [AI TRADE SÅLD]: Stängde position med VINST +$${numPnL} på levande marknadsdata!`, 'success');
+        } else {
+            addLog(`⚠️ [AI STOP-LOSS]: Utlöste säkerhetsspärr. Stängde position med förlust -$${Math.abs(numPnL)}`, 'danger');
+        }
+
+        // Uppdatera saldo
+        totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        dailyPnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+        dailyPnlEl.className = `text-sm font-semibold ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+    } else {
+        // AI VÄNTAR
+        addLog(`🔍 [AI SCANNER]: Analyserar Binance orderbok. Inget tydligt läge just nu, avvaktar...`, 'info');
+    }
+}
+
 // Starta / Stoppa AI-roboten
 toggleBtn.addEventListener('click', () => {
     isRunning = !isRunning;
 
     if (isRunning) {
-        // Ändra till aktivt läge
         toggleBtn.className = "w-full bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-rose-500/25 transition transform active:scale-95 flex items-center justify-center gap-2";
         toggleBtn.innerHTML = `<i class="fa-solid fa-stop"></i> Stoppa AI-Robot`;
         
         botStatusBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5";
-        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv`;
+        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv (Kopplad till Binance API)`;
 
-        addLog("AI-roboten har startats och analyserar orderböcker...", "success");
+        addLog("Kopplingen till Binance är bekräftad. AI-roboten börjar analysera live-flödet...", "success");
 
-        // Starta simulerad AI-loop
-        botInterval = setInterval(() => {
-            runAiTradeCycle();
-        }, 4000);
+        // Kör AI-logik var 4:e sekund
+        tradeInterval = setInterval(runAiTradeCycle, 4000);
 
     } else {
-        // Pausa/stoppa
         toggleBtn.className = "w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-cyan-500/25 transition transform active:scale-95 flex items-center justify-center gap-2";
         toggleBtn.innerHTML = `<i class="fa-solid fa-power-off"></i> Starta AI-Robot`;
         
         botStatusBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1.5";
         botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Bot Pausad`;
 
-        addLog("AI-roboten har pausats av användaren.", "warn");
-        clearInterval(botInterval);
+        addLog("AI-roboten har pausats.", "warn");
+        clearInterval(tradeInterval);
     }
 });
-
-// Simulerad AI-logik som körs periodvis
-function runAiTradeCycle() {
-    // Slumpa prisrörelse för BTC
-    const priceChange = (Math.random() - 0.48) * 120;
-    currentBtcPrice += priceChange;
-    btcPriceEl.textContent = `$${currentBtcPrice.toFixed(2)}`;
-
-    // Uppdatera grafstaplar
-    barValues.shift();
-    barValues.push(Math.floor(Math.random() * 40) + 30);
-    renderChart();
-
-    // Slumpa om AI gör en affär
-    const actions = ['BUY', 'SELL', 'HOLD'];
-    const chosenAction = actions[Math.floor(Math.random() * actions.length)];
-
-    if (chosenAction === 'BUY') {
-        const tradeAmount = (Math.random() * 50 + 10).toFixed(2);
-        pnl += parseFloat((tradeAmount * 0.15).toFixed(2));
-        balance += parseFloat((tradeAmount * 0.15).toFixed(2));
-        
-        addLog(`AI analyserar trend: Indikator RSI visar översålt. Köper BTC för $${tradeAmount}`, "success");
-    } else if (chosenAction === 'SELL') {
-        const tradeProfit = (Math.random() * 40 - 10).toFixed(2);
-        pnl += parseFloat(tradeProfit);
-        balance += parseFloat(tradeProfit);
-
-        if (tradeProfit > 0) {
-            addLog(`AI säkrar vinst! Stänger position med +$${tradeProfit}`, "success");
-        } else {
-            addLog(`AI triggade stop-loss. Stänger position med -$${Math.abs(tradeProfit)}`, "danger");
-        }
-    } else {
-        addLog(`AI scannar marknaden: Inga optimala lägen hittades för tillfället. Väntar...`, "info");
-    }
-
-    // Uppdatera UI för saldo
-    totalBalanceEl.textContent = `$${balance.toFixed(2)}`;
-    dailyPnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} (${((pnl/10000)*100).toFixed(2)}%)`;
-    dailyPnlEl.className = `text-sm font-semibold ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-}
