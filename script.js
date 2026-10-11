@@ -12,7 +12,6 @@ const cryptoSelect = document.getElementById('crypto-select');
 const newsContainer = document.getElementById('news-container');
 const fitChartBtn = document.getElementById('fit-chart-btn');
 
-// Proffsmetriker DOM
 const metricSharpe = document.getElementById('metric-sharpe');
 const metricDrawdown = document.getElementById('metric-drawdown');
 const metricWinrate = document.getElementById('metric-winrate');
@@ -20,7 +19,6 @@ const metricProfitfactor = document.getElementById('metric-profitfactor');
 const marketSpreadEl = document.getElementById('market-spread');
 const orderbookPressureEl = document.getElementById('orderbook-pressure');
 
-// --- Hämta sparade inställningar från LocalStorage om det finns ---
 if (localStorage.getItem('cryptoai_symbol')) {
     cryptoSelect.value = localStorage.getItem('cryptoai_symbol');
 }
@@ -37,8 +35,8 @@ let balance = 10000.00;
 let initialBalance = 10000.00;
 let peakBalance = 10000.00;
 let pnl = 0.00;
-let currentPrice = 67420.50;
 let selectedSymbol = cryptoSelect.value;
+let currentPrice = 83000.00; // Standardstart
 
 let totalTrades = 0;
 let winningTrades = 0;
@@ -48,7 +46,7 @@ let returnsHistory = [];
 let maxDrawdownVal = 0;
 
 const defaultPrices = {
-    "BTCUSDT": 67420.50,
+    "BTCUSDT": 83000.00,
     "ETHUSDT": 3520.10,
     "SOLUSDT": 145.80,
     "XRPUSDT": 0.58
@@ -70,7 +68,7 @@ const chart = LightweightCharts.createChart(chartContainer, {
     },
     rightPriceScale: {
         borderColor: '#1e2329',
-        autoScale: true, // Ser till att skalan anpassar sig automatiskt efter synliga ljus
+        autoScale: true,
     },
     timeScale: {
         borderColor: '#1e2329',
@@ -80,8 +78,8 @@ const chart = LightweightCharts.createChart(chartContainer, {
 });
 
 let candlestickSeries;
-let emaFastSeries; // EMA 9 (Gult snitt)
-let emaSlowSeries; // EMA 21 (Blått snitt)
+let emaFastSeries;
+let emaSlowSeries;
 
 const seriesOptions = {
     upColor: '#0ecb81',
@@ -102,7 +100,6 @@ if (typeof chart.addCandlestickSeries === 'function') {
     emaSlowSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#38bdf8', lineWidth: 2 });
 }
 
-// Beräkna Exponential Moving Average (EMA) med realistisk spridning för tydliga linjer
 function calculateEMA(data, period) {
     const k = 2 / (period + 1);
     let emaArray = [];
@@ -118,27 +115,32 @@ function calculateEMA(data, period) {
     return emaArray;
 }
 
-// Generera historisk data med lagom avstånd så att grafen blir lättläst direkt
+// Generera historisk data med utgångspunkt från det faktiska nuvarande priset
 function generateInitialChartData(basePrice) {
     const data = [];
     let currentTime = Math.floor(Date.now() / 1000) - (60 * 30);
-    let p = basePrice * 0.995;
+    let p = basePrice * 0.998; // Börja mjukt nära det riktiga priset
     
     for (let i = 0; i < 30; i++) {
         let open = p;
-        let variation = basePrice * 0.0012; // Finjusterad variation för snyggare staplar
+        let variation = basePrice * 0.001;
         let close = open + (Math.random() - 0.48) * variation;
-        let high = Math.max(open, close) + Math.random() * (basePrice * 0.0006);
-        let low = Math.min(open, close) - Math.random() * (basePrice * 0.0006);
+        let high = Math.max(open, close) + Math.random() * (basePrice * 0.0005);
+        let low = Math.min(open, close) - Math.random() * (basePrice * 0.0005);
         
         data.push({ time: currentTime, open, high, low, close });
         p = close;
         currentTime += 60;
     }
+    // Sätt sista ljuset till exakt nuvarande pris
+    if (data.length > 0) {
+        data[data.length - 1].close = basePrice;
+    }
     return data;
 }
 
-let chartData = generateInitialChartData(defaultPrices[selectedSymbol] || currentPrice);
+let currentInitialPrice = defaultPrices[selectedSymbol] || 83000.00;
+let chartData = generateInitialChartData(currentInitialPrice);
 candlestickSeries.setData(chartData);
 
 function updateIndicators() {
@@ -149,17 +151,15 @@ function updateIndicators() {
 }
 updateIndicators();
 
-// Knapp för att zooma och centrera grafen perfekt (Auto-Fit)
 fitChartBtn.addEventListener('click', () => {
     chart.timeScale().fitContent();
-    addLog("Graf: Auto-Fit aktiverat för perfekt överblick.", "info");
+    addLog("Graf: Auto-Fit aktiverat.", "info");
 });
 
 window.addEventListener('resize', () => {
     chart.applyOptions({ width: chartContainer.clientWidth, height: chartContainer.clientHeight });
 });
 
-// Felsäker hämtning av saldo med fallback
 async function hamtaRiktigtSaldo() {
     try {
         const response = await fetch('/api/balance');
@@ -177,8 +177,7 @@ async function hamtaRiktigtSaldo() {
         }
 
         totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        addLog("System: Ansluten till Binance Testnet via Vercel för saldo.", "success");
-
+        addLog("System: Ansluten till Binance Testnet för saldo.", "success");
     } catch (error) {
         balance = 10000.00;
         totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
@@ -260,10 +259,19 @@ async function fetchLivePrice() {
     }
 }
 
-cryptoSelect.addEventListener('change', (e) => {
+cryptoSelect.addEventListener('change', async (e) => {
     selectedSymbol = e.target.value;
     localStorage.setItem('cryptoai_symbol', selectedSymbol);
-    currentPrice = defaultPrices[selectedSymbol] || 100;
+    
+    // Hämta direkt riktigt pris vid byte för att grafen ska hamna rätt direkt
+    try {
+        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${selectedSymbol}`);
+        const data = await response.json();
+        currentPrice = parseFloat(data.lastPrice);
+    } catch (err) {
+        currentPrice = defaultPrices[selectedSymbol] || 100;
+    }
+
     chartData = generateInitialChartData(currentPrice);
     candlestickSeries.setData(chartData);
     updateIndicators();
@@ -291,41 +299,30 @@ function addLog(message, type = 'info') {
     aiLog.scrollTop = aiLog.scrollHeight;
 }
 
-// Live-nyheter simulator
-setInterval(() => {
-    const newsItems = [
-        { text: "Stora institutioner ökar sina BTC-positioner inför helgen.", sentiment: "BULLISH" },
-        { text: "Volatilitetsindexet pekar på kommande breakout i kryptosektorn.", sentiment: "BULLISH" },
-        { text: "Kortvarigt säljtryck observeras på derivatbörserna.", sentiment: "BEARISH" },
-        { text: "Ethereum gas fees sjunker till nya lägstanoteringar.", sentiment: "NEUTRAL" }
-    ];
-    const randomNews = newsItems[Math.floor(Math.random() * newsItems.length)];
-    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    const newsDiv = document.createElement('div');
-    newsDiv.className = "p-2.5 bg-darkbg rounded border border-cardborder flex justify-between items-start animate-fade-in";
-    newsDiv.innerHTML = `
-        <div>
-            <p class="text-gray-200 font-semibold text-[11px]">${randomNews.text}</p>
-            <span class="text-[10px] text-gray-500">Idag kl ${timeNow}</span>
-        </div>
-        <span class="text-[10px] bg-white/10 text-white px-1.5 py-0.5 rounded font-bold">${randomNews.sentiment}</span>
-    `;
-    newsContainer.prepend(newsDiv);
-    if (newsContainer.children.length > 5) {
-        newsContainer.removeChild(newsContainer.lastChild);
+// Starta och hämta riktigt pris direkt innan första grafen ritas
+async function initTerminal() {
+    try {
+        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${selectedSymbol}`);
+        const data = await response.json();
+        currentPrice = parseFloat(data.lastPrice);
+    } catch (err) {
+        currentPrice = defaultPrices[selectedSymbol] || 83000.00;
     }
-}, 25000);
 
-currentPrice = defaultPrices[selectedSymbol] || 67420.50;
-fetchLivePrice();
-priceFetchInterval = setInterval(fetchLivePrice, 3000);
-hamtaRiktigtSaldo();
+    chartData = generateInitialChartData(currentPrice);
+    candlestickSeries.setData(chartData);
+    updateIndicators();
 
-// Auto-Fit grafen direkt vid start så den ser proffsig ut
-setTimeout(() => {
-    chart.timeScale().fitContent();
-}, 500);
+    fetchLivePrice();
+    priceFetchInterval = setInterval(fetchLivePrice, 3000);
+    hamtaRiktigtSaldo();
+
+    setTimeout(() => {
+        chart.timeScale().fitContent();
+    }, 300);
+}
+
+initTerminal();
 
 function runAiTradeCycle() {
     const risk = parseInt(riskRange.value);
