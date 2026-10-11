@@ -8,8 +8,8 @@ const cryptoPriceEl = document.getElementById('crypto-price');
 const cryptoChangeEl = document.getElementById('crypto-change');
 const totalBalanceEl = document.getElementById('total-balance');
 const dailyPnlEl = document.getElementById('daily-pnl');
-const chartCandles = document.getElementById('chart-candles');
 const cryptoSelect = document.getElementById('crypto-select');
+const newsContainer = document.getElementById('news-container');
 
 // Proffsmetriker DOM
 const metricSharpe = document.getElementById('metric-sharpe');
@@ -29,7 +29,6 @@ let peakBalance = 10000.00;
 let pnl = 0.00;
 let currentPrice = 67420.50;
 let selectedSymbol = cryptoSelect.value;
-let chartInitialized = false;
 
 let totalTrades = 0;
 let winningTrades = 0;
@@ -45,8 +44,66 @@ const defaultPrices = {
     "XRPUSDT": 0.58
 };
 
-let candles = [];
-const maxCandles = 20;
+// --- TradingView Chart Initialisering ---
+const chartContainer = document.getElementById('tv-chart-container');
+const chart = LightweightCharts.createChart(chartContainer, {
+    layout: {
+        background: { type: 'solid', color: '#0b0e11' },
+        textColor: '#9ca3af',
+    },
+    grid: {
+        vertLines: { color: '#1e2329' },
+        horzLines: { color: '#1e2329' },
+    },
+    crosshair: {
+        mode: LightweightCharts.CrosshairMode.Normal,
+    },
+    rightPriceScale: {
+        borderColor: '#1e2329',
+    },
+    timeScale: {
+        borderColor: '#1e2329',
+        timeVisible: true,
+        secondsVisible: true,
+    },
+});
+
+const candlestickSeries = chart.addCandlestickSeries({
+    upColor: '#0ecb81',
+    downColor: '#f6465d',
+    borderDownColor: '#f6465d',
+    borderUpColor: '#0ecb81',
+    wickDownColor: '#f6465d',
+    wickUpColor: '#0ecb81',
+});
+
+// Generera historisk data för TradingView
+function generateInitialChartData(basePrice) {
+    const data = [];
+    let currentTime = Math.floor(Date.now() / 1000) - (60 * 60); // 1 timme bakåt i tiden
+    let p = basePrice * 0.98;
+    
+    for (let i = 0; i < 40; i++) {
+        let open = p;
+        let variation = basePrice * 0.003;
+        let close = open + (Math.random() - 0.48) * variation;
+        let high = Math.max(open, close) + Math.random() * (basePrice * 0.0015);
+        let low = Math.min(open, close) - Math.random() * (basePrice * 0.0015);
+        
+        data.push({ time: currentTime, open, high, low, close });
+        p = close;
+        currentTime += 60; // 1 minut per ljus
+    }
+    return data;
+}
+
+let chartData = generateInitialChartData(defaultPrices[selectedSymbol]);
+candlestickSeries.setData(chartData);
+
+// Responsive hantering av grafen
+window.addEventListener('resize', () => {
+    chart.applyOptions({ width: chartContainer.clientWidth, height: chartContainer.clientHeight });
+});
 
 async function hamtaRiktigtSaldo() {
     try {
@@ -65,67 +122,12 @@ async function hamtaRiktigtSaldo() {
         }
 
         totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        addLog("System: Ansluten till Binance via Vercel för saldo.", "success");
+        addLog("System: Ansluten till Binance Testnet via Vercel för saldo.", "success");
 
     } catch (error) {
         console.error("Fel vid hämtning av saldo:", error);
         addLog("Varning: Kunde inte hämta saldo från Vercel-funktionen.", "warn");
     }
-}
-
-function initCandles(basePrice) {
-    candles = [];
-    let p = basePrice * 0.995;
-    for (let i = 0; i < maxCandles; i++) {
-        let open = p;
-        let variation = basePrice * 0.002;
-        let close = open + (Math.random() - 0.48) * variation;
-        let high = Math.max(open, close) + Math.random() * (basePrice * 0.001);
-        let low = Math.min(open, close) - Math.random() * (basePrice * 0.001);
-        candles.push({ open, close, high, low });
-        p = close;
-    }
-}
-
-function renderChart() {
-    chartCandles.innerHTML = '';
-    if (candles.length === 0) return;
-
-    let allPrices = candles.flatMap(c => [c.high, c.low]);
-    let minVal = Math.min(...allPrices);
-    let maxVal = Math.max(...allPrices);
-    let range = maxVal - minVal || 1;
-
-    candles.forEach((candle) => {
-        const isGreen = candle.close >= candle.open;
-        const colorClass = isGreen ? 'bg-white shadow-sm' : 'bg-gray-600 shadow-sm';
-        const wickColor = isGreen ? 'bg-gray-300' : 'bg-gray-500';
-
-        let wickTop = ((maxVal - candle.high) / range) * 100;
-        let wickHeight = ((candle.high - candle.low) / range) * 100;
-        let bodyTopVal = Math.max(candle.open, candle.close);
-        let bodyBottomVal = Math.min(candle.open, candle.close);
-        
-        let bodyTop = ((maxVal - bodyTopVal) / range) * 100;
-        let bodyHeight = Math.max(((bodyTopVal - bodyBottomVal) / range) * 100, 4);
-
-        const candleWrapper = document.createElement('div');
-        candleWrapper.className = 'flex-1 h-full relative flex flex-col items-center justify-center mx-0.5';
-
-        const wick = document.createElement('div');
-        wick.className = `absolute w-[1px] ${wickColor}`;
-        wick.style.top = `${Math.max(wickTop, 0)}%`;
-        wick.style.height = `${Math.min(wickHeight, 100)}%`;
-
-        const body = document.createElement('div');
-        body.className = `absolute w-3/4 rounded-[1px] ${colorClass} z-10`;
-        body.style.top = `${Math.max(bodyTop, 0)}%`;
-        body.style.height = `${Math.min(bodyHeight, 100)}%`;
-
-        candleWrapper.appendChild(wick);
-        candleWrapper.appendChild(body);
-        chartCandles.appendChild(candleWrapper);
-    });
 }
 
 function updateProMetrics(tradeReturn = 0) {
@@ -159,7 +161,7 @@ function updatePriceUI(price, changePct) {
     
     const isPositive = changePct >= 0;
     cryptoChangeEl.textContent = `${isPositive ? '+' : ''}${changePct.toFixed(2)}% (24h)`;
-    cryptoChangeEl.className = `text-[11px] font-mono font-semibold ${isPositive ? 'text-white' : 'text-gray-400'}`;
+    cryptoChangeEl.className = `text-[11px] font-mono font-semibold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`;
 
     let spread = (Math.random() * 0.04 + 0.01).toFixed(3);
     marketSpreadEl.textContent = `${spread}%`;
@@ -176,43 +178,36 @@ async function fetchLivePrice() {
         const newPrice = parseFloat(data.lastPrice);
         const priceChangePercent = parseFloat(data.priceChangePercent);
 
-        // Om grafen inte är skalad efter det riktiga priset ännu, gör en nystart direkt
-        if (!chartInitialized) {
-            initCandles(newPrice);
-            chartInitialized = true;
-        }
-
         updatePriceUI(newPrice, priceChangePercent);
 
-        if (candles.length > 0) {
-            let lastCandle = candles[candles.length - 1];
+        // Uppdatera sista ljuset i TradingView-grafen
+        if (chartData.length > 0) {
+            let lastCandle = chartData[chartData.length - 1];
             lastCandle.close = newPrice;
             if (newPrice > lastCandle.high) lastCandle.high = newPrice;
             if (newPrice < lastCandle.low) lastCandle.low = newPrice;
+            candlestickSeries.update(lastCandle);
         }
-        renderChart();
     } catch (error) {
-        if (!chartInitialized) {
-            initCandles(defaultPrices[selectedSymbol] || 100);
-            chartInitialized = true;
-        }
         let fluctuation = (Math.random() - 0.48) * (currentPrice * 0.002);
         let simulatedPrice = currentPrice + fluctuation;
         updatePriceUI(simulatedPrice, 1.45);
 
-        let lastCandle = candles[candles.length - 1];
-        lastCandle.close = simulatedPrice;
-        if (simulatedPrice > lastCandle.high) lastCandle.high = simulatedPrice;
-        if (simulatedPrice < lastCandle.low) lastCandle.low = simulatedPrice;
-        renderChart();
+        if (chartData.length > 0) {
+            let lastCandle = chartData[chartData.length - 1];
+            lastCandle.close = simulatedPrice;
+            if (simulatedPrice > lastCandle.high) lastCandle.high = simulatedPrice;
+            if (simulatedPrice < lastCandle.low) lastCandle.low = simulatedPrice;
+            candlestickSeries.update(lastCandle);
+        }
     }
 }
 
 cryptoSelect.addEventListener('change', (e) => {
     selectedSymbol = e.target.value;
     currentPrice = defaultPrices[selectedSymbol] || 100;
-    chartInitialized = false;
-    initCandles(currentPrice);
+    chartData = generateInitialChartData(currentPrice);
+    candlestickSeries.setData(chartData);
     addLog(`System: Bytte aktiv till ${selectedSymbol}.`, 'info');
     fetchLivePrice();
 });
@@ -225,21 +220,46 @@ function addLog(message, type = 'info') {
     const time = new Date().toLocaleTimeString();
     const div = document.createElement('div');
     let colorClass = 'text-gray-300';
-    if (type === 'success') colorClass = 'text-white font-semibold';
-    if (type === 'danger') colorClass = 'text-gray-400 font-semibold';
-    if (type === 'warn') colorClass = 'text-gray-200';
+    if (type === 'success') colorClass = 'text-emerald-400 font-semibold';
+    if (type === 'danger') colorClass = 'text-red-400 font-semibold';
+    if (type === 'warn') colorClass = 'text-amber-400';
 
     div.className = colorClass;
-    div.innerHTML = `<span class="text-gray-600">[${time}]</span> ${message}`;
+    div.innerHTML = `<span class="text-gray-500">[${time}]</span> ${message}`;
     aiLog.appendChild(div);
     aiLog.scrollTop = aiLog.scrollHeight;
 }
 
+// Simulera inkommande live-nyheter ibland
+setInterval(() => {
+    const newsItems = [
+        { text: "Stora institutioner ökar sina BTC-positioner inför helgen.", sentiment: "BULLISH" },
+        { text: "Volatilitetsindexet pekar på kommande breakout i kryptosektorn.", sentiment: "BULLISH" },
+        { text: "Kortvarigt säljtryck observeras på derivatbörserna.", sentiment: "BEARISH" },
+        { text: "Ethereum gas fees sjunker till nya lägstanoteringar.", sentiment: "NEUTRAL" }
+    ];
+    const randomNews = newsItems[Math.floor(Math.random() * newsItems.length)];
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const newsDiv = document.createElement('div');
+    newsDiv.className = "p-2.5 bg-darkbg rounded border border-cardborder flex justify-between items-start animate-fade-in";
+    newsDiv.innerHTML = `
+        <div>
+            <p class="text-gray-200 font-semibold text-[11px]">${randomNews.text}</p>
+            <span class="text-[10px] text-gray-500">Idag kl ${timeNow}</span>
+        </div>
+        <span class="text-[10px] bg-white/10 text-white px-1.5 py-0.5 rounded font-bold">${randomNews.sentiment}</span>
+    `;
+    newsContainer.prepend(newsDiv);
+    if (newsContainer.children.length > 5) {
+        newsContainer.removeChild(newsContainer.lastChild);
+    }
+}, 25000);
+
+// Starta initiala flöden
 currentPrice = defaultPrices[selectedSymbol];
-initCandles(currentPrice);
 fetchLivePrice();
 priceFetchInterval = setInterval(fetchLivePrice, 3000);
-
 hamtaRiktigtSaldo();
 
 function runAiTradeCycle() {
@@ -248,14 +268,16 @@ function runAiTradeCycle() {
     const maxAllowedSpend = parseFloat(maxSpendInput.value) || 1000;
     const rand = Math.random() * 10;
     
+    // Skapa nytt tidsstämplat ljus i TradingView-grafen
+    let nowTime = Math.floor(Date.now() / 1000);
     let open = currentPrice;
     let close = currentPrice * (1 + (Math.random() - 0.47) * 0.003);
     let high = Math.max(open, close) * 1.0015;
     let low = Math.min(open, close) * 0.9985;
     
-    candles.shift();
-    candles.push({ open, close, high, low });
-    renderChart();
+    chartData.push({ time: nowTime, open, high, low, close });
+    if (chartData.length > 60) chartData.shift();
+    candlestickSeries.setData(chartData);
 
     if (rand < 3.5) {
         let calculatedSize = balance * (risk / 100);
@@ -283,7 +305,7 @@ function runAiTradeCycle() {
 
         totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         dailyPnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
-        dailyPnlEl.className = `text-lg font-mono font-bold ${pnl >= 0 ? 'text-white' : 'text-gray-400'}`;
+        dailyPnlEl.className = `text-2xl font-mono font-bold ${pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
 
         updateProMetrics(tradeReturnPct);
     } else {
@@ -295,13 +317,13 @@ toggleBtn.addEventListener('click', () => {
     isRunning = !isRunning;
 
     if (isRunning) {
-        toggleBtn.className = "w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2.5 px-4 rounded-lg text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-2 border border-gray-700";
+        toggleBtn.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-lg text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-2";
         toggleBtn.innerHTML = `<i class="fa-solid fa-stop"></i> Stoppa AI-Robot`;
         
-        botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-white/10 text-white border border-white/20 flex items-center gap-2";
-        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Bot Aktiv (${selectedSymbol})`;
+        botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-2";
+        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv (${selectedSymbol})`;
 
-        addLog(`Terminal: Autonom exekvering startad för ${selectedSymbol}.`, "success");
+        addLog(`Terminal: Autonom exekvering startad för ${selectedSymbol} i v2-läge.`, "success");
         tradeInterval = setInterval(runAiTradeCycle, 4000);
 
     } else {
