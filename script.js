@@ -1,5 +1,5 @@
 // ============================================================
-//   CryptoAI Pro Terminal – script.js (Med ATR & Moln-synk)
+//   CryptoAI Pro Terminal – script.js (Komplett version)
 // ============================================================
 
 // ---------- DOM ----------
@@ -30,6 +30,8 @@ const API = 'https://api.binance.com/api/v3';
 const HISTORY_LIMIT = 300;   
 const REFRESH_MS = 3000;     
 const BOT_MS = 4000;         
+const BACKTEST_CANDLES = 4000;  
+const BACKTEST_START = 200;     
 const FEE = 0.001;           
 const COLORS = { up: '#0ecb81', down: '#f6465d', ema9: '#facc15', ema21: '#38bdf8' };
 const decimalsBySymbol = { BTCUSDT: 2, ETHUSDT: 2, SOLUSDT: 2, XRPUSDT: 4 };
@@ -81,23 +83,61 @@ const STRATEGIES = {
     'ema-50-200': emaStrategy('EMA 50/200 (Golden Cross)', 50, 200),
     'ema-fast': emaStrategy('EMA 3/8 (snabbtest)', 3, 8),
     'macd': {
-        name: 'MACD 12/26/9', colors: [], legend: [],
+        name: 'MACD 12/26/9', colors: ['#38bdf8', '#facc15'], legend: [['MACD:', 'Histogram'], ['Signal:', 'Linje']],
         compute: function (d) {
             const c = d.map(function (x) { return x.close; }), e12 = emaArr(c, 12), e26 = emaArr(c, 26);
             const m = e12.map(function (x, i) { return x - e26[i]; }), sg = emaArr(m, 9);
             const r = signals(d.length, function (i) { return crossUp(m, sg, i); }, function (i) { return crossDown(m, sg, i); });
-            r.lines = [];
+            r.lines = [m, sg];
             r.text = function (i) { return 'MACD ' + m[i].toFixed(2) + ' / signal ' + sg[i].toFixed(2); };
             return r;
         }
     },
     'rsi': {
-        name: 'RSI 14 (köp under 30, sälj över 70)', colors: [], legend: [],
+        name: 'RSI 14 (köp under 30, sälj över 70)', colors: ['#a78bfa'], legend: [['RSI:', '14 perioder']],
         compute: function (d) {
             const v = rsiArr(d.map(function (x) { return x.close; }), 14);
             const r = signals(d.length, function (i) { return v[i] !== null && v[i] < 30; }, function (i) { return v[i] !== null && v[i] > 70; });
-            r.lines = [];
+            r.lines = [v];
             r.text = function (i) { return 'RSI ' + (v[i] === null ? '-' : v[i].toFixed(1)); };
+            return r;
+        }
+    },
+    'bb': {
+        name: 'Bollinger 20/2 (mean reversion)', colors: ['#a78bfa', '#facc15', '#a78bfa'],
+        legend: [['Band:', 'Övre/undre (2 std)'], ['Mitt:', 'Snitt 20']],
+        compute: function (d) {
+            const c = d.map(function (x) { return x.close; }), mid = [], up = [], lo = [];
+            for (let i = 0; i < c.length; i++) {
+                if (i < 19) { mid.push(null); up.push(null); lo.push(null); continue; }
+                let sum = 0, q = 0;
+                for (let j = i - 19; j <= i; j++) sum += c[j];
+                const m = sum / 20;
+                for (let j = i - 19; j <= i; j++) q += (c[j] - m) * (c[j] - m);
+                const sd = Math.sqrt(q / 20);
+                mid.push(m); up.push(m + 2 * sd); lo.push(m - 2 * sd);
+            }
+            const r = signals(d.length, function (i) { return lo[i] !== null && c[i] < lo[i]; }, function (i) { return mid[i] !== null && c[i] > mid[i]; });
+            r.lines = [up, mid, lo];
+            r.text = function (i) { return 'Pris ' + fmt(c[i]) + ' / nedre ' + (lo[i] === null ? '-' : fmt(lo[i])) + ' / mitt ' + (mid[i] === null ? '-' : fmt(mid[i])); };
+            return r;
+        }
+    },
+    'donchian': {
+        name: 'Donchian 20/10 (breakout)', colors: ['#fb923c', '#a78bfa'],
+        legend: [['Övre:', 'Högsta 20'], ['Nedre:', 'Lägsta 10']],
+        compute: function (d) {
+            const hi = [], lo = [];
+            for (let i = 0; i < d.length; i++) {
+                if (i < 20) { hi.push(null); lo.push(null); continue; }
+                let h = -Infinity, l = Infinity;
+                for (let j = i - 20; j < i; j++) h = Math.max(h, d[j].high);
+                for (let j = i - 10; j < i; j++) l = Math.min(l, d[j].low);
+                hi.push(h); lo.push(l);
+            }
+            const r = signals(d.length, function (i) { return hi[i] !== null && d[i].close > hi[i]; }, function (i) { return lo[i] !== null && d[i].close < lo[i]; });
+            r.lines = [hi, lo];
+            r.text = function (i) { return 'Pris ' + fmt(d[i].close) + ' / högsta20 ' + (hi[i] === null ? '-' : fmt(hi[i])) + ' / lägsta10 ' + (lo[i] === null ? '-' : fmt(lo[i])); };
             return r;
         }
     }
@@ -117,12 +157,11 @@ async function loadCloudState() {
                 pnl = data.pnl || 0;
                 totalTrades = data.totalTrades || 0;
                 winningTrades = data.winningTrades || 0;
-                addLog('Molnsynk: Hämtade sparade data från Vercel KV.', 'success');
                 updateStats();
             }
         }
     } catch (e) {
-        addLog('Molnsynk ej tillgänglig, använder lokal cache.', 'warn');
+        // Fallback till lokal lagring om moln ej är nåbart
     }
 }
 
@@ -133,9 +172,7 @@ async function saveCloudState() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ balance, pnl, totalTrades, winningTrades })
         });
-    } catch (e) {
-        // Tyst hantering vid offline
-    }
+    } catch (e) {}
 }
 
 function loadSetting(key) {
@@ -211,7 +248,7 @@ function fmt(p) {
     return p.toLocaleString('en-US', { minimumFractionDigits: dec(), maximumFractionDigits: dec() });
 }
 
-// ---------- Grafen ----------
+// ---------- Grafen (TradingView Lightweight Charts) ----------
 const chart = LightweightCharts.createChart(chartContainer, {
     autoSize: true,
     layout: {
@@ -261,7 +298,7 @@ function applyPrecision() {
     overlaySeries.forEach(function (x) { x.applyOptions(fmtOpts); });
 }
 
-// ---------- ATR (Average True Range) Beräkning ----------
+// ---------- ATR (Average True Range) ----------
 function calculateATR(data, period = 14) {
     if (data.length < period + 1) return data[data.length - 1].high - data[data.length - 1].low;
     let trList = [];
@@ -273,11 +310,10 @@ function calculateATR(data, period = 14) {
         trList.push(tr);
     }
     const recentTr = trList.slice(-period);
-    const atr = recentTr.reduce((a, b) => a + b, 0) / recentTr.length;
-    return atr;
+    return recentTr.reduce((a, b) => a + b, 0) / recentTr.length;
 }
 
-// ---------- Indikatorer ----------
+// ---------- Indikatorer & Linjer ----------
 function toPoints(d, arr) {
     const out = [];
     for (let i = 0; i < d.length; i++) {
@@ -290,20 +326,20 @@ function setOverlays() {
     const res = strategy.compute(candles);
     overlaySeries.forEach(function (x, j) {
         if (res.lines[j]) {
-            x.applyOptions({ color: strategy.colors[j] });
+            x.applyOptions({ color: strategy.colors[j] || '#38bdf8' });
             x.setData(toPoints(candles, res.lines[j]));
         } else {
             x.setData([]);
         }
     });
-    lastEmaTime = candles[candles.length - 1].time;
+    if (candles.length > 0) lastEmaTime = candles[candles.length - 1].time;
 }
 
 function updateLegend() {
     if (!legendLines) return;
     legendLines.innerHTML = strategy.legend.length
         ? strategy.legend.map(function (l, j) {
-            return '<div><span class="inline-block w-3 h-1 mr-1" style="background:' + strategy.colors[j] + '"></span><strong>' + l[0] + '</strong> ' + l[1] + '</div>';
+            return '<div><span class="inline-block w-3 h-1 mr-1" style="background:' + (strategy.colors[j] || '#38bdf8') + '"></span><strong>' + l[0] + '</strong> ' + l[1] + '</div>';
         }).join('')
         : '<div>Inga linjer, signalerna syns som pilar</div>';
 }
@@ -326,4 +362,77 @@ async function getJSON(url) {
 
 function toCandle(k) {
     return {
-        time: Math.floor(k[0] /
+        time: Math.floor(k[0] / 1000),
+        open: parseFloat(k[1]),
+        high: parseFloat(k[2]),
+        low: parseFloat(k[3]),
+        close: parseFloat(k[4])
+    };
+}
+
+function setConnection(ok, err) {
+    if (ok === connected) return;
+    connected = ok;
+    if (ok) {
+        addLog('Ansluten till Binance, live-data hämtas.', 'success');
+    } else {
+        addLog('Kunde inte hämta data från Binance' + (err ? ' (' + err.message + ')' : ''), 'danger');
+    }
+}
+
+async function loadHistory() {
+    const myToken = ++loadToken;
+    loading = true;
+    historyReady = false;
+    try {
+        const raw = await getJSON(API + '/klines?symbol=' + selectedSymbol + '&interval=' + selectedInterval + '&limit=' + HISTORY_LIMIT);
+        if (myToken !== loadToken) return;
+        candles = raw.map(toCandle);
+        candleSeries.setData(candles);
+        setOverlays();
+        if (candles.length > 1) lastEvalTime = candles[candles.length - 2].time;
+        chart.timeScale().fitContent();
+        historyReady = true;
+        setConnection(true);
+        refreshMarket();
+    } catch (e) {
+        if (myToken === loadToken) setConnection(false, e);
+    } finally {
+        if (myToken === loadToken) loading = false;
+    }
+}
+
+function applyCandles(list) {
+    for (const c of list) {
+        const last = candles[candles.length - 1];
+        if (last && c.time < last.time) continue;
+        if (last && c.time === last.time) {
+            candles[candles.length - 1] = c;
+        } else {
+            candles.push(c);
+        }
+        candleSeries.update(c);
+    }
+    if (candles.length > 1000) candles.shift();
+
+    const res = strategy.compute(candles);
+    const n = candles.length;
+    for (let i = Math.max(0, n - 2); i < n; i++) {
+        if (candles[i].time < lastEmaTime) continue;
+        overlaySeries.forEach(function (x, j) {
+            const v = res.lines[j] ? res.lines[j][i] : null;
+            if (v !== null && v !== undefined) x.update({ time: candles[i].time, value: v });
+        });
+        if (candles[i]) lastEmaTime = candles[i].time;
+    }
+}
+
+async function refreshMarket() {
+    if (!historyReady) {
+        if (!loading) loadHistory();
+        return;
+    }
+    if (refreshing) return;
+    refreshing = true;
+    const tok = loadToken;
+    try {
