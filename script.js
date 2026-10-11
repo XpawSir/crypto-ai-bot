@@ -117,17 +117,18 @@ function calculateEMA(data, period) {
     return emaArray;
 }
 
+// Skapar fylliga, snygga ljus med realistiska variationer utan platta streck
 function generateInitialChartData(basePrice) {
     const data = [];
-    let currentTime = Math.floor(Date.now() / 1000) - (60 * 30);
-    let p = basePrice * 0.997;
+    let currentTime = Math.floor(Date.now() / 1000) - (60 * 40);
+    let p = basePrice * 0.995;
     
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 40; i++) {
         let open = p;
-        let stepChange = (Math.random() - 0.49) * (basePrice * 0.0008);
-        let close = open + stepChange;
-        let high = Math.max(open, close) + (basePrice * 0.0004);
-        let low = Math.min(open, close) - (basePrice * 0.0004);
+        let change = (Math.random() - 0.48) * (basePrice * 0.0025); // Fylligare variation
+        let close = open + change;
+        let high = Math.max(open, close) + (basePrice * 0.001);
+        let low = Math.min(open, close) - (basePrice * 0.001);
         
         data.push({ time: currentTime, open, high, low, close });
         p = close;
@@ -245,7 +246,7 @@ async function fetchLivePrice() {
             updateIndicators();
         }
     } catch (error) {
-        let fluctuation = (Math.random() - 0.48) * (currentPrice * 0.0006);
+        let fluctuation = (Math.random() - 0.48) * (currentPrice * 0.001);
         let simulatedPrice = currentPrice + fluctuation;
         updatePriceUI(simulatedPrice, 1.45);
 
@@ -323,17 +324,17 @@ async function initTerminal() {
 
 initTerminal();
 
-// --- RIKTIG EMA CROSSOVER AI-STRATEGI (Ingen slump!) ---
+// --- RIKTIG EMA CROSSOVER AI-STRATEGI ---
 function runAiTradeCycle() {
     const risk = parseInt(riskRange.value);
     const maxAllowedSpend = parseFloat(maxSpendInput.value) || 1000;
     
     let nowTime = Math.floor(Date.now() / 1000);
     let open = currentPrice;
-    let stepChange = (Math.random() - 0.48) * (currentPrice * 0.0012);
+    let stepChange = (Math.random() - 0.48) * (currentPrice * 0.0015);
     let close = open + stepChange;
-    let high = Math.max(open, close) + (currentPrice * 0.0005);
-    let low = Math.min(open, close) - (currentPrice * 0.0005);
+    let high = Math.max(open, close) + (currentPrice * 0.0008);
+    let low = Math.min(open, close) - (currentPrice * 0.0008);
     
     chartData.push({ time: nowTime, open, high, low, close });
     if (chartData.length > 60) chartData.shift();
@@ -407,8 +408,3 @@ toggleBtn.addEventListener('click', () => {
         
         botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-gray-900 text-gray-400 border border-gray-800 flex items-center gap-2";
         botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-600"></span> Bot Pausad`;
-
-        addLog("Terminal: Exekvering pausad.", "warn");
-        clearInterval(tradeInterval);
-    }
-});
