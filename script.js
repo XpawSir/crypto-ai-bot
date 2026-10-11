@@ -1,3 +1,11 @@
+// ============================================================
+//  CryptoAI Pro Terminal – script.js
+//  Graf: TradingView Lightweight Charts (candlesticks + EMA + köp/sälj-markörer)
+//  Data: Binance publika API (riktiga candles, inga påhittade priser)
+//  OBS: Boten handlar med låtsaspengar (paper trading), den är inte kopplad till någon börs.
+// ============================================================
+
+// ---------- DOM ----------
 const toggleBtn = document.getElementById('toggle-bot-btn');
 const botStatusBadge = document.getElementById('bot-status-badge');
 const aiLog = document.getElementById('ai-log');
@@ -9,6 +17,8 @@ const cryptoChangeEl = document.getElementById('crypto-change');
 const totalBalanceEl = document.getElementById('total-balance');
 const dailyPnlEl = document.getElementById('daily-pnl');
 const cryptoSelect = document.getElementById('crypto-select');
+const intervalSelect = document.getElementById('interval-select');
+const chartContainer = document.getElementById('tv-chart-container');
 
 const metricSharpe = document.getElementById('metric-sharpe');
 const metricDrawdown = document.getElementById('metric-drawdown');
@@ -16,23 +26,60 @@ const metricWinrate = document.getElementById('metric-winrate');
 const metricProfitfactor = document.getElementById('metric-profitfactor');
 const marketSpreadEl = document.getElementById('market-spread');
 
-if (localStorage.getItem('cryptoai_symbol')) {
-    cryptoSelect.value = localStorage.getItem('cryptoai_symbol');
+// ---------- Inställningar ----------
+const API = 'https://api.binance.com/api/v3';
+const HISTORY_LIMIT = 300;   // antal candles som hämtas vid start
+const REFRESH_MS = 3000;     // hur ofta live-data hämtas
+const BOT_MS = 4000;         // hur ofta boten kollar läget
+const STOP_LOSS = 0.005;     // 0,5 % stop-loss
+const FEE = 0.001;           // 0,1 % avgift per köp/sälj (som Binance spot)
+const COLORS = { up: '#0ecb81', down: '#f6465d', ema9: '#facc15', ema21: '#38bdf8' };
+const decimalsBySymbol = { BTCUSDT: 2, ETHUSDT: 2, SOLUSDT: 2, XRPUSDT: 4 };
+
+// ---------- Hjälpfunktioner för localStorage ----------
+function loadSetting(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
 }
-if (localStorage.getItem('cryptoai_risk')) {
-    riskRange.value = localStorage.getItem('cryptoai_risk');
+function saveSetting(key, val) {
+    try { localStorage.setItem(key, val); } catch (e) { /* ignoreras */ }
+}
+
+// ---------- Återställ sparade val ----------
+const savedSymbol = loadSetting('cryptoai_symbol');
+if (savedSymbol && [...cryptoSelect.options].some(o => o.value === savedSymbol)) {
+    cryptoSelect.value = savedSymbol;
+}
+const savedInterval = loadSetting('cryptoai_interval');
+if (savedInterval && [...intervalSelect.options].some(o => o.value === savedInterval)) {
+    intervalSelect.value = savedInterval;
+}
+const savedRisk = loadSetting('cryptoai_risk');
+if (savedRisk) {
+    riskRange.value = savedRisk;
     riskValue.textContent = riskRange.value + ' / 10';
 }
 
+// ---------- Tillstånd ----------
+let selectedSymbol = cryptoSelect.value;
+let selectedInterval = intervalSelect.value;
+
+let candles = [];            // { time, open, high, low, close }
+let markers = [];            // köp/sälj-pilar på grafen
+let currentPrice = 0;
+let historyReady = false;
+let loading = false;
+let loadToken = 0;
+let refreshing = false;
+let connected = null;
+let lastEmaTime = 0;
+let lastEvalTime = 0;
+
 let isRunning = false;
 let tradeInterval = null;
-let priceInterval = null;
 
 let balance = 10000.00;
+let peakBalance = 10000.00;
 let pnl = 0.00;
-let selectedSymbol = cryptoSelect.value;
-let currentPrice = 83000.00;
-
 let totalTrades = 0;
 let winningTrades = 0;
 let totalWinsAmount = 0;
@@ -41,224 +88,366 @@ let returnsHistory = [];
 let maxDrawdownVal = 0;
 let hasOpenPosition = false;
 let entryPrice = 0;
+let positionExposure = 0;
 
-const defaultPrices = {
-    "BTCUSDT": 83000.00,
-    "ETHUSDT": 3520.10,
-    "SOLUSDT": 145.80,
-    "XRPUSDT": 0.58
-};
-
-function generateInitialData(base) {
-    let data = [];
-    let time = Date.now() - (30 * 60 * 1000);
-    let p = base * 0.99;
-    for (let i = 0; i < 30; i++) {
-        let open = p;
-        let close = open + (Math.random() - 0.48) * (base * 0.004);
-        let high = Math.max(open, close) + (base * 0.0015);
-        let low = Math.min(open, close) - (base * 0.0015);
-        data.push({
-            x: new Date(time),
-            y: [parseFloat(open.toFixed(2)), parseFloat(high.toFixed(2)), parseFloat(low.toFixed(2)), parseFloat(close.toFixed(2))]
-        });
-        p = close;
-        time += 60 * 1000;
-    }
-    return data;
+// ---------- Formatering ----------
+function dec() {
+    return decimalsBySymbol[selectedSymbol] !== undefined ? decimalsBySymbol[selectedSymbol] : 2;
+}
+function fmt(p) {
+    return p.toLocaleString('en-US', { minimumFractionDigits: dec(), maximumFractionDigits: dec() });
 }
 
-function calculateEMA(dataArray, period) {
-    let closes = dataArray.map(d => d.y[3]);
-    let k = 2 / (period + 1);
-    let result = [];
-    if (closes.length === 0) return result;
-    let prev = closes[0];
-    for (let i = 0; i < closes.length; i++) {
-        let val = closes[i];
-        let ema = (val * k) + (prev * (1 - k));
-        result.push([dataArray[i].x.getTime(), parseFloat(ema.toFixed(2))]);
-        prev = ema;
-    }
-    return result;
-}
-
-let chartData = generateInitialData(defaultPrices[selectedSymbol] || 83000);
-
-var options = {
-    series: [{
-        name: 'Pris',
-        type: 'candlestick',
-        data: chartData
-    }, {
-        name: 'EMA 9',
-        type: 'line',
-        data: calculateEMA(chartData, 9)
-    }, {
-        name: 'EMA 21',
-        type: 'line',
-        data: calculateEMA(chartData, 21)
-    }],
-    chart: {
-        height: '100%',
-        type: 'line',
-        background: '#0b0e11',
-        toolbar: { show: false }
+// ---------- Grafen ----------
+const chart = LightweightCharts.createChart(chartContainer, {
+    autoSize: true,
+    layout: {
+        background: { type: LightweightCharts.ColorType.Solid, color: '#0b0e11' },
+        textColor: '#9ca3af'
     },
-    colors: ['#0ecb81', '#facc15', '#38bdf8'],
-    stroke: {
-        width: [1, 2, 2]
+    grid: {
+        vertLines: { color: '#1e2329' },
+        horzLines: { color: '#1e2329' }
     },
-    xaxis: {
-        type: 'datetime',
-        labels: { style: { colors: '#9ca3af' } }
-    },
-    yaxis: {
-        tooltip: { enabled: true },
-        labels: { style: { colors: '#9ca3af' } },
-        decimalsInFloat: 2
-    },
-    grid: { borderColor: '#1e2329' },
-    plotOptions: {
-        candlestick: {
-            colors: { upward: '#0ecb81', downward: '#f6465d' }
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor: '#1e2329' },
+    timeScale: {
+        borderColor: '#1e2329',
+        timeVisible: true,
+        secondsVisible: false,
+        // Visa lokal tid (inte UTC)
+        tickMarkFormatter: function (time, type) {
+            const d = new Date(time * 1000);
+            if (type >= 3) return d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
         }
     },
-    tooltip: { theme: 'dark' }
-};
+    localization: {
+        timeFormatter: function (time) {
+            return new Date(time * 1000).toLocaleString('sv-SE', {
+                day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+            });
+        }
+    }
+});
 
-var chart = new ApexCharts(document.querySelector("#tv-chart-container"), options);
-chart.render();
+const candleSeries = chart.addCandlestickSeries({
+    upColor: COLORS.up,
+    downColor: COLORS.down,
+    wickUpColor: COLORS.up,
+    wickDownColor: COLORS.down,
+    borderVisible: false
+});
 
-function updateChart() {
-    chart.updateSeries([{
-        data: chartData
-    }, {
-        data: calculateEMA(chartData, 9)
-    }, {
-        data: calculateEMA(chartData, 21)
-    }]);
+const lineOpts = { lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false };
+const ema9Series = chart.addLineSeries(Object.assign({ color: COLORS.ema9 }, lineOpts));
+const ema21Series = chart.addLineSeries(Object.assign({ color: COLORS.ema21 }, lineOpts));
+
+function applyPrecision() {
+    const d = dec();
+    const fmtOpts = { priceFormat: { type: 'price', precision: d, minMove: 1 / Math.pow(10, d) } };
+    candleSeries.applyOptions(fmtOpts);
+    ema9Series.applyOptions(fmtOpts);
+    ema21Series.applyOptions(fmtOpts);
 }
 
+// ---------- Indikatorer ----------
+function calcEMA(arr, period) {
+    const k = 2 / (period + 1);
+    const out = [];
+    let prev = 0;
+    for (let i = 0; i < arr.length; i++) {
+        prev = i === 0 ? arr[i].close : arr[i].close * k + prev * (1 - k);
+        out.push({ time: arr[i].time, value: prev });
+    }
+    return out;
+}
+
+// ---------- Logg ----------
 function addLog(msg, type) {
-    let time = new Date().toLocaleTimeString();
-    let div = document.createElement('div');
+    const time = new Date().toLocaleTimeString();
+    const div = document.createElement('div');
     div.className = type === 'success' ? 'text-emerald-400 font-semibold' : (type === 'danger' ? 'text-red-400' : 'text-gray-300');
     div.innerHTML = '<span class="text-gray-500">[' + time + ']</span> ' + msg;
     aiLog.appendChild(div);
+    while (aiLog.children.length > 200) aiLog.removeChild(aiLog.firstChild);
     aiLog.scrollTop = aiLog.scrollHeight;
 }
 
-async function fetchPrice() {
+// ---------- Datahämtning ----------
+async function getJSON(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+}
+
+function toCandle(k) {
+    return {
+        time: Math.floor(k[0] / 1000),
+        open: parseFloat(k[1]),
+        high: parseFloat(k[2]),
+        low: parseFloat(k[3]),
+        close: parseFloat(k[4])
+    };
+}
+
+function setConnection(ok, err) {
+    if (ok === connected) return;
+    connected = ok;
+    if (ok) {
+        addLog('Ansluten till Binance, live-data hämtas.', 'success');
+    } else {
+        addLog('Kunde inte hämta data från Binance' + (err ? ' (' + err.message + ')' : '') + '. Försöker igen...', 'danger');
+    }
+}
+
+async function loadHistory() {
+    const myToken = ++loadToken;
+    loading = true;
+    historyReady = false;
     try {
-        let res = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=' + selectedSymbol);
-        let json = await res.json();
-        currentPrice = parseFloat(json.lastPrice);
-        let change = parseFloat(json.priceChangePercent);
-        
-        cryptoPriceEl.textContent = '$' + currentPrice.toFixed(2);
+        const raw = await getJSON(API + '/klines?symbol=' + selectedSymbol + '&interval=' + selectedInterval + '&limit=' + HISTORY_LIMIT);
+        if (myToken !== loadToken) return;
+        candles = raw.map(toCandle);
+        candleSeries.setData(candles);
+        ema9Series.setData(calcEMA(candles, 9));
+        ema21Series.setData(calcEMA(candles, 21));
+        lastEmaTime = candles[candles.length - 1].time;
+        if (candles.length > 1) lastEvalTime = candles[candles.length - 2].time;
+        chart.timeScale().fitContent();
+        historyReady = true;
+        setConnection(true);
+        refreshMarket();
+    } catch (e) {
+        if (myToken === loadToken) setConnection(false, e);
+    } finally {
+        if (myToken === loadToken) loading = false;
+    }
+}
+
+function applyCandles(list) {
+    for (const c of list) {
+        const last = candles[candles.length - 1];
+        if (last && c.time < last.time) continue;
+        if (last && c.time === last.time) {
+            candles[candles.length - 1] = c;
+        } else {
+            candles.push(c);
+        }
+        candleSeries.update(c);
+    }
+    if (candles.length > 1000) candles.shift();
+
+    // Uppdatera EMA-linjerna för de två senaste punkterna
+    const e9 = calcEMA(candles, 9);
+    const e21 = calcEMA(candles, 21);
+    for (let i = Math.max(0, e9.length - 2); i < e9.length; i++) {
+        if (e9[i].time >= lastEmaTime) {
+            ema9Series.update(e9[i]);
+            ema21Series.update(e21[i]);
+            lastEmaTime = e9[i].time;
+        }
+    }
+}
+
+async function refreshMarket() {
+    if (!historyReady) {
+        if (!loading) loadHistory();
+        return;
+    }
+    if (refreshing) return;
+    refreshing = true;
+    const tok = loadToken;
+    try {
+        const results = await Promise.all([
+            getJSON(API + '/klines?symbol=' + selectedSymbol + '&interval=' + selectedInterval + '&limit=2'),
+            getJSON(API + '/ticker/24hr?symbol=' + selectedSymbol),
+            getJSON(API + '/ticker/bookTicker?symbol=' + selectedSymbol)
+        ]);
+        if (tok !== loadToken) return; // användaren hann byta symbol/intervall
+
+        applyCandles(results[0].map(toCandle));
+
+        const tick = results[1];
+        currentPrice = parseFloat(tick.lastPrice);
+        const change = parseFloat(tick.priceChangePercent);
+        cryptoPriceEl.textContent = '$' + fmt(currentPrice);
         cryptoChangeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
         cryptoChangeEl.className = 'text-[11px] font-mono font-semibold ' + (change >= 0 ? 'text-emerald-400' : 'text-red-400');
 
-        if (chartData.length > 0) {
-            let last = chartData[chartData.length - 1];
-            let open = last.y[0];
-            let high = Math.max(last.y[1], currentPrice);
-            let low = Math.min(last.y[2], currentPrice);
-            let close = currentPrice;
-            last.y = [open, high, low, close];
-            updateChart();
-        }
+        const bid = parseFloat(results[2].bidPrice);
+        const ask = parseFloat(results[2].askPrice);
+        if (ask > 0) marketSpreadEl.textContent = (((ask - bid) / ask) * 100).toFixed(4) + '%';
+
+        setConnection(true);
     } catch (e) {
-        currentPrice += (Math.random() - 0.49) * 10;
-        cryptoPriceEl.textContent = '$' + currentPrice.toFixed(2);
+        setConnection(false, e);
+    } finally {
+        refreshing = false;
     }
 }
 
-cryptoSelect.addEventListener('change', function(e) {
-    selectedSymbol = e.target.value;
-    localStorage.setItem('cryptoai_symbol', selectedSymbol);
-    currentPrice = defaultPrices[selectedSymbol] || 83000;
-    chartData = generateInitialData(currentPrice);
-    updateChart();
-    addLog("Bytte till " + selectedSymbol, 'info');
-    fetchPrice();
-});
+// ---------- Köp/sälj-markörer ----------
+function addMarker(side, price) {
+    if (candles.length === 0) return;
+    const t = candles[candles.length - 1].time;
+    if (side === 'buy') {
+        markers.push({ time: t, position: 'belowBar', color: COLORS.up, shape: 'arrowUp', text: 'Köp ' + fmt(price) });
+    } else {
+        markers.push({ time: t, position: 'aboveBar', color: COLORS.down, shape: 'arrowDown', text: 'Sälj ' + fmt(price) });
+    }
+    if (markers.length > 100) markers.shift();
+    candleSeries.setMarkers(markers);
+}
 
-riskRange.addEventListener('input', function(e) {
-    riskValue.textContent = e.target.value + ' / 10';
-    localStorage.setItem('cryptoai_risk', e.target.value);
-});
+// ---------- Statistik ----------
+function updateStats() {
+    totalBalanceEl.textContent = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    dailyPnlEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toFixed(2);
+    dailyPnlEl.className = 'text-2xl font-mono font-bold ' + (pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
 
-fetchPrice();
-priceInterval = setInterval(fetchPrice, 3000);
+    metricWinrate.textContent = totalTrades > 0 ? Math.round((winningTrades / totalTrades) * 100) + '%' : '0%';
 
+    if (totalLossesAmount > 0) {
+        metricProfitfactor.textContent = (totalWinsAmount / totalLossesAmount).toFixed(2);
+    } else {
+        metricProfitfactor.textContent = totalWinsAmount > 0 ? '∞' : '0.00';
+    }
+
+    metricDrawdown.textContent = maxDrawdownVal.toFixed(2) + '%';
+
+    // Sharpe per affär (inte årsbaserad): snittavkastning / standardavvikelse
+    let sharpe = 0;
+    if (returnsHistory.length >= 2) {
+        const mean = returnsHistory.reduce((a, b) => a + b, 0) / returnsHistory.length;
+        const variance = returnsHistory.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (returnsHistory.length - 1);
+        const std = Math.sqrt(variance);
+        sharpe = std > 0 ? mean / std : 0;
+    }
+    metricSharpe.textContent = sharpe.toFixed(2);
+}
+
+// ---------- Handel (simulerad) ----------
+function openPosition(price) {
+    const spend = parseFloat(maxSpendInput.value);
+    const maxSpend = spend > 0 ? spend : 1000;
+    const risk = parseInt(riskRange.value);
+
+    hasOpenPosition = true;
+    entryPrice = price;
+    positionExposure = maxSpend * (risk / 2);
+
+    addMarker('buy', price);
+    addLog('🟢 Golden Cross på ' + selectedSymbol + '! Köper @ $' + fmt(price), 'success');
+}
+
+function closePosition(price, reason) {
+    const gross = ((price - entryPrice) / entryPrice) * positionExposure;
+    const fees = positionExposure * FEE * 2;
+    const delta = gross - fees;
+
+    totalTrades++;
+    pnl += delta;
+    balance += delta;
+    returnsHistory.push(delta / positionExposure);
+
+    if (delta >= 0) {
+        winningTrades++;
+        totalWinsAmount += delta;
+    } else {
+        totalLossesAmount += Math.abs(delta);
+    }
+
+    if (balance > peakBalance) peakBalance = balance;
+    const dd = ((peakBalance - balance) / peakBalance) * 100;
+    if (dd > maxDrawdownVal) maxDrawdownVal = dd;
+
+    addMarker('sell', price);
+
+    const amount = (delta >= 0 ? '+$' : '-$') + Math.abs(delta).toFixed(2);
+    if (reason === 'stop') {
+        addLog('🛑 Stop-loss utlöst @ $' + fmt(price) + ': ' + amount, 'danger');
+    } else if (reason === 'switch') {
+        addLog('Position stängd vid symbolbyte @ $' + fmt(price) + ': ' + amount, delta >= 0 ? 'success' : 'danger');
+    } else if (delta >= 0) {
+        addLog('💰 Vinst säkrad @ $' + fmt(price) + ': ' + amount, 'success');
+    } else {
+        addLog('🔴 Såld @ $' + fmt(price) + ' (EMA-korsning ned): ' + amount, 'danger');
+    }
+
+    hasOpenPosition = false;
+    updateStats();
+}
+
+// ---------- Bot-logik ----------
 function runBot() {
-    let risk = parseInt(riskRange.value);
-    let maxSpend = parseFloat(maxSpendInput.value) || 1000;
-    
-    let time = Date.now();
-    let open = currentPrice;
-    let close = open + (Math.random() - 0.48) * (currentPrice * 0.002);
-    let high = Math.max(open, close) + (currentPrice * 0.0008);
-    let low = Math.min(open, close) - (currentPrice * 0.0008);
+    if (!historyReady || candles.length < 25 || currentPrice <= 0) return;
 
-    chartData.push({
-        x: new Date(time),
-        y: [parseFloat(open.toFixed(2)), parseFloat(high.toFixed(2)), parseFloat(low.toFixed(2)), parseFloat(close.toFixed(2))]
-    });
-    if (chartData.length > 50) chartData.shift();
-    updateChart();
+    // 1) Stop-loss kollas hela tiden på livepriset
+    if (hasOpenPosition && currentPrice <= entryPrice * (1 - STOP_LOSS)) {
+        closePosition(currentPrice, 'stop');
+        return;
+    }
 
-    let ema9 = calculateEMA(chartData, 9);
-    let ema21 = calculateEMA(chartData, 21);
-    if (ema9.length < 2) return;
+    // 2) EMA-korsning kollas bara på stängda candles (undviker falska signaler)
+    const closed = candles.slice(0, -1);
+    const lastClosed = closed[closed.length - 1];
+    if (lastClosed.time === lastEvalTime) return; // inget nytt att analysera än
+    lastEvalTime = lastClosed.time;
 
-    let fastNow = ema9[ema9.length - 1][1];
-    let fastPrev = ema9[ema9.length - 2][1];
-    let slowNow = ema21[ema21.length - 1][1];
-    let slowPrev = ema21[ema21.length - 2][1];
+    const e9 = calcEMA(closed, 9);
+    const e21 = calcEMA(closed, 21);
+    const n = e9.length;
 
-    let crossUp = fastPrev <= slowPrev && fastNow > slowNow;
-    let crossDown = fastPrev >= slowPrev && fastNow < slowNow;
+    const crossUp = e9[n - 2].value <= e21[n - 2].value && e9[n - 1].value > e21[n - 1].value;
+    const crossDown = e9[n - 2].value >= e21[n - 2].value && e9[n - 1].value < e21[n - 1].value;
 
     if (crossUp && !hasOpenPosition) {
-        hasOpenPosition = true;
-        entryPrice = currentPrice;
-        addLog('🟢 Golden Cross på ' + selectedSymbol + '! Köper.', 'success');
-    } else if ((crossDown || (hasOpenPosition && currentPrice < entryPrice * 0.995)) && hasOpenPosition) {
-        totalTrades++;
-        let pnlDelta = ((currentPrice - entryPrice) / entryPrice) * maxSpend * (risk / 2);
-        pnl += pnlDelta;
-        balance += pnlDelta;
-
-        if (pnlDelta >= 0) {
-            winningTrades++;
-            totalWinsAmount += pnlDelta;
-            addLog('💰 Vinst säkrad: +$' + pnlDelta.toFixed(2), 'success');
-        } else {
-            totalLossesAmount += Math.abs(pnlDelta);
-            addLog('🛑 Stop-loss utlöst: -$' + Math.abs(pnlDelta).toFixed(2), 'danger');
-        }
-
-        hasOpenPosition = false;
-        totalBalanceEl.textContent = '$' + balance.toLocaleString('en-US', {minimumFractionDigits: 2});
-        dailyPnlEl.textContent = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
-        dailyPnlEl.className = 'text-2xl font-mono font-bold ' + (pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
+        openPosition(currentPrice);
+    } else if (crossDown && hasOpenPosition) {
+        closePosition(currentPrice, 'cross');
     } else {
-        addLog('Analyserar marknad för ' + selectedSymbol, 'info');
+        addLog('Analyserar ' + selectedSymbol + ' (' + selectedInterval + '): EMA 9 ' + fmt(e9[n - 1].value) + ' / EMA 21 ' + fmt(e21[n - 1].value), 'info');
     }
 }
 
-toggleBtn.addEventListener('click', function() {
+// ---------- Händelser ----------
+cryptoSelect.addEventListener('change', function (e) {
+    if (hasOpenPosition) closePosition(currentPrice, 'switch');
+    selectedSymbol = e.target.value;
+    saveSetting('cryptoai_symbol', selectedSymbol);
+    markers = [];
+    candleSeries.setMarkers([]);
+    currentPrice = 0;
+    cryptoPriceEl.textContent = '$0.00';
+    applyPrecision();
+    addLog('Bytte till ' + selectedSymbol, 'info');
+    loadHistory();
+});
+
+intervalSelect.addEventListener('change', function (e) {
+    selectedInterval = e.target.value;
+    saveSetting('cryptoai_interval', selectedInterval);
+    addLog('Tidsintervall: ' + selectedInterval, 'info');
+    loadHistory();
+});
+
+riskRange.addEventListener('input', function (e) {
+    riskValue.textContent = e.target.value + ' / 10';
+    saveSetting('cryptoai_risk', e.target.value);
+});
+
+toggleBtn.addEventListener('click', function () {
     isRunning = !isRunning;
     if (isRunning) {
         toggleBtn.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2";
         toggleBtn.innerHTML = '<i class="fa-solid fa-stop"></i> Stoppa AI-Robot';
         botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-2";
         botStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv';
-        addLog("Robot startad.", "success");
-        tradeInterval = setInterval(runBot, 4000);
+        addLog("Robot startad. Väntar på nästa EMA-korsning.", "success");
+        // Bara nya signaler räknas, inte gamla korsningar som redan hänt
+        if (candles.length > 1) lastEvalTime = candles[candles.length - 2].time;
+        tradeInterval = setInterval(runBot, BOT_MS);
     } else {
         toggleBtn.className = "w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2";
         toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i> Starta AI-Robot';
@@ -268,3 +457,9 @@ toggleBtn.addEventListener('click', function() {
         clearInterval(tradeInterval);
     }
 });
+
+// ---------- Start ----------
+applyPrecision();
+updateStats();
+loadHistory();
+setInterval(refreshMarket, REFRESH_MS);
