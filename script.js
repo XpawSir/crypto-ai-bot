@@ -44,7 +44,7 @@ const defaultPrices = {
     "XRPUSDT": 0.58
 };
 
-// --- TradingView Chart Initialisering ---
+// --- TradingView Chart Initialisering med API-kompatibilitet ---
 const chartContainer = document.getElementById('tv-chart-container');
 const chart = LightweightCharts.createChart(chartContainer, {
     layout: {
@@ -68,19 +68,27 @@ const chart = LightweightCharts.createChart(chartContainer, {
     },
 });
 
-const candlestickSeries = chart.addCandlestickSeries({
+// Kompatibilitetshantering för v3/v4 API
+let candlestickSeries;
+const seriesOptions = {
     upColor: '#0ecb81',
     downColor: '#f6465d',
     borderDownColor: '#f6465d',
     borderUpColor: '#0ecb81',
     wickDownColor: '#f6465d',
     wickUpColor: '#0ecb81',
-});
+};
+
+if (typeof chart.addCandlestickSeries === 'function') {
+    candlestickSeries = chart.addCandlestickSeries(seriesOptions);
+} else {
+    candlestickSeries = chart.addSeries(LightweightCharts.CandlestickSeries, seriesOptions);
+}
 
 // Generera historisk data för TradingView
 function generateInitialChartData(basePrice) {
     const data = [];
-    let currentTime = Math.floor(Date.now() / 1000) - (60 * 60); // 1 timme bakåt i tiden
+    let currentTime = Math.floor(Date.now() / 1000) - (60 * 60);
     let p = basePrice * 0.98;
     
     for (let i = 0; i < 40; i++) {
@@ -92,7 +100,7 @@ function generateInitialChartData(basePrice) {
         
         data.push({ time: currentTime, open, high, low, close });
         p = close;
-        currentTime += 60; // 1 minut per ljus
+        currentTime += 60;
     }
     return data;
 }
@@ -100,7 +108,6 @@ function generateInitialChartData(basePrice) {
 let chartData = generateInitialChartData(defaultPrices[selectedSymbol]);
 candlestickSeries.setData(chartData);
 
-// Responsive hantering av grafen
 window.addEventListener('resize', () => {
     chart.applyOptions({ width: chartContainer.clientWidth, height: chartContainer.clientHeight });
 });
@@ -180,7 +187,6 @@ async function fetchLivePrice() {
 
         updatePriceUI(newPrice, priceChangePercent);
 
-        // Uppdatera sista ljuset i TradingView-grafen
         if (chartData.length > 0) {
             let lastCandle = chartData[chartData.length - 1];
             lastCandle.close = newPrice;
@@ -230,7 +236,6 @@ function addLog(message, type = 'info') {
     aiLog.scrollTop = aiLog.scrollHeight;
 }
 
-// Simulera inkommande live-nyheter ibland
 setInterval(() => {
     const newsItems = [
         { text: "Stora institutioner ökar sina BTC-positioner inför helgen.", sentiment: "BULLISH" },
@@ -256,7 +261,6 @@ setInterval(() => {
     }
 }, 25000);
 
-// Starta initiala flöden
 currentPrice = defaultPrices[selectedSymbol];
 fetchLivePrice();
 priceFetchInterval = setInterval(fetchLivePrice, 3000);
@@ -268,7 +272,6 @@ function runAiTradeCycle() {
     const maxAllowedSpend = parseFloat(maxSpendInput.value) || 1000;
     const rand = Math.random() * 10;
     
-    // Skapa nytt tidsstämplat ljus i TradingView-grafen
     let nowTime = Math.floor(Date.now() / 1000);
     let open = currentPrice;
     let close = currentPrice * (1 + (Math.random() - 0.47) * 0.003);
