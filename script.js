@@ -10,6 +10,7 @@ const totalBalanceEl = document.getElementById('total-balance');
 const dailyPnlEl = document.getElementById('daily-pnl');
 const cryptoSelect = document.getElementById('crypto-select');
 const newsContainer = document.getElementById('news-container');
+const fitChartBtn = document.getElementById('fit-chart-btn');
 
 // Proffsmetriker DOM
 const metricSharpe = document.getElementById('metric-sharpe');
@@ -18,6 +19,15 @@ const metricWinrate = document.getElementById('metric-winrate');
 const metricProfitfactor = document.getElementById('metric-profitfactor');
 const marketSpreadEl = document.getElementById('market-spread');
 const orderbookPressureEl = document.getElementById('orderbook-pressure');
+
+// --- Hämta sparade inställningar från LocalStorage om det finns ---
+if (localStorage.getItem('cryptoai_symbol')) {
+    cryptoSelect.value = localStorage.getItem('cryptoai_symbol');
+}
+if (localStorage.getItem('cryptoai_risk')) {
+    riskRange.value = localStorage.getItem('cryptoai_risk');
+    riskValue.textContent = `${riskRange.value} / 10`;
+}
 
 let isRunning = false;
 let tradeInterval = null;
@@ -60,6 +70,7 @@ const chart = LightweightCharts.createChart(chartContainer, {
     },
     rightPriceScale: {
         borderColor: '#1e2329',
+        autoScale: true, // Ser till att skalan anpassar sig automatiskt efter synliga ljus
     },
     timeScale: {
         borderColor: '#1e2329',
@@ -91,7 +102,7 @@ if (typeof chart.addCandlestickSeries === 'function') {
     emaSlowSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#38bdf8', lineWidth: 2 });
 }
 
-// Beräkna Exponential Moving Average (EMA)
+// Beräkna Exponential Moving Average (EMA) med realistisk spridning för tydliga linjer
 function calculateEMA(data, period) {
     const k = 2 / (period + 1);
     let emaArray = [];
@@ -107,18 +118,18 @@ function calculateEMA(data, period) {
     return emaArray;
 }
 
-// Generera historisk data för grafen
+// Generera historisk data med lagom avstånd så att grafen blir lättläst direkt
 function generateInitialChartData(basePrice) {
     const data = [];
-    let currentTime = Math.floor(Date.now() / 1000) - (60 * 40);
-    let p = basePrice * 0.98;
+    let currentTime = Math.floor(Date.now() / 1000) - (60 * 30);
+    let p = basePrice * 0.995;
     
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 30; i++) {
         let open = p;
-        let variation = basePrice * 0.003;
+        let variation = basePrice * 0.0012; // Finjusterad variation för snyggare staplar
         let close = open + (Math.random() - 0.48) * variation;
-        let high = Math.max(open, close) + Math.random() * (basePrice * 0.0015);
-        let low = Math.min(open, close) - Math.random() * (basePrice * 0.0015);
+        let high = Math.max(open, close) + Math.random() * (basePrice * 0.0006);
+        let low = Math.min(open, close) - Math.random() * (basePrice * 0.0006);
         
         data.push({ time: currentTime, open, high, low, close });
         p = close;
@@ -127,7 +138,7 @@ function generateInitialChartData(basePrice) {
     return data;
 }
 
-let chartData = generateInitialChartData(defaultPrices[selectedSymbol]);
+let chartData = generateInitialChartData(defaultPrices[selectedSymbol] || currentPrice);
 candlestickSeries.setData(chartData);
 
 function updateIndicators() {
@@ -138,6 +149,12 @@ function updateIndicators() {
 }
 updateIndicators();
 
+// Knapp för att zooma och centrera grafen perfekt (Auto-Fit)
+fitChartBtn.addEventListener('click', () => {
+    chart.timeScale().fitContent();
+    addLog("Graf: Auto-Fit aktiverat för perfekt överblick.", "info");
+});
+
 window.addEventListener('resize', () => {
     chart.applyOptions({ width: chartContainer.clientWidth, height: chartContainer.clientHeight });
 });
@@ -146,9 +163,7 @@ window.addEventListener('resize', () => {
 async function hamtaRiktigtSaldo() {
     try {
         const response = await fetch('/api/balance');
-        if (!response.ok) {
-            throw new Error(`Server svarade med status ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Status ${response.status}`);
         const data = await response.json();
         
         if (data && data.totalBalance) {
@@ -165,7 +180,6 @@ async function hamtaRiktigtSaldo() {
         addLog("System: Ansluten till Binance Testnet via Vercel för saldo.", "success");
 
     } catch (error) {
-        console.log("Använder simulerat Testnet-saldo ($10,000.00):", error.message);
         balance = 10000.00;
         totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         addLog("System: Testnet-läge aktivt ($10,000.00 simulerat kapital).", "info");
@@ -231,7 +245,7 @@ async function fetchLivePrice() {
             updateIndicators();
         }
     } catch (error) {
-        let fluctuation = (Math.random() - 0.48) * (currentPrice * 0.002);
+        let fluctuation = (Math.random() - 0.48) * (currentPrice * 0.001);
         let simulatedPrice = currentPrice + fluctuation;
         updatePriceUI(simulatedPrice, 1.45);
 
@@ -248,16 +262,19 @@ async function fetchLivePrice() {
 
 cryptoSelect.addEventListener('change', (e) => {
     selectedSymbol = e.target.value;
+    localStorage.setItem('cryptoai_symbol', selectedSymbol);
     currentPrice = defaultPrices[selectedSymbol] || 100;
     chartData = generateInitialChartData(currentPrice);
     candlestickSeries.setData(chartData);
     updateIndicators();
+    chart.timeScale().fitContent();
     addLog(`System: Bytte aktiv till ${selectedSymbol}.`, 'info');
     fetchLivePrice();
 });
 
 riskRange.addEventListener('input', (e) => {
     riskValue.textContent = `${e.target.value} / 10`;
+    localStorage.setItem('cryptoai_risk', e.target.value);
 });
 
 function addLog(message, type = 'info') {
@@ -300,10 +317,15 @@ setInterval(() => {
     }
 }, 25000);
 
-currentPrice = defaultPrices[selectedSymbol];
+currentPrice = defaultPrices[selectedSymbol] || 67420.50;
 fetchLivePrice();
 priceFetchInterval = setInterval(fetchLivePrice, 3000);
 hamtaRiktigtSaldo();
+
+// Auto-Fit grafen direkt vid start så den ser proffsig ut
+setTimeout(() => {
+    chart.timeScale().fitContent();
+}, 500);
 
 function runAiTradeCycle() {
     const risk = parseInt(riskRange.value);
@@ -366,7 +388,7 @@ toggleBtn.addEventListener('click', () => {
         botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-2";
         botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv (${selectedSymbol})`;
 
-        addLog(`Terminal: Autonom exekvering startad för ${selectedSymbol} med EMA-indikatorer.`, "success");
+        addLog(`Terminal: Autonom exekvering startad för ${selectedSymbol}.`, "success");
         tradeInterval = setInterval(runAiTradeCycle, 4000);
 
     } else {
