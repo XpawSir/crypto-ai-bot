@@ -136,7 +136,7 @@
 
             <!-- TradingView Graf Container -->
             <div class="bg-cardbg border border-cardborder rounded-xl p-5 shadow-xl flex-grow flex flex-col min-h-[420px]">
-                <div class="flex items-center justify-between mb-4 pb-3 border-b border-cardborder">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-cardborder flex-wrap gap-2">
                     <div class="flex items-center gap-3">
                         <select id="crypto-select" class="bg-darkbg border border-cardborder rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none">
                             <option value="BTCUSDT">BTC/USDT</option>
@@ -144,7 +144,9 @@
                             <option value="SOLUSDT">SOL/USDT</option>
                             <option value="XRPUSDT">XRP/USDT</option>
                         </select>
-                        <span class="text-[11px] font-mono text-gray-400 border-l border-cardborder pl-3">TradingView Pro Chart Engine + EMA</span>
+                        <button id="fit-chart-btn" class="bg-darkbg hover:bg-cardborder text-gray-300 border border-cardborder px-2.5 py-1 rounded-md text-[11px] font-mono transition flex items-center gap-1.5" title="Centrera och zooma in grafen perfekt">
+                            <i class="fa-solid fa-compress"></i> Auto-Fit
+                        </button>
                     </div>
                     <div class="text-right font-mono">
                         <div id="crypto-price" class="text-lg font-bold text-white">$0.00</div>
@@ -188,7 +190,7 @@
                         <i class="fa-solid fa-code text-white"></i> Exekveringslogg
                     </h2>
                     <div id="ai-log" class="bg-darkbg border border-cardborder rounded-lg p-3 text-xs font-mono overflow-y-auto space-y-1.5 flex-grow">
-                        <div class="text-gray-400">[System] Terminal initialiserad i v2-läge med EMA-indikatorer. Klar...</div>
+                        <div class="text-gray-400">[System] Terminal initialiserad i v2-läge med Auto-Fit & LocalStorage. Klar...</div>
                     </div>
                 </div>
             </div>
