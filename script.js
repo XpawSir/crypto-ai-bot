@@ -436,3 +436,295 @@ async function refreshMarket() {
     refreshing = true;
     const tok = loadToken;
     try {
+        const results = await Promise.all([
+            getJSON(API + '/klines?symbol=' + selectedSymbol + '&interval=' + selectedInterval + '&limit=2'),
+            getJSON(API + '/ticker/24hr?symbol=' + selectedSymbol),
+            getJSON(API + '/ticker/bookTicker?symbol=' + selectedSymbol)
+        ]);
+        if (tok !== loadToken) return;
+
+        applyCandles(results[0].map(toCandle));
+
+        const tick = results[1];
+        currentPrice = parseFloat(tick.lastPrice);
+        const change = parseFloat(tick.priceChangePercent);
+        cryptoPriceEl.textContent = '$' + fmt(currentPrice);
+        cryptoChangeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+        cryptoChangeEl.className = 'text-[11px] font-mono font-semibold ' + (change >= 0 ? 'text-emerald-400' : 'text-red-400');
+
+        const bid = parseFloat(results[2].bidPrice);
+        const ask = parseFloat(results[2].askPrice);
+        if (ask > 0) marketSpreadEl.textContent = (((ask - bid) / ask) * 100).toFixed(4) + '%';
+
+        setConnection(true);
+    } catch (e) {
+        setConnection(false, e);
+    } finally {
+        refreshing = false;
+    }
+}
+
+function addMarker(side, price) {
+    if (candles.length === 0) return;
+    const t = candles[candles.length - 1].time;
+    if (side === 'buy') {
+        markers.push({ time: t, position: 'belowBar', color: COLORS.up, shape: 'arrowUp', text: 'Köp ' + fmt(price) });
+    } else {
+        markers.push({ time: t, position: 'aboveBar', color: COLORS.down, shape: 'arrowDown', text: 'Sälj ' + fmt(price) });
+    }
+    if (markers.length > 100) markers.shift();
+    candleSeries.setMarkers(markers);
+}
+
+function updateStats() {
+    totalBalanceEl.textContent = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    dailyPnlEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toFixed(2);
+    dailyPnlEl.className = 'text-2xl font-mono font-bold ' + (pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
+
+    metricWinrate.textContent = totalTrades > 0 ? Math.round((winningTrades / totalTrades) * 100) + '%' : '0%';
+
+    if (totalLossesAmount > 0) {
+        metricProfitfactor.textContent = (totalWinsAmount / totalLossesAmount).toFixed(2);
+    } else {
+        metricProfitfactor.textContent = totalWinsAmount > 0 ? '∞' : '0.00';
+    }
+
+    metricDrawdown.textContent = maxDrawdownVal.toFixed(2) + '%';
+
+    let sharpe = 0;
+    if (returnsHistory.length >= 2) {
+        const mean = returnsHistory.reduce((a, b) => a + b, 0) / returnsHistory.length;
+        const variance = returnsHistory.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (returnsHistory.length - 1);
+        const std = Math.sqrt(variance);
+        sharpe = std > 0 ? mean / std : 0;
+    }
+    metricSharpe.textContent = sharpe.toFixed(2);
+}
+
+// ---------- Handel & ATR ----------
+function openPosition(price) {
+    const spend = parseFloat(maxSpendInput.value);
+    const maxSpend = spend > 0 ? spend : 1000;
+    const risk = parseInt(riskRange.value);
+
+    hasOpenPosition = true;
+    entryPrice = price;
+    positionExposure = maxSpend * (risk / 2);
+
+    const atr = calculateATR(candles, 14);
+    const riskMultiplier = Math.max(0.5, (11 - risk) * 0.2);
+    dynamicStopPrice = price - (atr * 1.5 * riskMultiplier);
+    dynamicTakeProfitPrice = price + (atr * 2.5 * riskMultiplier);
+
+    addMarker('buy', price);
+    addLog('🟢 Köp @ $' + fmt(price) + ' | ATR Stop: $' + fmt(dynamicStopPrice) + ' | TP: $' + fmt(dynamicTakeProfitPrice), 'success');
+}
+
+function closePosition(price, reason) {
+    const gross = ((price - entryPrice) / entryPrice) * positionExposure;
+    const fees = positionExposure * FEE * 2;
+    const delta = gross - fees;
+
+    totalTrades++;
+    pnl += delta;
+    balance += delta;
+    returnsHistory.push(delta / positionExposure);
+
+    if (delta >= 0) {
+        winningTrades++;
+        totalWinsAmount += delta;
+    } else {
+        totalLossesAmount += Math.abs(delta);
+    }
+
+    if (balance > peakBalance) peakBalance = balance;
+    const dd = ((peakBalance - balance) / peakBalance) * 100;
+    if (dd > maxDrawdownVal) maxDrawdownVal = dd;
+
+    addMarker('sell', price);
+    saveCloudState();
+
+    const amount = (delta >= 0 ? '+$' : '-$') + Math.abs(delta).toFixed(2);
+    if (reason === 'stop') {
+        addLog('🛑 Stop-loss utlöst @ $' + fmt(price) + ': ' + amount, 'danger');
+    } else if (reason === 'tp') {
+        addLog('🎯 Take-profit nådd @ $' + fmt(price) + ': ' + amount, 'success');
+    } else {
+        addLog('🔴 Position stängd @ $' + fmt(price) + ': ' + amount, delta >= 0 ? 'success' : 'danger');
+    }
+
+    hasOpenPosition = false;
+    updateStats();
+}
+
+// ---------- Backtest & Stjärnor ----------
+function stopPct() {
+    const map = { '1m': 0.003, '5m': 0.006, '15m': 0.01, '1h': 0.02 };
+    return map[selectedInterval] || 0.005;
+}
+
+function backtest(strat, d, stop) {
+    const sig = strat.compute(d);
+    let inPos = false, entry = 0, eq = 1, peak = 1, maxDD = 0, trades = 0, wins = 0, ws = 0, ls = 0;
+    function exit(px) {
+        const r = (px / entry) * (1 - FEE) * (1 - FEE) - 1;
+        eq *= 1 + r; trades++;
+        if (r > 0) { wins++; ws += r; } else { ls -= r; }
+        peak = Math.max(peak, eq);
+        maxDD = Math.max(maxDD, (peak - eq) / peak * 100);
+        inPos = false;
+    }
+    for (let i = BACKTEST_START; i < d.length; i++) {
+        const c = d[i];
+        if (inPos) {
+            const sp = entry * (1 - stop);
+            if (c.low <= sp) exit(Math.min(c.open, sp)); else if (sig.sell[i]) exit(c.close);
+        }
+        if (!inPos && sig.buy[i]) { inPos = true; entry = c.close; }
+    }
+    if (inPos) exit(d[d.length - 1].close);
+    return { net: (eq - 1) * 100, maxDD: maxDD, trades: trades, wins: wins, pf: ls > 0 ? ws / ls : (ws > 0 ? Infinity : 0) };
+}
+
+function starsFor(r, bh) {
+    if (r.trades < 5) return null;
+    let s = 1;
+    if (r.net > 0) s++;
+    if (r.pf >= 1.3) s++;
+    if (r.net > bh) s++;
+    if (r.net > 0 && r.net >= r.maxDD) s++;
+    return s;
+}
+function starText(s) { return s === null ? '☆ ?' : '★'.repeat(s) + '☆'.repeat(5 - s); }
+
+function refreshOptionLabels() {
+    for (const o of strategySelect.options) {
+        o.textContent = STRATEGIES[o.value].name + '  ' + (o.value in stars ? starText(stars[o.value]) : '…');
+    }
+}
+
+let btToken = 0;
+async function runBacktests() {
+    const my = ++btToken, sym = selectedSymbol, itv = selectedInterval, stop = stopPct();
+    for (const k in stars) delete stars[k];
+    refreshOptionLabels();
+    try {
+        let d = [], end = null;
+        while (d.length < BACKTEST_CANDLES) {
+            const lim = Math.min(1000, BACKTEST_CANDLES - d.length);
+            const raw = await getJSON(API + '/klines?symbol=' + sym + '&interval=' + itv + '&limit=' + lim + (end ? '&endTime=' + end : ''));
+            if (my !== btToken) return;
+            if (!raw.length) break;
+            d = raw.map(toCandle).concat(d);
+            end = raw[0][0] - 1;
+            if (raw.length < lim) break;
+        }
+        d.pop();
+        if (d.length < BACKTEST_START + 100) return;
+        const bh = ((d[d.length - 1].close / d[BACKTEST_START].close) * (1 - FEE) * (1 - FEE) - 1) * 100;
+        STRATEGY_IDS.forEach(function (id) {
+            const r = backtest(STRATEGIES[id], d, stop);
+            stars[id] = starsFor(r, bh);
+        });
+        refreshOptionLabels();
+    } catch (e) {}
+}
+
+// ---------- Bot-logik ----------
+function runBot() {
+    if (!historyReady || candles.length < 25 || currentPrice <= 0) return;
+
+    if (hasOpenPosition) {
+        if (currentPrice <= dynamicStopPrice) {
+            closePosition(currentPrice, 'stop');
+            return;
+        }
+        if (currentPrice >= dynamicTakeProfitPrice) {
+            closePosition(currentPrice, 'tp');
+            return;
+        }
+    }
+
+    const closed = candles.slice(0, -1);
+    const lastClosed = closed[closed.length - 1];
+    if (lastClosed.time === lastEvalTime) return; 
+    lastEvalTime = lastClosed.time;
+
+    const res = strategy.compute(closed);
+    const n = closed.length - 1;
+
+    if (!hasOpenPosition && res.buy[n]) {
+        openPosition(currentPrice);
+    } else if (hasOpenPosition && res.sell[n]) {
+        closePosition(currentPrice, 'signal');
+    } else {
+        addLog('Analyserar ' + selectedSymbol + ' (' + selectedInterval + '): ' + res.text(n), 'info');
+    }
+}
+
+// ---------- Händelser ----------
+cryptoSelect.addEventListener('change', function (e) {
+    if (hasOpenPosition) closePosition(currentPrice, 'switch');
+    selectedSymbol = e.target.value;
+    saveSetting('cryptoai_symbol', selectedSymbol);
+    markers = [];
+    candleSeries.setMarkers([]);
+    currentPrice = 0;
+    cryptoPriceEl.textContent = '$0.00';
+    applyPrecision();
+    addLog('Bytte till ' + selectedSymbol, 'info');
+    loadHistory();
+    runBacktests();
+});
+
+intervalSelect.addEventListener('change', function (e) {
+    selectedInterval = e.target.value;
+    saveSetting('cryptoai_interval', selectedInterval);
+    addLog('Tidsintervall: ' + selectedInterval, 'info');
+    loadHistory();
+    runBacktests();
+});
+
+strategySelect.addEventListener('change', function (e) {
+    if (!STRATEGIES[e.target.value]) return;
+    strategy = STRATEGIES[e.target.value];
+    saveSetting('cryptoai_strategy', e.target.value);
+    updateLegend();
+    if (historyReady) setOverlays();
+    addLog('Strategi: ' + strategy.name, 'info');
+});
+
+riskRange.addEventListener('input', function (e) {
+    riskValue.textContent = e.target.value + ' / 10';
+    saveSetting('cryptoai_risk', e.target.value);
+});
+
+toggleBtn.addEventListener('click', function () {
+    isRunning = !isRunning;
+    if (isRunning) {
+        toggleBtn.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2";
+        toggleBtn.innerHTML = '<i class="fa-solid fa-stop"></i> Stoppa AI-Robot';
+        botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-2";
+        botStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv';
+        addLog("Robot startad.", "success");
+        if (candles.length > 1) lastEvalTime = candles[candles.length - 2].time;
+        tradeInterval = setInterval(runBot, BOT_MS);
+    } else {
+        toggleBtn.className = "w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2";
+        toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i> Starta AI-Robot';
+        botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-gray-900 text-gray-400 border border-gray-800 flex items-center gap-2";
+        botStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-gray-600"></span> Bot Pausad';
+        addLog("Robot pausad.", "warn");
+        clearInterval(tradeInterval);
+    }
+});
+
+// ---------- Start ----------
+applyPrecision();
+updateLegend();
+updateStats();
+loadCloudState().then(() => {
+    loadHistory();
+    runBacktests();
+});
+setInterval(refreshMarket, REFRESH_MS);
