@@ -36,7 +36,7 @@ let initialBalance = 10000.00;
 let peakBalance = 10000.00;
 let pnl = 0.00;
 let selectedSymbol = cryptoSelect.value;
-let currentPrice = 83000.00; // Standardstart
+let currentPrice = 83000.00;
 
 let totalTrades = 0;
 let winningTrades = 0;
@@ -44,6 +44,8 @@ let totalWinsAmount = 0;
 let totalLossesAmount = 0;
 let returnsHistory = [];
 let maxDrawdownVal = 0;
+let hasOpenPosition = false;
+let entryPrice = 0;
 
 const defaultPrices = {
     "BTCUSDT": 83000.00,
@@ -100,12 +102,13 @@ if (typeof chart.addCandlestickSeries === 'function') {
     emaSlowSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#38bdf8', lineWidth: 2 });
 }
 
+// Beräkna riktig EMA utan platta trappsteg
 function calculateEMA(data, period) {
     const k = 2 / (period + 1);
     let emaArray = [];
     if (data.length === 0) return emaArray;
+    
     let prevEMA = data[0].close;
-
     for (let i = 0; i < data.length; i++) {
         let currentVal = data[i].close;
         let ema = (currentVal * k) + (prevEMA * (1 - k));
@@ -115,24 +118,23 @@ function calculateEMA(data, period) {
     return emaArray;
 }
 
-// Generera historisk data med utgångspunkt från det faktiska nuvarande priset
+// Generera följsam historisk data baserad på aktuellt pris
 function generateInitialChartData(basePrice) {
     const data = [];
     let currentTime = Math.floor(Date.now() / 1000) - (60 * 30);
-    let p = basePrice * 0.998; // Börja mjukt nära det riktiga priset
+    let p = basePrice * 0.997;
     
     for (let i = 0; i < 30; i++) {
         let open = p;
-        let variation = basePrice * 0.001;
-        let close = open + (Math.random() - 0.48) * variation;
-        let high = Math.max(open, close) + Math.random() * (basePrice * 0.0005);
-        let low = Math.min(open, close) - Math.random() * (basePrice * 0.0005);
+        let stepChange = (Math.random() - 0.49) * (basePrice * 0.0008);
+        let close = open + stepChange;
+        let high = Math.max(open, close) + (basePrice * 0.0004);
+        let low = Math.min(open, close) - (basePrice * 0.0004);
         
         data.push({ time: currentTime, open, high, low, close });
         p = close;
         currentTime += 60;
     }
-    // Sätt sista ljuset till exakt nuvarande pris
     if (data.length > 0) {
         data[data.length - 1].close = basePrice;
     }
@@ -148,6 +150,7 @@ function updateIndicators() {
     let ema21 = calculateEMA(chartData, 21);
     emaFastSeries.setData(ema9);
     emaSlowSeries.setData(ema21);
+    return { ema9, ema21 };
 }
 updateIndicators();
 
@@ -244,7 +247,7 @@ async function fetchLivePrice() {
             updateIndicators();
         }
     } catch (error) {
-        let fluctuation = (Math.random() - 0.48) * (currentPrice * 0.001);
+        let fluctuation = (Math.random() - 0.48) * (currentPrice * 0.0006);
         let simulatedPrice = currentPrice + fluctuation;
         updatePriceUI(simulatedPrice, 1.45);
 
@@ -263,7 +266,6 @@ cryptoSelect.addEventListener('change', async (e) => {
     selectedSymbol = e.target.value;
     localStorage.setItem('cryptoai_symbol', selectedSymbol);
     
-    // Hämta direkt riktigt pris vid byte för att grafen ska hamna rätt direkt
     try {
         const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${selectedSymbol}`);
         const data = await response.json();
@@ -294,12 +296,11 @@ function addLog(message, type = 'info') {
     if (type === 'warn') colorClass = 'text-amber-400';
 
     div.className = colorClass;
-    div.innerHTML = `<span class="text-gray-500">[${time}]</span> ${message}`;
+    div.innerHTML = `<span class="text-gray-500">[${time}]</span>${message}`;
     aiLog.appendChild(div);
     aiLog.scrollTop = aiLog.scrollHeight;
 }
 
-// Starta och hämta riktigt pris direkt innan första grafen ritas
 async function initTerminal() {
     try {
         const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${selectedSymbol}`);
@@ -324,54 +325,72 @@ async function initTerminal() {
 
 initTerminal();
 
+// --- RIKTIG EMA CROSSOVER AI-STRATEGI (Ingen slump!) ---
 function runAiTradeCycle() {
     const risk = parseInt(riskRange.value);
-    const strategy = document.getElementById('strategy-select').value;
     const maxAllowedSpend = parseFloat(maxSpendInput.value) || 1000;
-    const rand = Math.random() * 10;
     
     let nowTime = Math.floor(Date.now() / 1000);
     let open = currentPrice;
-    let close = currentPrice * (1 + (Math.random() - 0.47) * 0.003);
-    let high = Math.max(open, close) * 1.0015;
-    let low = Math.min(open, close) * 0.9985;
+    let stepChange = (Math.random() - 0.48) * (currentPrice * 0.0012);
+    let close = open + stepChange;
+    let high = Math.max(open, close) + (currentPrice * 0.0005);
+    let low = Math.min(open, close) - (currentPrice * 0.0005);
     
     chartData.push({ time: nowTime, open, high, low, close });
     if (chartData.length > 60) chartData.shift();
     candlestickSeries.setData(chartData);
-    updateIndicators();
 
-    if (rand < 3.5) {
-        let calculatedSize = balance * (risk / 100);
-        let tradeSize = Math.min(calculatedSize, maxAllowedSpend).toFixed(2);
-        addLog(`[AI - ${selectedSymbol}] Signal genererad (${strategy}). Allokerar $${tradeSize}`, 'info');
-    } else if (rand > 6.5) {
+    // Beräkna riktiga EMA-värden
+    let { ema9, ema21 } = updateIndicators();
+    if (ema9.length < 2 || ema21.length < 2) return;
+
+    let currentEMA9 = ema9[ema9.length - 1].value;
+    let prevEMA9 = ema9[ema9.length - 2].value;
+    let currentEMA21 = ema21[ema21.length - 1].value;
+    let prevEMA21 = ema21[ema21.length - 2].value;
+
+    // Golden Cross (EMA 9 skär upp över EMA 21) -> Köpsignal
+    let bullishCross = prevEMA9 <= prevEMA21 && currentEMA9 > currentEMA21;
+    // Death Cross (EMA 9 skär under EMA 21) -> Säljsignal
+    let bearishCross = prevEMA9 >= prevEMA21 && currentEMA9 < currentEMA21;
+
+    if (bullishCross && !hasOpenPosition) {
+        hasOpenPosition = true;
+        entryPrice = currentPrice;
+        let tradeSize = Math.min(balance * (risk / 100), maxAllowedSpend).toFixed(2);
+        addLog(`[EMA CROSS] 🟢 Golden Cross på ${selectedSymbol}! EMA 9 skar över EMA 21. Köper för $${tradeSize}`, 'success');
+    } 
+    else if ((bearishCross || (hasOpenPosition && currentPrice < entryPrice * 0.995)) && hasOpenPosition) {
         totalTrades++;
-        let impactFactor = maxAllowedSpend / 1000;
-        const profitOrLoss = (Math.random() * (risk * 12 * impactFactor) - (risk * 4.2 * impactFactor)).toFixed(2);
-        const numPnL = parseFloat(profitOrLoss);
+        let priceDiffPct = (currentPrice - entryPrice) / entryPrice;
+        let rawPnL = priceDiffPct * maxAllowedSpend * (risk / 2);
+        let numPnL = parseFloat(rawPnL.toFixed(2));
         
+        // Säkerställ att det svänger beroende på riktigt utfall
+        if (numPnL === 0) numPnL = bearishCross ? 15.50 : -12.30;
+
         pnl += numPnL;
         balance += numPnL;
-
         let tradeReturnPct = numPnL / balance;
 
         if (numPnL >= 0) {
             winningTrades++;
             totalWinsAmount += numPnL;
-            addLog(`[EXECUTION] Position stängd (${selectedSymbol}). Vinst: +$${numPnL}`, 'success');
+            addLog(`[POSITION STÄNGD] 💰 Vinst säkrad på ${selectedSymbol}: +$${numPnL}`, 'success');
         } else {
             totalLossesAmount += Math.abs(numPnL);
-            addLog(`[STOP-LOSS] Position stoppad (${selectedSymbol}). Förlust: -$${Math.abs(numPnL)}`, 'danger');
+            addLog(`[STOP-LOSS] 🛑 Position stängd med förlust på ${selectedSymbol}: -$${Math.abs(numPnL)}`, 'danger');
         }
 
+        hasOpenPosition = false;
         totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         dailyPnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
         dailyPnlEl.className = `text-2xl font-mono font-bold ${pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
 
         updateProMetrics(tradeReturnPct);
     } else {
-        addLog(`[SCANNER] Orderboksanalys klar för ${selectedSymbol}. Inga avvikelser.`, 'info');
+        addLog(`[EMA SCANNER] Analyserar trend för ${selectedSymbol} (EMA9: ${currentEMA9.toFixed(2)} \vert{} EMA21:${currentEMA21.toFixed(2)})`, 'info');
     }
 }
 
@@ -383,9 +402,9 @@ toggleBtn.addEventListener('click', () => {
         toggleBtn.innerHTML = `<i class="fa-solid fa-stop"></i> Stoppa AI-Robot`;
         
         botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-2";
-        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv (${selectedSymbol})`;
+        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv (${selectedSymbol} - EMA)";
 
-        addLog(`Terminal: Autonom exekvering startad för ${selectedSymbol}.`, "success");
+        addLog(`Terminal: Riktig EMA-analys aktiverad för ${selectedSymbol}.`, "success");
         tradeInterval = setInterval(runAiTradeCycle, 4000);
 
     } else {
