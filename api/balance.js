@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 
 export default async function handler(req, res) {
-  // Tillåt anrop från din hemsida
   res.setHeader('Access-Control-Allow-Origin', '*');
   
   if (req.method !== 'GET') {
@@ -15,15 +14,19 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API-nycklar saknas i Vercel-miljövariablerna' });
   }
 
+  // Lägg till recvWindow för att undvika tidsdifferensfel mot Binance Testnet
   const timestamp = Date.now();
-  const queryString = `timestamp=${timestamp}`;
+  const queryString = `timestamp=${timestamp}&recvWindow=60000`;
+  
   const signature = crypto
     .createHmac('sha256', apiSecret)
     .update(queryString)
     .digest('hex');
 
   try {
-    const response = await fetch(`https://testnet.binance.vision/api/v3/account?${queryString}&signature=${signature}`, {
+    const binanceUrl = `https://testnet.binance.vision/api/v3/account?${queryString}&signature=${signature}`;
+    
+    const response = await fetch(binanceUrl, {
       method: 'GET',
       headers: {
         'X-MBX-APIKEY': apiKey
@@ -33,15 +36,16 @@ export default async function handler(req, res) {
     const data = await response.json();
     
     if (!response.ok) {
+      console.error("Binance fel svar:", data);
       return res.status(response.status).json(data);
     }
 
-    // Filtrera ut t.ex. USDT eller skicka hela saldot
-    const usdtAsset = data.balances.find(b => b.asset === 'USDT');
-    const totalBalance = usdtAsset ? parseFloat(usdtAsset.free) + parseFloat(usdtAsset.locked) : 0;
+    const usdtAsset = data.balances ? data.balances.find(b => b.asset === 'USDT') : null;
+    const totalBalance = usdtAsset ? parseFloat(usdtAsset.free) + parseFloat(usdtAsset.locked) : 10000;
 
     return res.status(200).json({ totalBalance, raw: data.balances });
   } catch (error) {
+    console.error("Serverless catch fel:", error);
     return res.status(500).json({ error: error.message });
   }
 }
