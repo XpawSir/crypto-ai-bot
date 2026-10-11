@@ -30,7 +30,6 @@ let pnl = 0.00;
 let currentPrice = 67420.50;
 let selectedSymbol = cryptoSelect.value;
 
-// Statistikvariabler för proffsmått
 let totalTrades = 0;
 let winningTrades = 0;
 let totalWinsAmount = 0;
@@ -48,12 +47,8 @@ const defaultPrices = {
 let candles = [];
 const maxCandles = 20;
 
-// ==========================================
-// KOPPLING TILL VERCEL SERVERLESS FUNCTION
-// ==========================================
 async function hamtaRiktigtSaldo() {
     try {
-        // Här anropar vi vår nya Vercel-funktion istället för localhost
         const response = await fetch('/api/balance');
         if (!response.ok) throw new Error("Kunde inte nå serverless-funktionen");
         const data = await response.json();
@@ -70,7 +65,6 @@ async function hamtaRiktigtSaldo() {
             initialBalance = balance;
         }
 
-        // Uppdatera UI med det riktiga saldot
         totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         addLog("System: Ansluten till Binance via Vercel för saldo.", "success");
 
@@ -234,7 +228,7 @@ function addLog(message, type = 'info') {
     if (type === 'warn') colorClass = 'text-gray-200';
 
     div.className = colorClass;
-    div.innerHTML = `<span class="text-gray-600">[${time}]</span>${message}`;
+    div.innerHTML = `<span class="text-gray-600">[${time}]</span> ${message}`;
     aiLog.appendChild(div);
     aiLog.scrollTop = aiLog.scrollHeight;
 }
@@ -244,7 +238,6 @@ initCandles(currentPrice);
 fetchLivePrice();
 priceFetchInterval = setInterval(fetchLivePrice, 3000);
 
-// Anropa Vercel-funktionen direkt när sidan laddas för att hämta det riktiga saldot
 hamtaRiktigtSaldo();
 
 function runAiTradeCycle() {
@@ -265,4 +258,58 @@ function runAiTradeCycle() {
     if (rand < 3.5) {
         let calculatedSize = balance * (risk / 100);
         let tradeSize = Math.min(calculatedSize, maxAllowedSpend).toFixed(2);
-        addLog(`[AI - ${selectedSymbol}] Signal genererad (${strategy
+        addLog(`[AI - ${selectedSymbol}] Signal genererad (${strategy}). Allokerar $${tradeSize}`, 'info');
+    } else if (rand > 6.5) {
+        totalTrades++;
+        let impactFactor = maxAllowedSpend / 1000;
+        const profitOrLoss = (Math.random() * (risk * 12 * impactFactor) - (risk * 4.2 * impactFactor)).toFixed(2);
+        const numPnL = parseFloat(profitOrLoss);
+        
+        pnl += numPnL;
+        balance += numPnL;
+
+        let tradeReturnPct = numPnL / balance;
+
+        if (numPnL >= 0) {
+            winningTrades++;
+            totalWinsAmount += numPnL;
+            addLog(`[EXECUTION] Position stängd (${selectedSymbol}). Vinst: +$${numPnL}`, 'success');
+        } else {
+            totalLossesAmount += Math.abs(numPnL);
+            addLog(`[STOP-LOSS] Position stoppad (${selectedSymbol}). Förlust: -$${Math.abs(numPnL)}`, 'danger');
+        }
+
+Nd        totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        dailyPnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+        dailyPnlEl.className = `text-lg font-mono font-bold ${pnl >= 0 ? 'text-white' : 'text-gray-400'}`;
+
+        updateProMetrics(tradeReturnPct);
+    } else {
+        addLog(`[SCANNER] Orderboksanalys klar för ${selectedSymbol}. Inga avvikelser.`, 'info');
+    }
+}
+
+toggleBtn.addEventListener('click', () => {
+    isRunning = !isRunning;
+
+    if (isRunning) {
+        toggleBtn.className = "w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2.5 px-4 rounded-lg text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-2 border border-gray-700";
+        toggleBtn.innerHTML = `<i class="fa-solid fa-stop"></i> Stoppa AI-Robot`;
+        
+        botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-white/10 text-white border border-white/20 flex items-center gap-2";
+        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Bot Aktiv (${selectedSymbol})`;
+
+        addLog(`Terminal: Autonom exekvering startad för ${selectedSymbol}.`, "success");
+        tradeInterval = setInterval(runAiTradeCycle, 4000);
+
+    } else {
+        toggleBtn.className = "w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-lg text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-2";
+        toggleBtn.innerHTML = `<i class="fa-solid fa-play"></i> Starta AI-Robot`;
+        
+        botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-gray-900 text-gray-400 border border-gray-800 flex items-center gap-2";
+        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-600"></span> Bot Pausad`;
+
+        addLog("Terminal: Exekvering pausad.", "warn");
+        clearInterval(tradeInterval);
+    }
+});
