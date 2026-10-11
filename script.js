@@ -9,7 +9,6 @@ const cryptoChangeEl = document.getElementById('crypto-change');
 const totalBalanceEl = document.getElementById('total-balance');
 const dailyPnlEl = document.getElementById('daily-pnl');
 const cryptoSelect = document.getElementById('crypto-select');
-const fitChartBtn = document.getElementById('fit-chart-btn');
 
 const metricSharpe = document.getElementById('metric-sharpe');
 const metricDrawdown = document.getElementById('metric-drawdown');
@@ -50,87 +49,96 @@ const defaultPrices = {
     "XRPUSDT": 0.58
 };
 
-const chartContainer = document.getElementById('tv-chart-container');
-const chart = LightweightCharts.createChart(chartContainer, {
-    layout: {
-        background: { type: 'solid', color: '#0b0e11' },
-        textColor: '#9ca3af',
-    },
-    grid: {
-        vertLines: { color: '#1e2329' },
-        horzLines: { color: '#1e2329' },
-    },
-    rightPriceScale: { borderColor: '#1e2329', autoScale: true },
-    timeScale: { borderColor: '#1e2329', timeVisible: true }
-});
-
-const seriesOptions = {
-    upColor: '#0ecb81',
-    downColor: '#f6465d',
-    borderDownColor: '#f6465d',
-    borderUpColor: '#0ecb81',
-    wickDownColor: '#f6465d',
-    wickUpColor: '#0ecb81',
-};
-
-// Kompatibilitetskontroll för olika versioner av Lightweight Charts
-let candleSeries, emaFast, emaSlow;
-if (typeof chart.addCandlestickSeries === 'function') {
-    candleSeries = chart.addCandlestickSeries(seriesOptions);
-    emaFast = chart.addLineSeries({ color: '#facc15', lineWidth: 2 });
-    emaSlow = chart.addLineSeries({ color: '#38bdf8', lineWidth: 2 });
-} else {
-    candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, seriesOptions);
-    emaFast = chart.addSeries(LightweightCharts.LineSeries, { color: '#facc15', lineWidth: 2 });
-    emaSlow = chart.addSeries(LightweightCharts.LineSeries, { color: '#38bdf8', lineWidth: 2 });
+function generateInitialData(base) {
+    let data = [];
+    let time = Date.now() - (30 * 60 * 1000);
+    let p = base * 0.99;
+    for (let i = 0; i < 30; i++) {
+        let open = p;
+        let close = open + (Math.random() - 0.48) * (base * 0.004);
+        let high = Math.max(open, close) + (base * 0.0015);
+        let low = Math.min(open, close) - (base * 0.0015);
+        data.push({
+            x: new Date(time),
+            y: [parseFloat(open.toFixed(2)), parseFloat(high.toFixed(2)), parseFloat(low.toFixed(2)), parseFloat(close.toFixed(2))]
+        });
+        p = close;
+        time += 60 * 1000;
+    }
+    return data;
 }
 
-function calculateEMA(data, period) {
-    const k = 2 / (period + 1);
+function calculateEMA(dataArray, period) {
+    let closes = dataArray.map(d => d.y[3]);
+    let k = 2 / (period + 1);
     let result = [];
-    if (data.length === 0) return result;
-    let prev = data[0].close;
-    for (let i = 0; i < data.length; i++) {
-        let val = data[i].close;
+    if (closes.length === 0) return result;
+    let prev = closes[0];
+    for (let i = 0; i < closes.length; i++) {
+        let val = closes[i];
         let ema = (val * k) + (prev * (1 - k));
-        result.push({ time: data[i].time, value: ema });
+        result.push([dataArray[i].x.getTime(), parseFloat(ema.toFixed(2))]);
         prev = ema;
     }
     return result;
 }
 
-function generateData(base) {
-    let arr = [];
-    let time = Math.floor(Date.now() / 1000) - (40 * 60);
-    let p = base * 0.99;
-    for (let i = 0; i < 40; i++) {
-        let open = p;
-        let close = open + (Math.random() - 0.49) * (base * 0.002);
-        let high = Math.max(open, close) + (base * 0.0005);
-        let low = Math.min(open, close) - (base * 0.0005);
-        arr.push({ time: time, open: open, high: high, low: low, close: close });
-        p = close;
-        time += 60;
-    }
-    return arr;
+let chartData = generateInitialData(defaultPrices[selectedSymbol] || 83000);
+
+var options = {
+    series: [{
+        name: 'Pris',
+        type: 'candlestick',
+        data: chartData
+    }, {
+        name: 'EMA 9',
+        type: 'line',
+        data: calculateEMA(chartData, 9)
+    }, {
+        name: 'EMA 21',
+        type: 'line',
+        data: calculateEMA(chartData, 21)
+    }],
+    chart: {
+        height: '100%',
+        type: 'line',
+        background: '#0b0e11',
+        toolbar: { show: false }
+    },
+    colors: ['#0ecb81', '#facc15', '#38bdf8'],
+    stroke: {
+        width: [1, 2, 2]
+    },
+    xaxis: {
+        type: 'datetime',
+        labels: { style: { colors: '#9ca3af' } }
+    },
+    yaxis: {
+        tooltip: { enabled: true },
+        labels: { style: { colors: '#9ca3af' } },
+        decimalsInFloat: 2
+    },
+    grid: { borderColor: '#1e2329' },
+    plotOptions: {
+        candlestick: {
+            colors: { upward: '#0ecb81', downward: '#f6465d' }
+        }
+    },
+    tooltip: { theme: 'dark' }
+};
+
+var chart = new ApexCharts(document.querySelector("#tv-chart-container"), options);
+chart.render();
+
+function updateChart() {
+    chart.updateSeries([{
+        data: chartData
+    }, {
+        data: calculateEMA(chartData, 9)
+    }, {
+        data: calculateEMA(chartData, 21)
+    }]);
 }
-
-let chartData = generateData(defaultPrices[selectedSymbol] || 83000);
-candleSeries.setData(chartData);
-
-function updateLines() {
-    emaFast.setData(calculateEMA(chartData, 9));
-    emaSlow.setData(calculateEMA(chartData, 21));
-}
-updateLines();
-
-fitChartBtn.addEventListener('click', function() {
-    chart.timeScale().fitContent();
-});
-
-window.addEventListener('resize', function() {
-    chart.applyOptions({ width: chartContainer.clientWidth, height: chartContainer.clientHeight });
-});
 
 function addLog(msg, type) {
     let time = new Date().toLocaleTimeString();
@@ -154,11 +162,12 @@ async function fetchPrice() {
 
         if (chartData.length > 0) {
             let last = chartData[chartData.length - 1];
-            last.close = currentPrice;
-            if (currentPrice > last.high) last.high = currentPrice + 2;
-            if (currentPrice < last.low) last.low = currentPrice - 2;
-            candleSeries.update(last);
-            updateLines();
+            let open = last.y[0];
+            let high = Math.max(last.y[1], currentPrice);
+            let low = Math.min(last.y[2], currentPrice);
+            let close = currentPrice;
+            last.y = [open, high, low, close];
+            updateChart();
         }
     } catch (e) {
         currentPrice += (Math.random() - 0.49) * 10;
@@ -169,11 +178,9 @@ async function fetchPrice() {
 cryptoSelect.addEventListener('change', function(e) {
     selectedSymbol = e.target.value;
     localStorage.setItem('cryptoai_symbol', selectedSymbol);
-    currentPrice = defaultPrices[selectedSymbol] || 100;
-    chartData = generateData(currentPrice);
-    candleSeries.setData(chartData);
-    updateLines();
-    chart.timeScale().fitContent();
+    currentPrice = defaultPrices[selectedSymbol] || 83000;
+    chartData = generateInitialData(currentPrice);
+    updateChart();
     addLog("Bytte till " + selectedSymbol, 'info');
     fetchPrice();
 });
@@ -186,32 +193,31 @@ riskRange.addEventListener('input', function(e) {
 fetchPrice();
 priceInterval = setInterval(fetchPrice, 3000);
 
-setTimeout(function() {
-    chart.timeScale().fitContent();
-}, 300);
-
 function runBot() {
     let risk = parseInt(riskRange.value);
     let maxSpend = parseFloat(maxSpendInput.value) || 1000;
     
-    let time = Math.floor(Date.now() / 1000);
+    let time = Date.now();
     let open = currentPrice;
-    let close = open + (Math.random() - 0.48) * (currentPrice * 0.0015);
-    let high = Math.max(open, close) + (currentPrice * 0.0004);
-    let low = Math.min(open, close) - (currentPrice * 0.0004);
+    let close = open + (Math.random() - 0.48) * (currentPrice * 0.002);
+    let high = Math.max(open, close) + (currentPrice * 0.0008);
+    let low = Math.min(open, close) - (currentPrice * 0.0008);
 
-    chartData.push({ time: time, open: open, high: high, low: low, close: close });
+    chartData.push({
+        x: new Date(time),
+        y: [parseFloat(open.toFixed(2)), parseFloat(high.toFixed(2)), parseFloat(low.toFixed(2)), parseFloat(close.toFixed(2))]
+    });
     if (chartData.length > 50) chartData.shift();
-    candleSeries.setData(chartData);
+    updateChart();
 
-    let emad = calculateEMA(chartData, 9);
-    let emas = calculateEMA(chartData, 21);
-    if (emad.length < 2) return;
+    let ema9 = calculateEMA(chartData, 9);
+    let ema21 = calculateEMA(chartData, 21);
+    if (ema9.length < 2) return;
 
-    let fastNow = emad[emad.length - 1].value;
-    let fastPrev = emad[emad.length - 2].value;
-    let slowNow = emas[emas.length - 1].value;
-    let slowPrev = emas[emas.length - 2].value;
+    let fastNow = ema9[ema9.length - 1][1];
+    let fastPrev = ema9[ema9.length - 2][1];
+    let slowNow = ema21[ema21.length - 1][1];
+    let slowPrev = ema21[ema21.length - 2][1];
 
     let crossUp = fastPrev <= slowPrev && fastNow > slowNow;
     let crossDown = fastPrev >= slowPrev && fastNow < slowNow;
