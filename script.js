@@ -279,7 +279,7 @@ function runAiTradeCycle() {
             addLog(`[STOP-LOSS] Position stoppad (${selectedSymbol}). Förlust: -$${Math.abs(numPnL)}`, 'danger');
         }
 
-Nd        totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        totalBalanceEl.textContent = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         dailyPnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
         dailyPnlEl.className = `text-lg font-mono font-bold ${pnl >= 0 ? 'text-white' : 'text-gray-400'}`;
 
