@@ -18,6 +18,8 @@ const totalBalanceEl = document.getElementById('total-balance');
 const dailyPnlEl = document.getElementById('daily-pnl');
 const cryptoSelect = document.getElementById('crypto-select');
 const intervalSelect = document.getElementById('interval-select');
+const strategySelect = document.getElementById('strategy-select');
+const legendLines = document.getElementById('legend-lines');
 const chartContainer = document.getElementById('tv-chart-container');
 
 const metricSharpe = document.getElementById('metric-sharpe');
@@ -31,10 +33,123 @@ const API = 'https://api.binance.com/api/v3';
 const HISTORY_LIMIT = 300;   // antal candles som hämtas vid start
 const REFRESH_MS = 3000;     // hur ofta live-data hämtas
 const BOT_MS = 4000;         // hur ofta boten kollar läget
-const STOP_LOSS = 0.005;     // 0,5 % stop-loss
+// Stop-loss växer med tidsintervallet (längre candles svänger mer)
+const STOP_BY_INTERVAL = { '1m': 0.003, '5m': 0.006, '15m': 0.01, '1h': 0.02 };
+const BACKTEST_CANDLES = 4000;  // så många candles används för stjärnorna
+const BACKTEST_START = 200;     // alla strategier jämförs från samma startpunkt
 const FEE = 0.001;           // 0,1 % avgift per köp/sälj (som Binance spot)
 const COLORS = { up: '#0ecb81', down: '#f6465d', ema9: '#facc15', ema21: '#38bdf8' };
 const decimalsBySymbol = { BTCUSDT: 2, ETHUSDT: 2, SOLUSDT: 2, XRPUSDT: 4 };
+// ---------- Strategier ----------
+// Varje strategi räknar ut köp/sälj per candle (bara med data fram till den candlen),
+// och ev. linjer som ritas på grafen. Samma kod används av boten och av backtestet.
+function emaArr(v, p) {
+    const k = 2 / (p + 1), o = [];
+    for (let i = 0; i < v.length; i++) o.push(i === 0 ? v[i] : v[i] * k + o[i - 1] * (1 - k));
+    return o;
+}
+function rsiArr(v, p) {
+    const out = v.map(function () { return null; });
+    if (v.length <= p) return out;
+    let g = 0, l = 0;
+    for (let i = 1; i <= p; i++) { const d = v[i] - v[i - 1]; if (d >= 0) g += d; else l -= d; }
+    let ag = g / p, al = l / p;
+    out[p] = al === 0 ? 100 : 100 - 100 / (1 + ag / al);
+    for (let i = p + 1; i < v.length; i++) {
+        const d = v[i] - v[i - 1];
+        ag = (ag * (p - 1) + (d > 0 ? d : 0)) / p;
+        al = (al * (p - 1) + (d < 0 ? -d : 0)) / p;
+        out[i] = al === 0 ? 100 : 100 - 100 / (1 + ag / al);
+    }
+    return out;
+}
+function crossUp(a, b, i) { return i > 0 && a[i - 1] <= b[i - 1] && a[i] > b[i]; }
+function crossDown(a, b, i) { return i > 0 && a[i - 1] >= b[i - 1] && a[i] < b[i]; }
+function signals(n, fb, fs) {
+    const buy = [], sell = [];
+    for (let i = 0; i < n; i++) { buy.push(!!fb(i)); sell.push(!!fs(i)); }
+    return { buy: buy, sell: sell };
+}
+function emaStrategy(name, f, s) {
+    return {
+        name: name, colors: ['#facc15', '#38bdf8'],
+        legend: [['EMA ' + f + ':', 'Snabb trend'], ['EMA ' + s + ':', 'Långsam trend']],
+        compute: function (d) {
+            const c = d.map(function (x) { return x.close; }), a = emaArr(c, f), b = emaArr(c, s);
+            const r = signals(d.length, function (i) { return crossUp(a, b, i); }, function (i) { return crossDown(a, b, i); });
+            r.lines = [a, b];
+            r.text = function (i) { return 'EMA ' + f + ' ' + fmt(a[i]) + ' / EMA ' + s + ' ' + fmt(b[i]); };
+            return r;
+        }
+    };
+}
+const STRATEGIES = {
+    'ema': emaStrategy('EMA 9/21', 9, 21),
+    'ema-50-200': emaStrategy('EMA 50/200 (Golden Cross)', 50, 200),
+    'ema-fast': emaStrategy('EMA 3/8 (snabbtest)', 3, 8),
+    'macd': {
+        name: 'MACD 12/26/9', colors: [], legend: [],
+        compute: function (d) {
+            const c = d.map(function (x) { return x.close; }), e12 = emaArr(c, 12), e26 = emaArr(c, 26);
+            const m = e12.map(function (x, i) { return x - e26[i]; }), sg = emaArr(m, 9);
+            const r = signals(d.length, function (i) { return crossUp(m, sg, i); }, function (i) { return crossDown(m, sg, i); });
+            r.lines = [];
+            r.text = function (i) { return 'MACD ' + m[i].toFixed(2) + ' / signal ' + sg[i].toFixed(2); };
+            return r;
+        }
+    },
+    'rsi': {
+        name: 'RSI 14 (köp under 30, sälj över 70)', colors: [], legend: [],
+        compute: function (d) {
+            const v = rsiArr(d.map(function (x) { return x.close; }), 14);
+            const r = signals(d.length, function (i) { return v[i] !== null && v[i] < 30; }, function (i) { return v[i] !== null && v[i] > 70; });
+            r.lines = [];
+            r.text = function (i) { return 'RSI ' + (v[i] === null ? '-' : v[i].toFixed(1)); };
+            return r;
+        }
+    },
+    'bb': {
+        name: 'Bollinger 20/2 (mean reversion)', colors: ['#a78bfa', '#facc15', '#a78bfa'],
+        legend: [['Band:', 'Övre/undre (2 std)'], ['Mitt:', 'Snitt 20']],
+        compute: function (d) {
+            const c = d.map(function (x) { return x.close; }), mid = [], up = [], lo = [];
+            for (let i = 0; i < c.length; i++) {
+                if (i < 19) { mid.push(null); up.push(null); lo.push(null); continue; }
+                let sum = 0, q = 0;
+                for (let j = i - 19; j <= i; j++) sum += c[j];
+                const m = sum / 20;
+                for (let j = i - 19; j <= i; j++) q += (c[j] - m) * (c[j] - m);
+                const sd = Math.sqrt(q / 20);
+                mid.push(m); up.push(m + 2 * sd); lo.push(m - 2 * sd);
+            }
+            const r = signals(d.length, function (i) { return lo[i] !== null && c[i] < lo[i]; }, function (i) { return mid[i] !== null && c[i] > mid[i]; });
+            r.lines = [up, mid, lo];
+            r.text = function (i) { return 'Pris ' + fmt(c[i]) + ' / nedre ' + (lo[i] === null ? '-' : fmt(lo[i])) + ' / mitt ' + (mid[i] === null ? '-' : fmt(mid[i])); };
+            return r;
+        }
+    },
+    'donchian': {
+        name: 'Donchian 20/10 (breakout)', colors: ['#fb923c', '#a78bfa'],
+        legend: [['Övre:', 'Högsta 20'], ['Nedre:', 'Lägsta 10']],
+        compute: function (d) {
+            const hi = [], lo = [];
+            for (let i = 0; i < d.length; i++) {
+                if (i < 20) { hi.push(null); lo.push(null); continue; }
+                let h = -Infinity, l = Infinity;
+                for (let j = i - 20; j < i; j++) h = Math.max(h, d[j].high);
+                for (let j = i - 10; j < i; j++) l = Math.min(l, d[j].low);
+                hi.push(h); lo.push(l);
+            }
+            const r = signals(d.length, function (i) { return hi[i] !== null && d[i].close > hi[i]; }, function (i) { return lo[i] !== null && d[i].close < lo[i]; });
+            r.lines = [hi, lo];
+            r.text = function (i) { return 'Pris ' + fmt(d[i].close) + ' / högsta20 ' + (hi[i] === null ? '-' : fmt(hi[i])) + ' / lägsta10 ' + (lo[i] === null ? '-' : fmt(lo[i])); };
+            return r;
+        }
+    }
+};
+const STRATEGY_IDS = Object.keys(STRATEGIES);
+const stars = {}; // id -> 1-5 (eller null om för få affärer)
+
 
 // ---------- Hjälpfunktioner för localStorage ----------
 function loadSetting(key) {
@@ -53,6 +168,15 @@ const savedInterval = loadSetting('cryptoai_interval');
 if (savedInterval && [...intervalSelect.options].some(o => o.value === savedInterval)) {
     intervalSelect.value = savedInterval;
 }
+strategySelect.innerHTML = '';
+STRATEGY_IDS.forEach(function (id) {
+    const o = document.createElement('option');
+    o.value = id;
+    strategySelect.appendChild(o);
+});
+const savedStrategy = loadSetting('cryptoai_strategy');
+if (savedStrategy && STRATEGIES[savedStrategy]) strategySelect.value = savedStrategy;
+refreshOptionLabels();
 const savedRisk = loadSetting('cryptoai_risk');
 if (savedRisk) {
     riskRange.value = savedRisk;
@@ -62,6 +186,7 @@ if (savedRisk) {
 // ---------- Tillstånd ----------
 let selectedSymbol = cryptoSelect.value;
 let selectedInterval = intervalSelect.value;
+let strategy = STRATEGIES[strategySelect.value] || STRATEGIES['ema'];
 
 let candles = [];            // { time, open, high, low, close }
 let markers = [];            // köp/sälj-pilar på grafen
@@ -140,27 +265,44 @@ const candleSeries = chart.addCandlestickSeries({
 });
 
 const lineOpts = { lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false };
-const ema9Series = chart.addLineSeries(Object.assign({ color: COLORS.ema9 }, lineOpts));
-const ema21Series = chart.addLineSeries(Object.assign({ color: COLORS.ema21 }, lineOpts));
+const overlaySeries = [0, 1, 2].map(function () { return chart.addLineSeries(lineOpts); }); // strategins linjer
 
 function applyPrecision() {
     const d = dec();
     const fmtOpts = { priceFormat: { type: 'price', precision: d, minMove: 1 / Math.pow(10, d) } };
     candleSeries.applyOptions(fmtOpts);
-    ema9Series.applyOptions(fmtOpts);
-    ema21Series.applyOptions(fmtOpts);
+    overlaySeries.forEach(function (x) { x.applyOptions(fmtOpts); });
 }
 
 // ---------- Indikatorer ----------
-function calcEMA(arr, period) {
-    const k = 2 / (period + 1);
+function toPoints(d, arr) {
     const out = [];
-    let prev = 0;
-    for (let i = 0; i < arr.length; i++) {
-        prev = i === 0 ? arr[i].close : arr[i].close * k + prev * (1 - k);
-        out.push({ time: arr[i].time, value: prev });
+    for (let i = 0; i < d.length; i++) {
+        if (arr[i] !== null && arr[i] !== undefined) out.push({ time: d[i].time, value: arr[i] });
     }
     return out;
+}
+
+function setOverlays() {
+    const res = strategy.compute(candles);
+    overlaySeries.forEach(function (x, j) {
+        if (res.lines[j]) {
+            x.applyOptions({ color: strategy.colors[j] });
+            x.setData(toPoints(candles, res.lines[j]));
+        } else {
+            x.setData([]);
+        }
+    });
+    lastEmaTime = candles[candles.length - 1].time;
+}
+
+function updateLegend() {
+    if (!legendLines) return;
+    legendLines.innerHTML = strategy.legend.length
+        ? strategy.legend.map(function (l, j) {
+            return '<div><span class="inline-block w-3 h-1 mr-1" style="background:' + strategy.colors[j] + '"></span><strong>' + l[0] + '</strong> ' + l[1] + '</div>';
+        }).join('')
+        : '<div>Inga linjer, signalerna syns som pilar</div>';
 }
 
 // ---------- Logg ----------
@@ -210,9 +352,7 @@ async function loadHistory() {
         if (myToken !== loadToken) return;
         candles = raw.map(toCandle);
         candleSeries.setData(candles);
-        ema9Series.setData(calcEMA(candles, 9));
-        ema21Series.setData(calcEMA(candles, 21));
-        lastEmaTime = candles[candles.length - 1].time;
+        setOverlays();
         if (candles.length > 1) lastEvalTime = candles[candles.length - 2].time;
         chart.timeScale().fitContent();
         historyReady = true;
@@ -238,15 +378,16 @@ function applyCandles(list) {
     }
     if (candles.length > 1000) candles.shift();
 
-    // Uppdatera EMA-linjerna för de två senaste punkterna
-    const e9 = calcEMA(candles, 9);
-    const e21 = calcEMA(candles, 21);
-    for (let i = Math.max(0, e9.length - 2); i < e9.length; i++) {
-        if (e9[i].time >= lastEmaTime) {
-            ema9Series.update(e9[i]);
-            ema21Series.update(e21[i]);
-            lastEmaTime = e9[i].time;
-        }
+    // Uppdatera strategins linjer för de två senaste candlesen
+    const res = strategy.compute(candles);
+    const n = candles.length;
+    for (let i = Math.max(0, n - 2); i < n; i++) {
+        if (candles[i].time < lastEmaTime) continue;
+        overlaySeries.forEach(function (x, j) {
+            const v = res.lines[j] ? res.lines[j][i] : null;
+            if (v !== null && v !== undefined) x.update({ time: candles[i].time, value: v });
+        });
+        lastEmaTime = candles[i].time;
     }
 }
 
@@ -338,7 +479,7 @@ function openPosition(price) {
     positionExposure = maxSpend * (risk / 2);
 
     addMarker('buy', price);
-    addLog('🟢 Golden Cross på ' + selectedSymbol + '! Köper @ $' + fmt(price), 'success');
+    addLog('🟢 Köpsignal (' + strategy.name + ') på ' + selectedSymbol + '. Köper @ $' + fmt(price), 'success');
 }
 
 function closePosition(price, reason) {
@@ -372,11 +513,89 @@ function closePosition(price, reason) {
     } else if (delta >= 0) {
         addLog('💰 Vinst säkrad @ $' + fmt(price) + ': ' + amount, 'success');
     } else {
-        addLog('🔴 Såld @ $' + fmt(price) + ' (EMA-korsning ned): ' + amount, 'danger');
+        addLog('🔴 Såld @ $' + fmt(price) + ' (säljsignal): ' + amount, 'danger');
     }
 
     hasOpenPosition = false;
     updateStats();
+}
+
+// ---------- Backtest och stjärnor ----------
+function stopPct() { return STOP_BY_INTERVAL[selectedInterval] || 0.005; }
+
+function backtest(strat, d, stop) {
+    const sig = strat.compute(d);
+    let inPos = false, entry = 0, eq = 1, peak = 1, maxDD = 0, trades = 0, wins = 0, ws = 0, ls = 0;
+    function exit(px) {
+        const r = (px / entry) * (1 - FEE) * (1 - FEE) - 1;
+        eq *= 1 + r; trades++;
+        if (r > 0) { wins++; ws += r; } else { ls -= r; }
+        peak = Math.max(peak, eq);
+        maxDD = Math.max(maxDD, (peak - eq) / peak * 100);
+        inPos = false;
+    }
+    for (let i = BACKTEST_START; i < d.length; i++) {
+        const c = d[i];
+        if (inPos) {
+            const sp = entry * (1 - stop);
+            if (c.low <= sp) exit(Math.min(c.open, sp)); else if (sig.sell[i]) exit(c.close);
+        }
+        if (!inPos && sig.buy[i]) { inPos = true; entry = c.close; }
+    }
+    if (inPos) exit(d[d.length - 1].close);
+    return { net: (eq - 1) * 100, maxDD: maxDD, trades: trades, wins: wins, pf: ls > 0 ? ws / ls : (ws > 0 ? Infinity : 0) };
+}
+
+// 1 stjärna grund, +1 positiv avkastning, +1 vinstfaktor >= 1,3,
+// +1 slår köp & håll, +1 avkastning >= största nedgång. Under 5 affärer: inget betyg.
+function starsFor(r, bh) {
+    if (r.trades < 5) return null;
+    let s = 1;
+    if (r.net > 0) s++;
+    if (r.pf >= 1.3) s++;
+    if (r.net > bh) s++;
+    if (r.net > 0 && r.net >= r.maxDD) s++;
+    return s;
+}
+function starText(s) { return s === null ? '☆ ?' : '★'.repeat(s) + '☆'.repeat(5 - s); }
+
+function refreshOptionLabels() {
+    for (const o of strategySelect.options) {
+        o.textContent = STRATEGIES[o.value].name + '  ' + (o.value in stars ? starText(stars[o.value]) : '…');
+    }
+}
+
+let btToken = 0;
+async function runBacktests() {
+    const my = ++btToken, sym = selectedSymbol, itv = selectedInterval, stop = stopPct();
+    for (const k in stars) delete stars[k];
+    refreshOptionLabels();
+    try {
+        let d = [], end = null;
+        while (d.length < BACKTEST_CANDLES) {
+            const lim = Math.min(1000, BACKTEST_CANDLES - d.length);
+            const raw = await getJSON(API + '/klines?symbol=' + sym + '&interval=' + itv + '&limit=' + lim + (end ? '&endTime=' + end : ''));
+            if (my !== btToken) return;
+            if (!raw.length) break;
+            d = raw.map(toCandle).concat(d);
+            end = raw[0][0] - 1;
+            if (raw.length < lim) break;
+        }
+        d.pop(); // sista candlen är inte stängd än
+        if (d.length < BACKTEST_START + 100) { addLog('Backtest: för lite historik för ' + sym + ' ' + itv + '.', 'warn'); return; }
+        const bh = ((d[d.length - 1].close / d[BACKTEST_START].close) * (1 - FEE) * (1 - FEE) - 1) * 100;
+        const days = Math.round((d[d.length - 1].time - d[BACKTEST_START].time) / 86400);
+        addLog('Backtest ' + sym + ' ' + itv + ' (' + days + ' dagar, stop-loss ' + (stop * 100).toFixed(1) + '%). Köp & håll: ' + bh.toFixed(1) + '%', 'info');
+        STRATEGY_IDS.forEach(function (id) {
+            const r = backtest(STRATEGIES[id], d, stop);
+            stars[id] = starsFor(r, bh);
+            addLog(STRATEGIES[id].name + ' ' + starText(stars[id]) + ' ' + r.net.toFixed(1) + '% / ' + r.trades + ' affärer / max nedgång ' + r.maxDD.toFixed(1) + '%', 'info');
+        });
+        refreshOptionLabels();
+        if (days < 60) addLog('Obs: bara ' + days + ' dagars historik, stjärnorna är osäkra. Välj 1 tim för längre period.', 'warn');
+    } catch (e) {
+        if (my === btToken) addLog('Backtest misslyckades: ' + e.message, 'danger');
+    }
 }
 
 // ---------- Bot-logik ----------
@@ -384,7 +603,7 @@ function runBot() {
     if (!historyReady || candles.length < 25 || currentPrice <= 0) return;
 
     // 1) Stop-loss kollas hela tiden på livepriset
-    if (hasOpenPosition && currentPrice <= entryPrice * (1 - STOP_LOSS)) {
+    if (hasOpenPosition && currentPrice <= entryPrice * (1 - stopPct())) {
         closePosition(currentPrice, 'stop');
         return;
     }
@@ -395,19 +614,15 @@ function runBot() {
     if (lastClosed.time === lastEvalTime) return; // inget nytt att analysera än
     lastEvalTime = lastClosed.time;
 
-    const e9 = calcEMA(closed, 9);
-    const e21 = calcEMA(closed, 21);
-    const n = e9.length;
+    const res = strategy.compute(closed);
+    const n = closed.length - 1;
 
-    const crossUp = e9[n - 2].value <= e21[n - 2].value && e9[n - 1].value > e21[n - 1].value;
-    const crossDown = e9[n - 2].value >= e21[n - 2].value && e9[n - 1].value < e21[n - 1].value;
-
-    if (crossUp && !hasOpenPosition) {
+    if (!hasOpenPosition && res.buy[n]) {
         openPosition(currentPrice);
-    } else if (crossDown && hasOpenPosition) {
-        closePosition(currentPrice, 'cross');
+    } else if (hasOpenPosition && res.sell[n]) {
+        closePosition(currentPrice, 'signal');
     } else {
-        addLog('Analyserar ' + selectedSymbol + ' (' + selectedInterval + '): EMA 9 ' + fmt(e9[n - 1].value) + ' / EMA 21 ' + fmt(e21[n - 1].value), 'info');
+        addLog('Analyserar ' + selectedSymbol + ' (' + selectedInterval + '): ' + res.text(n), 'info');
     }
 }
 
@@ -423,6 +638,7 @@ cryptoSelect.addEventListener('change', function (e) {
     applyPrecision();
     addLog('Bytte till ' + selectedSymbol, 'info');
     loadHistory();
+    runBacktests();
 });
 
 intervalSelect.addEventListener('change', function (e) {
@@ -430,6 +646,16 @@ intervalSelect.addEventListener('change', function (e) {
     saveSetting('cryptoai_interval', selectedInterval);
     addLog('Tidsintervall: ' + selectedInterval, 'info');
     loadHistory();
+    runBacktests();
+});
+
+strategySelect.addEventListener('change', function (e) {
+    if (!STRATEGIES[e.target.value]) return;
+    strategy = STRATEGIES[e.target.value];
+    saveSetting('cryptoai_strategy', e.target.value);
+    updateLegend();
+    if (historyReady) setOverlays();
+    addLog('Strategi: ' + strategy.name, 'info');
 });
 
 riskRange.addEventListener('input', function (e) {
@@ -460,6 +686,8 @@ toggleBtn.addEventListener('click', function () {
 
 // ---------- Start ----------
 applyPrecision();
+updateLegend();
 updateStats();
 loadHistory();
+runBacktests();
 setInterval(refreshMarket, REFRESH_MS);
