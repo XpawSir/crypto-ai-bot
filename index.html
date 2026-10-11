@@ -7,7 +7,6 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- TradingView Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <script>
         tailwind.config = {
@@ -17,202 +16,136 @@
                     colors: {
                         darkbg: '#0b0e11',
                         cardbg: '#12161c',
-                        cardborder: '#1e2329',
-                        accentgreen: '#0ecb81',
-                        accentred: '#f6465d'
+                        cardborder: '#1e2329'
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-darkbg text-gray-200 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-gray-700 selection:text-white">
+<body class="bg-darkbg text-gray-200 font-sans antialiased min-h-screen flex flex-col justify-between">
 
-    <!-- Header -->
-    <header class="border-b border-cardborder bg-cardbg/80 backdrop-blur-md px-6 py-3.5 flex items-center justify-between sticky top-0 z-50">
+    <header class="border-b border-cardborder bg-cardbg/80 px-6 py-3.5 flex items-center justify-between sticky top-0 z-50">
         <div class="flex items-center gap-3">
-            <div class="bg-cardborder p-2 rounded-lg border border-gray-800 text-white shadow-inner">
+            <div class="bg-cardborder p-2 rounded-lg border border-gray-800 text-white">
                 <i class="fa-solid fa-terminal text-sm"></i>
             </div>
             <div>
-                <h1 class="font-bold tracking-wider text-sm text-white flex items-center gap-2">
-                    CRYPTOAI <span class="bg-white/10 text-white text-[10px] px-2 py-0.5 rounded border border-white/10 uppercase tracking-widest font-mono">PRO TERMINAL V2</span>
-                </h1>
-                <p class="text-[11px] text-gray-400 font-mono">Binance Testnet / Serverless Node.js Core</p>
+                <h1 class="font-bold text-sm text-white">CRYPTOAI <span class="text-[10px] px-2 py-0.5 rounded bg-white/10 font-mono">PRO TERMINAL V2</span></h1>
+                <p class="text-[11px] text-gray-400 font-mono">Binance Live Engine</p>
             </div>
         </div>
-        <div class="flex items-center gap-4">
-            <div id="bot-status-badge" class="px-3 py-1 rounded-md text-xs font-semibold bg-gray-900 text-gray-400 border border-gray-800 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-gray-600"></span> Bot Pausad
-            </div>
+        <div id="bot-status-badge" class="px-3 py-1 rounded-md text-xs font-semibold bg-gray-900 text-gray-400 border border-gray-800 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-gray-600"></span> Bot Pausad
         </div>
     </header>
 
-    <!-- Main Grid -->
     <main class="p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-[1700px] mx-auto w-full flex-grow">
         
-        <!-- Vänster panel: AI & Risk -->
         <div class="space-y-6">
             <div class="bg-cardbg border border-cardborder rounded-xl p-5 shadow-xl">
-                <h2 class="text-xs font-mono font-semibold uppercase tracking-wider text-gray-400 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-white"></i> AI Konfiguration (EMA Crossover)
-                </h2>
-
+                <h2 class="text-xs font-mono font-semibold uppercase text-gray-400 mb-4">AI Konfiguration</h2>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">Algoritmisk Strategi</label>
-                        <select id="strategy-select" class="w-full bg-darkbg border border-cardborder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gray-500 font-mono">
-                            <option value="ema">⚡ EMA 9/21 Trend Crossover Engine</option>
+                        <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">Strategi</label>
+                        <select id="strategy-select" class="w-full bg-darkbg border border-cardborder rounded-lg px-3 py-2 text-xs text-white font-mono">
+                            <option value="ema">EMA 9/21 Crossover</option>
                         </select>
                     </div>
-
                     <div>
                         <div class="flex justify-between text-[11px] font-mono mb-1.5 text-gray-400">
-                            <span class="uppercase">Riskprofil (Volatilitet)</span>
+                            <span>Riskprofil</span>
                             <span id="risk-value" class="text-white font-bold">4 / 10</span>
                         </div>
                         <input id="risk-range" type="range" min="1" max="10" value="4" class="w-full accent-white bg-darkbg cursor-pointer">
                     </div>
-
                     <div>
-                        <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">Max Kapital / Trade ($)</label>
-                        <input id="max-spend-input" type="number" value="1000" class="w-full bg-darkbg border border-cardborder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gray-500 font-mono">
+                        <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">Max Kapital ($)</label>
+                        <input id="max-spend-input" type="number" value="1000" class="w-full bg-darkbg border border-cardborder rounded-lg px-3 py-2 text-xs text-white font-mono">
                     </div>
-
-                    <button id="toggle-bot-btn" class="w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-lg text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-2 mt-2">
+                    <button id="toggle-bot-btn" class="w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2">
                         <i class="fa-solid fa-play"></i> Starta AI-Robot
                     </button>
                 </div>
             </div>
 
-            <!-- Proffsmetriker -->
             <div class="bg-cardbg border border-cardborder rounded-xl p-5 shadow-xl">
-                <h2 class="text-xs font-mono font-semibold uppercase tracking-wider text-gray-400 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-chart-pie text-white"></i> Risk & Prestanda (PRO)
-                </h2>
+                <h2 class="text-xs font-mono font-semibold uppercase text-gray-400 mb-4">Prestanda</h2>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
                     <div class="bg-darkbg p-3 rounded-lg border border-cardborder">
-                        <span class="text-gray-400 text-[10px] block uppercase">Sharpe-kvot</span>
+                        <span class="text-gray-400 text-[10px] block">Sharpe</span>
                         <span id="metric-sharpe" class="text-white font-bold text-sm">0.00</span>
                     </div>
                     <div class="bg-darkbg p-3 rounded-lg border border-cardborder">
-                        <span class="text-gray-400 text-[10px] block uppercase">Max Drawdown</span>
+                        <span class="text-gray-400 text-[10px] block">Drawdown</span>
                         <span id="metric-drawdown" class="text-white font-bold text-sm">0.00%</span>
                     </div>
                     <div class="bg-darkbg p-3 rounded-lg border border-cardborder">
-                        <span class="text-gray-400 text-[10px] block uppercase">Win Rate</span>
-                        <span id="metric-winrate" class="text-white font-bold text-sm">0% (0/0)</span>
+                        <span class="text-gray-400 text-[10px] block">Win Rate</span>
+                        <span id="metric-winrate" class="text-white font-bold text-sm">0%</span>
                     </div>
                     <div class="bg-darkbg p-3 rounded-lg border border-cardborder">
-                        <span class="text-gray-400 text-[10px] block uppercase">Profit Factor</span>
+                        <span class="text-gray-400 text-[10px] block">Profit Factor</span>
                         <span id="metric-profitfactor" class="text-white font-bold text-sm">0.00</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Mittenpanel: Graf & Översikt -->
         <div class="lg:col-span-3 space-y-6 flex flex-col">
             
-            <!-- Statistikkort -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-cardbg border border-cardborder rounded-xl p-4 shadow-xl">
-                    <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">Portföljsaldo (Binance)</span>
+                <div class="bg-cardbg border border-cardborder rounded-xl p-4">
+                    <span class="text-[11px] font-mono text-gray-400">Saldo</span>
                     <div id="total-balance" class="text-2xl font-mono font-bold text-white mt-1">$10,000.00</div>
-                    <span class="text-[10px] font-mono text-gray-400">Live Testnet Balance</span>
                 </div>
-                <div class="bg-cardbg border border-cardborder rounded-xl p-4 shadow-xl">
-                    <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">Realiserat PnL</span>
+                <div class="bg-cardbg border border-cardborder rounded-xl p-4">
+                    <span class="text-[11px] font-mono text-gray-400">Realiserat PnL</span>
                     <div id="daily-pnl" class="text-2xl font-mono font-bold text-gray-400 mt-1">$0.00</div>
-                    <span class="text-[10px] font-mono text-gray-400">Dagens avkastning</span>
                 </div>
-                <div class="bg-cardbg border border-cardborder rounded-xl p-4 shadow-xl">
-                    <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">Orderbok Spread</span>
+                <div class="bg-cardbg border border-cardborder rounded-xl p-4">
+                    <span class="text-[11px] font-mono text-gray-400">Spread</span>
                     <div id="market-spread" class="text-2xl font-mono font-bold text-white mt-1">0.02%</div>
-                    <span id="orderbook-pressure" class="text-[10px] font-mono text-gray-400">Tryck: Neutral</span>
                 </div>
             </div>
 
-            <!-- TradingView Graf Container -->
             <div class="bg-cardbg border border-cardborder rounded-xl p-5 shadow-xl flex-grow flex flex-col min-h-[440px]">
                 <div class="flex items-center justify-between mb-3 pb-3 border-b border-cardborder flex-wrap gap-2">
                     <div class="flex items-center gap-3">
-                        <select id="crypto-select" class="bg-darkbg border border-cardborder rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none">
+                        <select id="crypto-select" class="bg-darkbg border border-cardborder rounded-lg px-3 py-1.5 text-xs text-white font-mono">
                             <option value="BTCUSDT">BTC/USDT</option>
                             <option value="ETHUSDT">ETH/USDT</option>
                             <option value="SOLUSDT">SOL/USDT</option>
                             <option value="XRPUSDT">XRP/USDT</option>
                         </select>
-                        <button id="fit-chart-btn" class="bg-darkbg hover:bg-cardborder text-gray-300 border border-cardborder px-2.5 py-1 rounded-md text-[11px] font-mono transition flex items-center gap-1.5" title="Centrera och zooma in grafen perfekt">
-                            <i class="fa-solid fa-compress"></i> Auto-Fit
+                        <button id="fit-chart-btn" class="bg-darkbg hover:bg-cardborder text-gray-300 border border-cardborder px-2.5 py-1 rounded-md text-[11px] font-mono">
+                            Auto-Fit
                         </button>
                     </div>
                     <div class="text-right font-mono">
                         <div id="crypto-price" class="text-lg font-bold text-white">$0.00</div>
-                        <div id="crypto-change" class="text-[11px] text-gray-400">0.00% (24h)</div>
+                        <div id="crypto-change" class="text-[11px] text-gray-400">0.00%</div>
                     </div>
                 </div>
                 
-                <!-- TradingView-grafen -->
                 <div id="tv-chart-container" class="w-full flex-grow rounded-lg overflow-hidden bg-darkbg border border-cardborder/50 min-h-[320px]"></div>
 
-                <!-- Tydlig förklaring under grafen -->
-                <div class="mt-3 pt-2 border-t border-cardborder/60 flex flex-wrap items-center justify-between text-[11px] font-mono text-gray-400 gap-4">
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-1 bg-[#facc15] rounded-full inline-block"></span>
-                        <span><strong class="text-gray-200">EMA 9 (Snabb):</strong> Reagerar direkt på priset. Köpsignal vid uppåtgående korsning.</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-1 bg-[#38bdf8] rounded-full inline-block"></span>
-                        <span><strong class="text-gray-200">EMA 21 (Långsam):</strong> Visar den övergripande trendriktningen.</span>
-                    </div>
+                <div class="mt-3 pt-2 border-t border-cardborder/60 flex items-center justify-between text-[11px] font-mono text-gray-400">
+                    <div><span class="inline-block w-3 h-1 bg-[#facc15] mr-1"></span><strong>EMA 9:</strong> Snabb trend</div>
+                    <div><span class="inline-block w-3 h-1 bg-[#38bdf8] mr-1"></span><strong>EMA 21:</strong> Långsam trend</div>
                 </div>
             </div>
 
-            <!-- Nedre del: Live-nyheter & Logg -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Live Nyhetsflöde -->
-                <div class="bg-cardbg border border-cardborder rounded-xl p-5 shadow-xl flex flex-col h-[220px]">
-                    <h2 class="text-xs font-mono font-semibold uppercase tracking-wider text-gray-400 mb-3 flex items-center justify-between">
-                        <span class="flex items-center gap-2"><i class="fa-solid fa-globe text-white"></i> Live Crypto Nyheter & Sentiment</span>
-                        <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
-                    </h2>
-                    <div id="news-container" class="space-y-2.5 overflow-y-auto pr-2 text-xs font-mono flex-grow">
-                        <div class="p-2.5 bg-darkbg rounded border border-cardborder flex justify-between items-start">
-                            <div>
-                                <p class="text-gray-200 font-semibold text-[11px]">Binance Testnet uppgraderar nodinfrastrukturen för snabbare exekvering.</p>
-                                <span class="text-[10px] text-gray-500">För 2 min sedan</span>
-                            </div>
-                            <span class="text-[10px] bg-white/10 text-white px-1.5 py-0.5 rounded font-bold">BULLISH</span>
-                        </div>
-                        <div class="p-2.5 bg-darkbg rounded border border-cardborder flex justify-between items-start">
-                            <div>
-                                <p class="text-gray-200 font-semibold text-[11px]">Likviditetsindex visar starkt köptryck i orderboken för storbolag.</p>
-                                <span class="text-[10px] text-gray-500">För 7 min sedan</span>
-                            </div>
-                            <span class="text-[10px] bg-white/10 text-white px-1.5 py-0.5 rounded font-bold">NEUTRAL</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Exekveringslogg -->
-                <div class="bg-cardbg border border-cardborder rounded-xl p-5 shadow-xl flex flex-col h-[220px]">
-                    <h2 class="text-xs font-mono font-semibold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
-                        <i class="fa-solid fa-code text-white"></i> EMA AI Exekveringslogg
-                    </h2>
-                    <div id="ai-log" class="bg-darkbg border border-cardborder rounded-lg p-3 text-xs font-mono overflow-y-auto space-y-1.5 flex-grow">
-                        <div class="text-gray-400">[System] EMA Crossover Engine redo. Väntar på start...</div>
-                    </div>
+            <div class="bg-cardbg border border-cardborder rounded-xl p-5 shadow-xl flex flex-col h-[200px]">
+                <h2 class="text-xs font-mono font-semibold uppercase text-gray-400 mb-3">Exekveringslogg</h2>
+                <div id="ai-log" class="bg-darkbg border border-cardborder rounded-lg p-3 text-xs font-mono overflow-y-auto space-y-1 flex-grow">
+                    <div class="text-gray-400">[System] Terminal redo...</div>
                 </div>
             </div>
 
         </div>
 
     </main>
-
-    <footer class="border-t border-cardborder bg-cardbg/50 px-6 py-3 text-center text-xs font-mono text-gray-500">
-        CryptoAI Pro Terminal v2 &bull; Serverless Vercel Architecture &bull; Secured Binance Testnet
-    </footer>
 
     <script src="script.js"></script>
 </body>
