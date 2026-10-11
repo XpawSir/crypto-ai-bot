@@ -64,17 +64,26 @@ const chart = LightweightCharts.createChart(chartContainer, {
     timeScale: { borderColor: '#1e2329', timeVisible: true }
 });
 
-const candleSeries = chart.addCandlestickSeries({
+const seriesOptions = {
     upColor: '#0ecb81',
     downColor: '#f6465d',
     borderDownColor: '#f6465d',
     borderUpColor: '#0ecb81',
     wickDownColor: '#f6465d',
     wickUpColor: '#0ecb81',
-});
+};
 
-const emaFast = chart.addLineSeries({ color: '#facc15', lineWidth: 2 });
-const emaSlow = chart.addLineSeries({ color: '#38bdf8', lineWidth: 2 });
+// Kompatibilitetskontroll för olika versioner av Lightweight Charts
+let candleSeries, emaFast, emaSlow;
+if (typeof chart.addCandlestickSeries === 'function') {
+    candleSeries = chart.addCandlestickSeries(seriesOptions);
+    emaFast = chart.addLineSeries({ color: '#facc15', lineWidth: 2 });
+    emaSlow = chart.addLineSeries({ color: '#38bdf8', lineWidth: 2 });
+} else {
+    candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, seriesOptions);
+    emaFast = chart.addSeries(LightweightCharts.LineSeries, { color: '#facc15', lineWidth: 2 });
+    emaSlow = chart.addSeries(LightweightCharts.LineSeries, { color: '#38bdf8', lineWidth: 2 });
+}
 
 function calculateEMA(data, period) {
     const k = 2 / (period + 1);
