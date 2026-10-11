@@ -54,16 +54,14 @@
         <div class="space-y-6">
             <div class="bg-cardbg border border-cardborder rounded-xl p-5 shadow-xl">
                 <h2 class="text-xs font-mono font-semibold uppercase tracking-wider text-gray-400 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-white"></i> AI Konfiguration
+                    <i class="fa-solid fa-sliders text-white"></i> AI Konfiguration (EMA Crossover)
                 </h2>
 
                 <div class="space-y-4">
                     <div>
                         <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">Algoritmisk Strategi</label>
                         <select id="strategy-select" class="w-full bg-darkbg border border-cardborder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gray-500 font-mono">
-                            <option value="momentum">⚡ Högfrekvent Momentum Scalping</option>
-                            <option value="arbitrage">🌐 Cross-Exchange Arbitrage</option>
-                            <option value="grid">📊 Smart Grid Neural Engine</option>
+                            <option value="ema">⚡ EMA 9/21 Trend Crossover Engine</option>
                         </select>
                     </div>
 
@@ -135,8 +133,8 @@
             </div>
 
             <!-- TradingView Graf Container -->
-            <div class="bg-cardbg border border-cardborder rounded-xl p-5 shadow-xl flex-grow flex flex-col min-h-[420px]">
-                <div class="flex items-center justify-between mb-4 pb-3 border-b border-cardborder flex-wrap gap-2">
+            <div class="bg-cardbg border border-cardborder rounded-xl p-5 shadow-xl flex-grow flex flex-col min-h-[440px]">
+                <div class="flex items-center justify-between mb-3 pb-3 border-b border-cardborder flex-wrap gap-2">
                     <div class="flex items-center gap-3">
                         <select id="crypto-select" class="bg-darkbg border border-cardborder rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none">
                             <option value="BTCUSDT">BTC/USDT</option>
@@ -154,8 +152,20 @@
                     </div>
                 </div>
                 
-                <!-- Här ritas den professionella TradingView-grafen med EMA-linjer -->
-                <div id="tv-chart-container" class="w-full flex-grow rounded-lg overflow-hidden bg-darkbg border border-cardborder/50 min-h-[340px]"></div>
+                <!-- TradingView-grafen -->
+                <div id="tv-chart-container" class="w-full flex-grow rounded-lg overflow-hidden bg-darkbg border border-cardborder/50 min-h-[320px]"></div>
+
+                <!-- Tydlig förklaring under grafen -->
+                <div class="mt-3 pt-2 border-t border-cardborder/60 flex flex-wrap items-center justify-between text-[11px] font-mono text-gray-400 gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-1 bg-[#facc15] rounded-full inline-block"></i></span>
+                        <span><strong class="text-gray-200">EMA 9 (Snabb):</strong> Reagerar snabbt på prisförändringar. Köpsignal när den bryter uppåt.</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-1 bg-[#38bdf8] rounded-full inline-block"></span>
+                        <span><strong class="text-gray-200">EMA 21 (Långsam):</strong> Visar den övergripande marknadstrenden.</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Nedre del: Live-nyheter & Logg -->
@@ -187,10 +197,10 @@
                 <!-- Exekveringslogg -->
                 <div class="bg-cardbg border border-cardborder rounded-xl p-5 shadow-xl flex flex-col h-[220px]">
                     <h2 class="text-xs font-mono font-semibold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
-                        <i class="fa-solid fa-code text-white"></i> Exekveringslogg
+                        <i class="fa-solid fa-code text-white"></i> EMA AI Exekveringslogg
                     </h2>
                     <div id="ai-log" class="bg-darkbg border border-cardborder rounded-lg p-3 text-xs font-mono overflow-y-auto space-y-1.5 flex-grow">
-                        <div class="text-gray-400">[System] Terminal initialiserad i v2-läge med Auto-Fit & LocalStorage. Klar...</div>
+                        <div class="text-gray-400">[System] EMA Crossover Engine redo. Väntar på start...</div>
                     </div>
                 </div>
             </div>
