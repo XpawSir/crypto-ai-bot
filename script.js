@@ -29,6 +29,7 @@ let peakBalance = 10000.00;
 let pnl = 0.00;
 let currentPrice = 67420.50;
 let selectedSymbol = cryptoSelect.value;
+let chartInitialized = false;
 
 let totalTrades = 0;
 let winningTrades = 0;
@@ -53,8 +54,6 @@ async function hamtaRiktigtSaldo() {
         if (!response.ok) throw new Error("Kunde inte nå serverless-funktionen");
         const data = await response.json();
         
-        console.log("Riktigt saldo från Binance via Vercel:", data);
-
         if (data && data.totalBalance) {
             balance = parseFloat(data.totalBalance);
             peakBalance = balance;
@@ -76,13 +75,13 @@ async function hamtaRiktigtSaldo() {
 
 function initCandles(basePrice) {
     candles = [];
-    let p = basePrice * 0.98;
+    let p = basePrice * 0.995;
     for (let i = 0; i < maxCandles; i++) {
         let open = p;
-        let variation = basePrice * 0.004;
+        let variation = basePrice * 0.002;
         let close = open + (Math.random() - 0.48) * variation;
-        let high = Math.max(open, close) + Math.random() * (basePrice * 0.002);
-        let low = Math.min(open, close) - Math.random() * (basePrice * 0.002);
+        let high = Math.max(open, close) + Math.random() * (basePrice * 0.001);
+        let low = Math.min(open, close) - Math.random() * (basePrice * 0.001);
         candles.push({ open, close, high, low });
         p = close;
     }
@@ -130,17 +129,11 @@ function renderChart() {
 }
 
 function updateProMetrics(tradeReturn = 0) {
-    if (tradeReturn !== 0) {
-        returnsHistory.push(tradeReturn);
-    }
-
-    if (balance > peakBalance) {
-        peakBalance = balance;
-    }
+    if (tradeReturn !== 0) returnsHistory.push(tradeReturn);
+    if (balance > peakBalance) peakBalance = balance;
+    
     let currentDD = ((peakBalance - balance) / peakBalance) * 100;
-    if (currentDD > maxDrawdownVal) {
-        maxDrawdownVal = currentDD;
-    }
+    if (currentDD > maxDrawdownVal) maxDrawdownVal = currentDD;
 
     let winRatePct = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
     let profitFactor = totalLossesAmount > 0 ? (totalWinsAmount / totalLossesAmount) : (totalWinsAmount > 0 ? 99.0 : 0.0);
@@ -183,7 +176,12 @@ async function fetchLivePrice() {
         const newPrice = parseFloat(data.lastPrice);
         const priceChangePercent = parseFloat(data.priceChangePercent);
 
-        if (candles.length === 0) initCandles(newPrice);
+        // Om grafen inte är skalad efter det riktiga priset ännu, gör en nystart direkt
+        if (!chartInitialized) {
+            initCandles(newPrice);
+            chartInitialized = true;
+        }
+
         updatePriceUI(newPrice, priceChangePercent);
 
         if (candles.length > 0) {
@@ -194,7 +192,10 @@ async function fetchLivePrice() {
         }
         renderChart();
     } catch (error) {
-        if (candles.length === 0) initCandles(defaultPrices[selectedSymbol] || 100);
+        if (!chartInitialized) {
+            initCandles(defaultPrices[selectedSymbol] || 100);
+            chartInitialized = true;
+        }
         let fluctuation = (Math.random() - 0.48) * (currentPrice * 0.002);
         let simulatedPrice = currentPrice + fluctuation;
         updatePriceUI(simulatedPrice, 1.45);
@@ -210,6 +211,7 @@ async function fetchLivePrice() {
 cryptoSelect.addEventListener('change', (e) => {
     selectedSymbol = e.target.value;
     currentPrice = defaultPrices[selectedSymbol] || 100;
+    chartInitialized = false;
     initCandles(currentPrice);
     addLog(`System: Bytte aktiv till ${selectedSymbol}.`, 'info');
     fetchLivePrice();
