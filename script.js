@@ -102,7 +102,6 @@ if (typeof chart.addCandlestickSeries === 'function') {
     emaSlowSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#38bdf8', lineWidth: 2 });
 }
 
-// Beräkna riktig EMA utan platta trappsteg
 function calculateEMA(data, period) {
     const k = 2 / (period + 1);
     let emaArray = [];
@@ -118,7 +117,6 @@ function calculateEMA(data, period) {
     return emaArray;
 }
 
-// Generera följsam historisk data baserad på aktuellt pris
 function generateInitialChartData(basePrice) {
     const data = [];
     let currentTime = Math.floor(Date.now() / 1000) - (60 * 30);
@@ -296,7 +294,7 @@ function addLog(message, type = 'info') {
     if (type === 'warn') colorClass = 'text-amber-400';
 
     div.className = colorClass;
-    div.innerHTML = `<span class="text-gray-500">[${time}]</span>${message}`;
+    div.innerHTML = `<span class="text-gray-500">[${time}]</span> ${message}`;
     aiLog.appendChild(div);
     aiLog.scrollTop = aiLog.scrollHeight;
 }
@@ -341,7 +339,6 @@ function runAiTradeCycle() {
     if (chartData.length > 60) chartData.shift();
     candlestickSeries.setData(chartData);
 
-    // Beräkna riktiga EMA-värden
     let { ema9, ema21 } = updateIndicators();
     if (ema9.length < 2 || ema21.length < 2) return;
 
@@ -350,9 +347,7 @@ function runAiTradeCycle() {
     let currentEMA21 = ema21[ema21.length - 1].value;
     let prevEMA21 = ema21[ema21.length - 2].value;
 
-    // Golden Cross (EMA 9 skär upp över EMA 21) -> Köpsignal
     let bullishCross = prevEMA9 <= prevEMA21 && currentEMA9 > currentEMA21;
-    // Death Cross (EMA 9 skär under EMA 21) -> Säljsignal
     let bearishCross = prevEMA9 >= prevEMA21 && currentEMA9 < currentEMA21;
 
     if (bullishCross && !hasOpenPosition) {
@@ -367,7 +362,6 @@ function runAiTradeCycle() {
         let rawPnL = priceDiffPct * maxAllowedSpend * (risk / 2);
         let numPnL = parseFloat(rawPnL.toFixed(2));
         
-        // Säkerställ att det svänger beroende på riktigt utfall
         if (numPnL === 0) numPnL = bearishCross ? 15.50 : -12.30;
 
         pnl += numPnL;
@@ -390,7 +384,7 @@ function runAiTradeCycle() {
 
         updateProMetrics(tradeReturnPct);
     } else {
-        addLog(`[EMA SCANNER] Analyserar trend för ${selectedSymbol} (EMA9: ${currentEMA9.toFixed(2)} \vert{} EMA21:${currentEMA21.toFixed(2)})`, 'info');
+        addLog(`[EMA SCANNER] Analyserar trend för ${selectedSymbol} (EMA9: ${currentEMA9.toFixed(2)} | EMA21: ${currentEMA21.toFixed(2)})`, 'info');
     }
 }
 
@@ -402,7 +396,7 @@ toggleBtn.addEventListener('click', () => {
         toggleBtn.innerHTML = `<i class="fa-solid fa-stop"></i> Stoppa AI-Robot`;
         
         botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-2";
-        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv (${selectedSymbol} - EMA)";
+        botStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv (${selectedSymbol} - EMA)`;
 
         addLog(`Terminal: Riktig EMA-analys aktiverad för ${selectedSymbol}.`, "success");
         tradeInterval = setInterval(runAiTradeCycle, 4000);
