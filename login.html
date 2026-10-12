@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="sv" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logga in - CryptoAI Pro Terminal</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0b0e11',
+                        cardbg: '#12161c',
+                        cardborder: '#1e2329'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darkbg text-gray-200 font-sans antialiased min-h-screen flex items-center justify-center">
+
+    <div class="bg-cardbg border border-cardborder p-8 rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="text-center mb-6">
+            <div class="inline-block bg-cardborder p-3 rounded-xl border border-gray-800 text-white mb-3">
+                <i class="fa-solid fa-lock text-xl"></i>
+            </div>
+            <h1 class="font-bold text-lg text-white">CRYPTOAI PRO TERMINAL</h1>
+            <p class="text-xs text-gray-400 mt-1">Logga in för att komma åt din bot</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">E-postadress</label>
+                <input type="email" id="email" class="w-full bg-darkbg border border-cardborder rounded-lg px-3 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-gray-500" placeholder="din.epost@gmail.com">
+            </div>
+            <div>
+                <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">Lösenord</label>
+                <input type="password" id="password" class="w-full bg-darkbg border border-cardborder rounded-lg px-3 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-gray-500" placeholder="••••••••">
+            </div>
+            
+            <div id="felMeddelande" class="text-red-400 text-xs font-mono text-center hidden"></div>
+
+            <button id="loginBtn" class="w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2 mt-2">
+                <i class="fa-solid fa-right-to-bracket"></i> Logga in
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase Inloggningslogik -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD2y98EZ9kUpzP24IE_rFRqL-sZ5w04ttc",
+            authDomain: "cryptoai-a74a4.firebaseapp.com",
+            projectId: "cryptoai-a74a4",
+            storageBucket: "cryptoai-a74a4.firebasestorage.app",
+            messagingSenderId: "517561549498",
+            appId: "1:517561549498:web:61c7cb06424406f3b67883",
+            measurementId: "G-RC6WWS0G2W"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const loginBtn = document.getElementById("loginBtn");
+        const felRuta = document.getElementById("felMeddelande");
+
+        loginBtn.addEventListener("click", async () => {
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            felRuta.classList.add("hidden");
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                window.location.href = "index.html"; // Skickas till terminalen vid lyckad inloggning
+            } catch (error) {
+                felRuta.innerText = "Felaktig e-post eller lösenord!";
+                felRuta.classList.remove("hidden");
+            }
+        });
+
+        // Låt även användaren trycka Enter för att logga in
+        document.getElementById("password").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") loginBtn.click();
+        });
+    </script>
+</body>
+</html>
