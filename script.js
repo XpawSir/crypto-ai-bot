@@ -517,6 +517,25 @@ const overlaySeries = [0, 1, 2].map(function () { return chart.addLineSeries(lin
 const oscSeries = [0, 1, 2].map(function () {
     return chart.addLineSeries(Object.assign({ priceScaleId: 'osc' }, lineOpts));
 });
+// Färger på graferna följer valt tema (mörkt/ljust). Anropas av ui.js när temat byts.
+const serverCharts = [];
+function themeColors() {
+    const light = document.documentElement.dataset.theme === 'light';
+    return light
+        ? { bg: '#ffffff', text: '#475569', grid: '#e5e7eb', border: '#d1d5db' }
+        : { bg: '#030405', text: '#8a8f9c', grid: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.10)' };
+}
+window.setChartTheme = function () {
+    const c = themeColors();
+    chart.applyOptions({
+        layout: { background: { type: LightweightCharts.ColorType.Solid, color: c.bg }, textColor: c.text },
+        grid: { vertLines: { color: c.grid }, horzLines: { color: c.grid } },
+        rightPriceScale: { borderColor: c.border }, timeScale: { borderColor: c.border }
+    });
+    serverCharts.forEach(function (sc) { sc.applyOptions({ layout: { textColor: c.text }, grid: { horzLines: { color: c.grid } } }); });
+};
+window.setChartTheme();
+
 chart.priceScale('osc').applyOptions({ scaleMargins: { top: 0.78, bottom: 0.02 } });
 
 function applyPrecision() {
@@ -1331,6 +1350,8 @@ function makeServerPanel(prefix, file) {
                 rightPriceScale: { borderVisible: false }, timeScale: { borderVisible: false, timeVisible: true },
                 handleScroll: false, handleScale: false, crosshair: { mode: 0 }
             });
+            serverCharts.push(chart);
+            chart.applyOptions({ layout: { textColor: themeColors().text }, grid: { horzLines: { color: themeColors().grid } } });
             botLine = chart.addLineSeries({ color: '#34d399', lineWidth: 2, priceLineVisible: false, title: 'Boten' });
             bhLine = chart.addLineSeries({ color: '#94a3b8', lineWidth: 1, lineStyle: 2, priceLineVisible: false, title: 'Buy & hold' });
         }
@@ -1362,7 +1383,7 @@ function makeServerPanel(prefix, file) {
 
             el.balance.textContent = money(st.balance);
             el.pnl.textContent = money(st.pnl, true);
-            el.pnl.className = 'font-bold text-xl ' + (st.pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
+            el.pnl.className = 'stat-val ' + (st.pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
             el.trades.textContent = String(st.totalTrades);
             el.winrate.textContent = st.totalTrades > 0 ? Math.round(100 * st.winningTrades / st.totalTrades) + '%' : '-';
 

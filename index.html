@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CryptoAI - Pro Terminal</title>
     <!-- Sidan är dold tills inloggningen är bekräftad (script.js visar den igen) -->
-    <script>document.documentElement.style.visibility = 'hidden';</script>
+    <script>document.documentElement.style.visibility = 'hidden';
+        try { document.documentElement.dataset.theme = localStorage.getItem('cryptoai_theme') === 'light' ? 'light' : 'dark'; } catch (e) { document.documentElement.dataset.theme = 'dark'; }</script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -27,25 +28,57 @@
         }
     </script>
     <style>
-        :root { --bg:#070a12; --card:rgba(255,255,255,.035); --line:rgba(255,255,255,.08); --accent:#34d399; --accent2:#38bdf8; }
-        body { font-family:'Inter',system-ui,sans-serif; background:
-            radial-gradient(900px 500px at 8% -10%, rgba(56,189,248,.10), transparent 60%),
-            radial-gradient(800px 500px at 100% 0%, rgba(52,211,153,.08), transparent 55%), var(--bg); }
+        :root, html[data-theme=dark] { --bg:#000; --card:rgba(255,255,255,.028); --line:rgba(255,255,255,.085); --muted:#8a8f9c; --chart:#030405; --accent:#e5e7eb; }
+        html[data-theme=light] { --bg:#f4f5f7; --card:#ffffff; --line:rgba(15,23,42,.10); --muted:#5b6475; --chart:#ffffff; --accent:#111827; }
+        body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); }
+        html[data-theme=dark] body { background:radial-gradient(1100px 420px at 50% -160px, rgba(255,255,255,.055), transparent 70%), #000; }
         .font-mono { font-family:'JetBrains Mono',ui-monospace,monospace !important; }
-        .glass { background:var(--card); border:1px solid var(--line); border-radius:18px; backdrop-filter:blur(8px); box-shadow:0 10px 40px -20px rgba(0,0,0,.8); }
-        .tile { background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:12px; }
-        .h-sec { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#8b93a7; font-weight:600; }
-        .grad-text { background:linear-gradient(90deg,var(--accent2),var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent; }
-        select, input[type=number] { outline:none; } select:focus, input:focus { border-color:var(--accent2) !important; }
-        #tv-chart-container { height:440px !important; }
-        ::-webkit-scrollbar { width:8px; height:8px; } ::-webkit-scrollbar-thumb { background:rgba(255,255,255,.12); border-radius:8px; }
+        .glass { background:var(--card); border:1px solid var(--line); border-radius:16px; }
+        html[data-theme=light] .glass { box-shadow:0 1px 2px rgba(15,23,42,.05), 0 8px 24px -12px rgba(15,23,42,.10); }
+        .tile { background:rgba(0,0,0,.35); border:1px solid var(--line); border-radius:12px; min-width:0; }
+        html[data-theme=light] .tile { background:#f7f8fa; }
+        .h-sec { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+        .grad-text { color:var(--muted); font-weight:500; }
+        .stat-val { font-size:clamp(15px,1.45vw,19px); line-height:1.25; overflow-wrap:anywhere; font-weight:700; }
+        select, input[type=number] { outline:none; } select:focus, input:focus { border-color:var(--accent) !important; }
+        #tv-chart-container { height:440px !important; background:var(--chart) !important; }
+        ::-webkit-scrollbar { width:8px; height:8px; } ::-webkit-scrollbar-thumb { background:rgba(128,128,128,.25); border-radius:8px; }
+        /* flikar */
+        .tab { padding:7px 14px; border-radius:999px; font-size:12px; font-weight:600; color:var(--muted); transition:.15s; border:1px solid transparent; }
+        .tab:hover { color:var(--accent); }
+        .tab[aria-current=page] { color:var(--accent); background:rgba(128,128,128,.14); border-color:var(--line); }
+        .iconbtn { width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; border:1px solid var(--line); color:var(--muted); background:var(--card); transition:.15s; }
+        .iconbtn:hover { color:var(--accent); }
+        .chip { display:inline-block; font-size:10px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
+        .chip.new { color:#34d399; border-color:rgba(52,211,153,.35); } .chip.imp { color:#60a5fa; border-color:rgba(96,165,250,.35); }
+        .chip.res { color:#c084fc; border-color:rgba(192,132,252,.35); } .chip.fix { color:#fbbf24; border-color:rgba(251,191,36,.35); }
+        .prose-s p, .prose-s li { color:var(--muted); font-size:13px; line-height:1.7; } .prose-s strong { color:var(--accent); }
+        details.qa { border-top:1px solid var(--line); padding:14px 2px; } details.qa:first-of-type { border-top:0; }
+        details.qa summary { cursor:pointer; font-weight:600; font-size:14px; color:var(--accent); list-style:none; display:flex; justify-content:space-between; gap:12px; }
+        details.qa summary::after { content:'+'; color:var(--muted); } details.qa[open] summary::after { content:'–'; }
+        details.qa p { margin-top:10px; }
+        .tl { position:relative; padding-left:22px; } .tl::before { content:''; position:absolute; left:5px; top:6px; bottom:0; width:1px; background:var(--line); }
+        .tl-dot { position:absolute; left:0; top:18px; width:11px; height:11px; border-radius:50%; background:var(--bg); border:2px solid var(--muted); }
+        /* ljust läge: skriv över de fasta mörka färgerna från Tailwind-klasserna */
+        html[data-theme=light] body { color:#1f2937; }
+        html[data-theme=light] .text-white { color:#0f172a !important; }
+        html[data-theme=light] .text-gray-200, html[data-theme=light] .text-gray-300 { color:#334155 !important; }
+        html[data-theme=light] .text-gray-400, html[data-theme=light] .text-gray-500 { color:#5b6475 !important; }
+        html[data-theme=light] .text-emerald-400 { color:#059669 !important; } html[data-theme=light] .text-red-400 { color:#dc2626 !important; }
+        html[data-theme=light] .text-yellow-400 { color:#b45309 !important; } html[data-theme=light] .text-sky-400 { color:#0369a1 !important; }
+        html[data-theme=light] .bg-darkbg, html[data-theme=light] .bg-gray-900 { background:#f1f3f6 !important; }
+        html[data-theme=light] .border-cardborder, html[data-theme=light] .border-gray-800 { border-color:rgba(15,23,42,.12) !important; }
+        html[data-theme=light] .bg-white { background:#0f172a !important; color:#fff !important; } html[data-theme=light] .bg-white:hover { background:#1e293b !important; }
+        html[data-theme=light] header { background:rgba(255,255,255,.85) !important; border-color:rgba(15,23,42,.08) !important; }
+        html[data-theme=light] select, html[data-theme=light] input[type=number] { color:#0f172a !important; }
+        html[data-theme=light] .bg-red-900\/30 { background:rgba(220,38,38,.08) !important; }
     </style>
 </head>
 <body class="text-gray-200 antialiased min-h-screen flex flex-col justify-between">
 
-    <header class="border-b border-white/5 bg-[#070a12]/70 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between sticky top-0 z-50">
+    <header class="border-b px-4 md:px-6 py-3 flex items-center justify-between gap-3 flex-wrap sticky top-0 z-50 backdrop-blur-xl bg-black/70" style="border-color:var(--line)">
         <div class="flex items-center gap-3">
-            <div class="p-2.5 rounded-xl text-[#070a12]" style="background:linear-gradient(135deg,#38bdf8,#34d399)">
+            <div class="p-2.5 rounded-xl glass text-white">
                 <i class="fa-solid fa-terminal text-sm"></i>
             </div>
             <div>
@@ -53,7 +86,13 @@
                 <p class="text-[11px] text-gray-400 font-mono">Paper trading, simulerad handel</p>
             </div>
         </div>
-        <div class="flex items-center gap-4">
+        <nav class="flex items-center gap-1 order-3 md:order-none w-full md:w-auto justify-center" aria-label="Huvudmeny">
+            <a href="#home" class="tab" data-tab="home"><i class="fa-solid fa-house mr-1.5"></i>Home</a>
+            <a href="#updates" class="tab" data-tab="updates"><i class="fa-solid fa-bolt mr-1.5"></i>Latest Updates</a>
+            <a href="#learn" class="tab" data-tab="learn"><i class="fa-solid fa-graduation-cap mr-1.5"></i>Learn</a>
+        </nav>
+        <div class="flex items-center gap-3">
+            <button id="theme-btn" class="iconbtn" title="Växla mellan mörkt och ljust läge" aria-label="Växla tema"><i class="fa-solid fa-moon"></i></button>
             <div id="bot-status-badge" class="px-3 py-1 rounded-md text-xs font-semibold bg-gray-900 text-gray-400 border border-gray-800 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-gray-600"></span> Bot Pausad
             </div>
@@ -63,18 +102,18 @@
         </div>
     </header>
 
-    <main class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-[1700px] mx-auto w-full flex-grow">
+    <main id="view-home" class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-[1700px] mx-auto w-full flex-grow">
         <section class="lg:col-span-4 grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
                     <div><h2 class="h-sec">Serverbot · 4h med stop och mål</h2><p class="text-[12px] text-gray-500 mt-1">Handlar BTC, ETH, SOL och XRP med låtsaspengar, även när sidan är stängd.</p></div>
                     <div id="srv-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv-balance" class="text-white font-bold text-xl">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv-pnl" class="text-white font-bold text-xl">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv-trades" class="text-white font-bold text-xl">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Win Rate</span><span id="srv-winrate" class="text-white font-bold text-xl">-</span></div>
+                <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv-balance" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv-pnl" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv-trades" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Win Rate</span><span id="srv-winrate" class="stat-val text-white">-</span></div>
                 </div>
                 <p id="srv-bh" class="mt-3 text-[11px] font-mono text-gray-400"></p>
                 <div id="srv-chart" class="mt-2 w-full h-[180px]"></div>
@@ -88,11 +127,11 @@
                     <div><h2 class="h-sec">Dagbot · experiment utan stop</h2><p class="text-[12px] text-gray-500 mt-1">Dagliga candles, SuperTrend, säljer bara på signal. Körs sida vid sida för jämförelse.</p></div>
                     <div id="srv2-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv2-balance" class="text-white font-bold text-xl">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv2-pnl" class="text-white font-bold text-xl">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv2-trades" class="text-white font-bold text-xl">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Win Rate</span><span id="srv2-winrate" class="text-white font-bold text-xl">-</span></div>
+                <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv2-balance" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv2-pnl" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv2-trades" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Win Rate</span><span id="srv2-winrate" class="stat-val text-white">-</span></div>
                 </div>
                 <p id="srv2-bh" class="mt-3 text-[11px] font-mono text-gray-400"></p>
                 <div id="srv2-chart" class="mt-2 w-full h-[180px]"></div>
@@ -106,11 +145,11 @@
                     <div><h2 class="h-sec">Rotationsbot · veckovis momentum</h2><p class="text-[12px] text-gray-500 mt-1">Äger de 3 valutor (av 10) som stigit mest på 120 dagar och ligger över sitt medelvärde, resten kontanter. Ombalanserar varje vecka.</p></div>
                     <div id="srv3-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv3-balance" class="text-white font-bold text-xl">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv3-pnl" class="text-white font-bold text-xl">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv3-trades" class="text-white font-bold text-xl">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Win Rate</span><span id="srv3-winrate" class="text-white font-bold text-xl">-</span></div>
+                <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv3-balance" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv3-pnl" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv3-trades" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Win Rate</span><span id="srv3-winrate" class="stat-val text-white">-</span></div>
                 </div>
                 <p id="srv3-bh" class="mt-3 text-[11px] font-mono text-gray-400"></p>
                 <div id="srv3-chart" class="mt-2 w-full h-[180px]"></div>
@@ -241,7 +280,114 @@
 
     </main>
 
+    <main id="view-updates" class="hidden p-4 md:p-6 max-w-3xl mx-auto w-full flex-grow">
+        <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Latest Updates</h2>
+            <p class="text-[13px] text-gray-400 mt-1">Det senaste som byggts och ändrats, nyast först. All handel är simulerad med låtsaspengar.</p></div>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Rotationsbot: veckovis momentum</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En tredje låtsasbot som varje vecka äger de 3 av 10 valutor som stigit mest på 120 dagar och ligger över sitt 100-dagarsmedelvärde. Resten är kontanter. Bygger på portföljtestet och har en egen panel med kapitalkurva mot buy & hold BTC.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Dagbot utan stop (experiment)</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Dagliga candles, SuperTrend, ingen stop-loss eller take-profit. Säljer bara på signal. Körs sida vid sida med 4h-boten så att de kan jämföras live med samma startkapital.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip imp">Improved</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Verklighetstrogen handel</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Botarna köper på riktigt utbudspris (ask) och säljer på riktigt budpris (bid) från Binances orderbok, plus 0,02 % extra glapp och 0,1 % avgift. Spread visas per valuta, och spread-rutan i grafen är riktig data.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Kapitalkurva mot buy & hold</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Varje panel visar botens värde över tid mot att bara köpa och behålla, med en rad som säger hur mycket före eller efter boten ligger. Det är den ärliga måttstocken.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Flera valutor samtidigt</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Serverboten bevakar BTC, ETH, SOL och XRP på en gång med gemensamt saldo och tak så att den aldrig har mer ute än saldot. Fel på en valuta stoppar inte de andra.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip res">Research</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Portföljtest, dag/vecka och AUTO-varianter</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Fyra rapporter byggda på cirka sju års riktig Binance-data med avgifter och håll-ut-test. Slutsats hittills: ingen strategi slår buy & hold rakt av. Närmast kommer veckovis rotation mellan valutor, men valet av valutor flatterar den. Rapporterna körs om varje söndag.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip res">Research</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Trendfilter och 4h-intervall</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Testerna visade att 1h förlorar på avgifter och falska signaler. Serverboten kör därför 4h och köper bara när kursen ligger över sitt 200-medelvärde, vilket gav mindre förluster både på första och andra halvan av historiken.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip imp">Improved</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Ny design, flikar och ljust läge</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Svartare och stilrentare utseende, flikarna Home, Latest Updates och Learn, samt en knapp för mörkt och ljust läge som kommer ihåg ditt val.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip fix">Fix</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Reservadresser för Binance-data</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Om Binance.com är blockerat i ditt land provar sidan automatiskt data-api.binance.vision och api.binance.us.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">Tidigare</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Körs 24/7 på GitHub</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Serverboten körs var 10:e minut av GitHub Actions, gratis och utan egen server. Läget sparas på en egen gren och visas på sidan. Boten tar igen stop, mål och signaler som hänt mellan körningarna.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">Tidigare</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">15 strategier och AUTO-läge</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">EMA, MACD, SuperTrend, Ichimoku, Donchian, RSI, Bollinger med flera, med stjärnbetyg efter hur de klarat sig historiskt. AUTO väljer själv strategi efter marknadsläge och senaste resultat.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">Tidigare</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Inloggning och sparat läge</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Sidan kräver inloggning, och webbläsarbotens saldo och position sparas så du kan fortsätta där du slutade. Candlestick-graf med köp- och säljmarkeringar.</span></p>
+                </div>
+            </article>
+    </main>
+    <main id="view-learn" class="hidden p-4 md:p-6 max-w-3xl mx-auto w-full flex-grow">
+        <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Learn</h2>
+            <p class="text-[13px] text-gray-400 mt-1">Korta förklaringar av det du ser på sidan. Klicka på en fråga för att öppna den.</p></div>
+        <div class="glass px-5 py-2">
+            <details class="qa"><summary>Vad är det här för sida?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En terminal för en <strong>simulerad</strong> kryptoboot. Inga riktiga pengar och inga börsnycklar är inblandade. Botarna handlar med låtsaspengar mot riktiga priser från Binance, så du kan se hur en strategi hade klarat sig utan att riskera något.</span></p></details>
+            <details class="qa"><summary>Vilka botar finns och vad är skillnaden?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)"><strong>Serverbot 4h</strong> köper och säljer med stop-loss och take-profit på 4-timmarscandles. <strong>Dagbot</strong> använder dagliga candles och säljer bara på signal. <strong>Rotationsbot</strong> äger varje vecka de starkaste valutorna av tio. De tre kör hela tiden på GitHub, även när sidan är stängd. Knappen "Starta AI-Robot" styr en separat testbot i din webbläsare som bara går medan fliken är öppen.</span></p></details>
+            <details class="qa"><summary>Vad är en candlestick?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Ett staplat "ljus" som visar ett tidsintervall. Kroppen går från öppningspris till stängningspris, och veken visar högsta och lägsta pris under tiden. Grönt betyder att priset steg, rött att det föll. Intervallet (1 min, 1 tim, 4 tim, dag) bestämmer hur lång tid varje ljus är.</span></p></details>
+            <details class="qa"><summary>Vad är stop-loss och take-profit?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En stop-loss säljer automatiskt om priset faller till en viss nivå, så att en förlust inte växer. En take-profit säljer när vinsten nått ett mål. Här räknas nivåerna med ATR, ett mått på hur mycket priset brukar röra sig, och riskreglaget gör nivåerna tajtare eller längre ifrån.</span></p></details>
+            <details class="qa"><summary>Vad är spread och avgifter?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Spread är skillnaden mellan bästa köppris (ask) och bästa säljpris (bid). Du köper på det högre och säljer på det lägre, så varje affär kostar lite. Dessutom tar börsen cirka 0,1 % avgift per köp och per sälj. Därför lönar sig inte att handla väldigt ofta: avgifterna äter upp vinsten.</span></p></details>
+            <details class="qa"><summary>Vad är buy & hold?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Att köpa i början och bara sitta still. Det är måttstocken som varje bot jämförs mot. En strategi är bara värd något om den slår buy & hold efter avgifter, eller åtminstone har mycket mindre nedgångar.</span></p></details>
+            <details class="qa"><summary>Vad gör AUTO-läget?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Det mäter om marknaden trendar eller rör sig sidledes (med ADX), testar de passande strategierna på den senaste historiken och väljer den som gått bäst. Bara strategier som varit lönsamma får handla, annars väntar boten utanför marknaden. Valet kan inte titta in i framtiden.</span></p></details>
+            <details class="qa"><summary>Vad är momentum och trendfilter?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Momentum betyder att man äger det som stigit mest på sistone. Ett trendfilter betyder att man bara köper när kursen ligger över sitt medelvärde (till exempel de senaste 200 candlesen), alltså i en uppåtgående trend. Båda är kända idéer, och rotationsboten kombinerar dem.</span></p></details>
+            <details class="qa"><summary>Vad är overfitting och varför håll-ut-test?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Om man testar många strategier hittar man alltid någon som såg bra ut förr av ren slump. Därför delar rapporterna historiken på mitten: man väljer på första halvan och mäter på andra halvan som strategin aldrig sett. Håller resultatet inte där var det troligen tur.</span></p></details>
+            <details class="qa"><summary>Vad har testerna visat hittills?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Att ingen strategi slår buy & hold rakt av. Snabb handel (1 timme och kortare) förlorar på avgifter. Långsammare handel och rotation mellan flera valutor ser bäst ut, men valutorna i testet är sådana som är stora idag, vilket flatterar resultatet. Läs hela rapporterna via länkarna på Home.</span></p></details>
+            <details class="qa"><summary>Kan jag använda riktiga pengar?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Inget här är kopplat till riktiga pengar och det är ingen finansiell rådgivning. Historiska resultat garanterar inget om framtiden. Lägg aldrig börsnycklar bakom en öppen adress, och börja inte med riktiga pengar utan att först ha sett en bot klara sig i flera månader mot buy & hold.</span></p></details>
+        </div>
+    </main>
+
     <!-- type="module" krävs eftersom script.js använder import för Firebase -->
     <script type="module" src="script.js"></script>
+    <script src="ui.js" defer></script>
 </body>
 </html>
