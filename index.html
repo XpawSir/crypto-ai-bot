@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoAI - Pro Terminal</title>
+    <title>Algiz</title>
     <!-- Sidan är dold tills inloggningen är bekräftad (script.js visar den igen) -->
     <script>document.documentElement.style.visibility = 'hidden';
         try { document.documentElement.dataset.theme = localStorage.getItem('cryptoai_theme') === 'light' ? 'light' : 'dark'; } catch (e) { document.documentElement.dataset.theme = 'dark'; }</script>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%23000%22/><path d=%22M12 3.8v16.4M12 13L6.4 5.8M12 13l5.6-7.2%22 stroke=%22%23fff%22 stroke-width=%222%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
     <link rel="stylesheet" href="tailwind.css">
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -29,6 +29,11 @@
         select, input[type=number] { outline:none; } select:focus, input:focus { border-color:var(--accent) !important; }
         #tv-chart-container { height:440px !important; background:var(--chart) !important; }
         ::-webkit-scrollbar { width:8px; height:8px; } ::-webkit-scrollbar-thumb { background:rgba(128,128,128,.25); border-radius:8px; }
+        /* varumärke */
+        .brand-mark { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:12px; color:var(--accent); background:var(--card); border:1px solid var(--line); box-shadow:inset 0 1px 0 rgba(255,255,255,.06); transition:.15s; }
+        .brand-mark:hover { transform:translateY(-1px); border-color:var(--accent); }
+        .brand-name { font-size:17px; line-height:1.1; font-weight:700; letter-spacing:.34em; text-transform:uppercase; margin-right:-.34em;
+            background:linear-gradient(180deg, var(--accent) 30%, var(--muted)); -webkit-background-clip:text; background-clip:text; color:transparent; }
         /* market */
         .mk-row { display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border-radius:12px; border:1px solid transparent; transition:.12s; }
         .mk-row:hover { background:rgba(128,128,128,.10); }
@@ -75,11 +80,9 @@
 
     <header class="border-b px-4 md:px-6 py-3 flex items-center justify-between gap-3 flex-wrap sticky top-0 z-50 backdrop-blur-xl bg-black/70" style="border-color:var(--line)">
         <div class="flex items-center gap-3">
-            <div class="p-2.5 rounded-xl glass text-white">
-                <i class="fa-solid fa-terminal text-sm"></i>
-            </div>
+            <a href="#home" class="brand-mark" aria-label="Algiz, till startsidan"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2v17.6M12 13.2L5.8 5.4M12 13.2l6.2-7.8"/></svg></a>
             <div>
-                <h1 class="font-bold text-sm text-white">Crypto<span class="grad-text">AI</span> <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 font-mono">PRO</span></h1>
+                <h1 class="brand-name">Algiz</h1>
                 <p class="text-[11px] text-gray-400 font-mono">Paper trading, simulerad handel</p>
             </div>
         </div>
