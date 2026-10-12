@@ -1264,28 +1264,16 @@ if (document.addEventListener) {
 }
 
 // ---------- Serverbot (körs 24/7 av GitHub Actions) ----------
-// Panelen läser serverbotens sparade läge från grenen "bot-state" i ditt GitHub-repo.
-// Byt SERVER_REPO om ditt repo heter något annat. Repot måste vara publikt för att webbläsaren ska kunna läsa filen.
+// Panelerna läser serverbotarnas sparade läge från grenen "bot-state" i GitHub-repot.
+// Byt SERVER_REPO om repot heter något annat. Repot måste vara publikt för att webbläsaren ska kunna läsa filerna.
 const SERVER_REPO = 'XpawSir/crypto-ai-bot';
-const SERVER_STATE_URL = 'https://raw.githubusercontent.com/' + SERVER_REPO + '/bot-state/state.json';
-const srvEl = {
-    badge: document.getElementById('srv-badge'), balance: document.getElementById('srv-balance'),
-    pnl: document.getElementById('srv-pnl'), trades: document.getElementById('srv-trades'),
-    winrate: document.getElementById('srv-winrate'), pos: document.getElementById('srv-pos'),
-    note: document.getElementById('srv-note'), log: document.getElementById('srv-log')
+const SERVER_BASE = 'https://raw.githubusercontent.com/' + SERVER_REPO + '/bot-state/';
+const BADGE_TONES = {
+    ok: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    warn: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+    bad: 'bg-red-500/10 text-red-400 border-red-500/20',
+    off: 'bg-gray-900 text-gray-400 border-gray-800'
 };
-
-function setSrvBadge(text, tone) {
-    if (!srvEl.badge) return;
-    const tones = {
-        ok: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-        warn: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-        bad: 'bg-red-500/10 text-red-400 border-red-500/20',
-        off: 'bg-gray-900 text-gray-400 border-gray-800'
-    };
-    srvEl.badge.className = 'px-2.5 py-1 rounded-md text-[11px] font-semibold border ' + (tones[tone] || tones.off);
-    srvEl.badge.textContent = text;
-}
 
 function ago(iso) {
     const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -1296,60 +1284,133 @@ function ago(iso) {
     return h < 48 ? h + ' tim sedan' : Math.round(h / 24) + ' dygn sedan';
 }
 
-async function loadServerBot() {
-    if (!srvEl.badge) return;
-    try {
-        const res = await fetch(SERVER_STATE_URL + '?t=' + Date.now(), { cache: 'no-store' });
-        if (res.status === 404) {
-            setSrvBadge('Ingen data än', 'off');
-            srvEl.note.textContent = 'Serverboten har inte körts än. Starta workflow "Crypto bot" i GitHub (fliken Actions), så dyker den upp här. Är repot privat kan sidan inte läsa filen.';
-            return;
-        }
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const st = await res.json();
-        const minutes = (Date.now() - new Date(st.lastRun).getTime()) / 60000;
-        if (st.lastError) setSrvBadge('Fel vid senaste körning', 'bad');
-        else if (st.enabled === false) setSrvBadge('Avstängd i config.json', 'off');
-        else if (minutes > 45) setSrvBadge('Inte körts på ' + Math.round(minutes) + ' min', 'warn');
-        else setSrvBadge('Aktiv', 'ok');
+const money = function (v, sign) {
+    const t = Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return sign ? (v >= 0 ? '+$' : '-$') + t : '$' + t;
+};
+const priceTxt = function (v) { return v === null || v === undefined ? 'ingen' : '$' + Number(v).toFixed(4).replace(/0+$/, '').replace(/\.$/, ''); };
 
-        srvEl.balance.textContent = '$' + Number(st.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        srvEl.pnl.textContent = (st.pnl >= 0 ? '+' : '-') + '$' + Math.abs(st.pnl).toFixed(2);
-        srvEl.pnl.className = 'font-bold text-sm ' + (st.pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
-        srvEl.trades.textContent = String(st.totalTrades);
-        srvEl.winrate.textContent = st.totalTrades > 0 ? Math.round(100 * st.winningTrades / st.totalTrades) + '%' : '-';
+function makeServerPanel(prefix, file) {
+    const el = {};
+    ['badge', 'balance', 'pnl', 'trades', 'winrate', 'pos', 'note', 'log', 'chart', 'bh', 'markets'].forEach(function (k) {
+        el[k] = document.getElementById(prefix + '-' + k);
+    });
+    if (!el.badge) return { load: function () {} };
+    let chart = null, botLine = null, bhLine = null;
 
-        const list = Array.isArray(st.openPositions) ? st.openPositions : (st.openPositionView ? [st.openPositionView] : []);
-        if (list.length) {
-            srvEl.pos.textContent = list.map(function (p) {
-                const u = (typeof p.unrealized === 'number') ? ' | orealiserat ' + (p.unrealized >= 0 ? '+' : '-') + '$' + Math.abs(p.unrealized).toFixed(2) : '';
-                return p.symbol + ' köpt @ $' + Number(p.entryPrice).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + ' | stop $' + Number(p.stop).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + ' | mål $' + Number(p.tp).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + u;
-            }).join('\n');
-            srvEl.pos.style.whiteSpace = 'pre-line';
-            srvEl.pos.textContent = 'Öppna positioner (' + list.length + '):\n' + srvEl.pos.textContent;
-        } else {
-            srvEl.pos.textContent = 'Ingen öppen position. Boten väntar på nästa signal.';
-        }
-        const c = st.config || {};
-        const syms = Array.isArray(c.symbols) ? c.symbols.join(', ') : (c.symbol || '');
-        srvEl.note.textContent = 'Senaste körning ' + ago(st.lastRun) + ' | bevakar ' + syms + ' | ' + (c.interval || '') + ' | strategi ' + (c.strategy || '') + ' | simulerad handel';
-
-        srvEl.log.innerHTML = '';
-        (st.log || []).slice(-8).reverse().forEach(function (l) {
-            const d = document.createElement('div');
-            d.className = l.k === 'success' ? 'text-emerald-400' : (l.k === 'danger' ? 'text-red-400' : 'text-gray-300');
-            const t = document.createElement('span');
-            t.className = 'text-gray-500';
-            t.textContent = '[' + new Date(l.t).toLocaleString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '] ';
-            d.appendChild(t);
-            d.appendChild(document.createTextNode(l.m));
-            srvEl.log.appendChild(d);
-        });
-    } catch (e) {
-        setSrvBadge('Kunde inte hämta', 'bad');
-        srvEl.note.textContent = 'Kunde inte läsa serverbotens status (' + e.message + ').';
+    function badge(text, tone) {
+        el.badge.className = 'px-2.5 py-1 rounded-md text-[11px] font-semibold border ' + (BADGE_TONES[tone] || BADGE_TONES.off);
+        el.badge.textContent = text;
     }
+
+    function drawChart(points) {
+        if (!el.chart || typeof LightweightCharts === 'undefined' || !points || points.length < 2) return;
+        if (!chart) {
+            chart = LightweightCharts.createChart(el.chart, {
+                autoSize: true,
+                layout: { background: { type: LightweightCharts.ColorType.Solid, color: 'transparent' }, textColor: '#8b93a7' },
+                grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)' } },
+                rightPriceScale: { borderVisible: false }, timeScale: { borderVisible: false, timeVisible: true },
+                handleScroll: false, handleScale: false, crosshair: { mode: 0 }
+            });
+            botLine = chart.addLineSeries({ color: '#34d399', lineWidth: 2, priceLineVisible: false, title: 'Boten' });
+            bhLine = chart.addLineSeries({ color: '#94a3b8', lineWidth: 1, lineStyle: 2, priceLineVisible: false, title: 'Buy & hold' });
+        }
+        const a = [], b = []; let last = 0;
+        points.forEach(function (p) {
+            const t = Math.floor(p[0] / 1000);
+            if (t <= last) return;
+            last = t; a.push({ time: t, value: p[1] }); b.push({ time: t, value: p[2] });
+        });
+        botLine.setData(a); bhLine.setData(b);
+        chart.timeScale().fitContent();
+    }
+
+    async function load() {
+        try {
+            const res = await fetch(SERVER_BASE + file + '?t=' + Date.now(), { cache: 'no-store' });
+            if (res.status === 404) {
+                badge('Ingen data än', 'off');
+                el.note.textContent = 'Boten har inte kört än. Starta workflow "Crypto bot" i GitHub (fliken Actions). Är repot privat kan sidan inte läsa filen.';
+                return;
+            }
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const st = await res.json();
+            const minutes = (Date.now() - new Date(st.lastRun).getTime()) / 60000;
+            if (st.lastError) badge('Fel vid senaste körning', 'bad');
+            else if (st.enabled === false) badge('Avstängd i config', 'off');
+            else if (minutes > 45) badge('Inte körts på ' + Math.round(minutes) + ' min', 'warn');
+            else badge('Aktiv', 'ok');
+
+            el.balance.textContent = money(st.balance);
+            el.pnl.textContent = money(st.pnl, true);
+            el.pnl.className = 'font-bold text-xl ' + (st.pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
+            el.trades.textContent = String(st.totalTrades);
+            el.winrate.textContent = st.totalTrades > 0 ? Math.round(100 * st.winningTrades / st.totalTrades) + '%' : '-';
+
+            // Jämförelse mot att bara köpa och behålla sedan start
+            if (el.bh) {
+                if (typeof st.buyHoldValue === 'number') {
+                    const botNow = st.equity && st.equity.length ? st.equity[st.equity.length - 1][1] : st.balance;
+                    const diff = botNow - st.buyHoldValue;
+                    el.bh.textContent = 'Buy & hold sedan start: ' + money(st.buyHoldValue) + ' · boten ' + (diff >= 0 ? 'ligger ' + money(diff) + ' före' : 'ligger ' + money(-diff) + ' efter');
+                    el.bh.className = 'text-[11px] font-mono ' + (diff >= 0 ? 'text-emerald-400' : 'text-gray-400');
+                } else el.bh.textContent = '';
+            }
+            drawChart(st.equity);
+
+            // Läget per valuta
+            if (el.markets) {
+                el.markets.textContent = '';
+                (st.marketsView || []).forEach(function (m) {
+                    const row = document.createElement('div');
+                    row.className = 'tile px-3 py-2 flex items-center justify-between gap-3 text-[11px] font-mono';
+                    const l = document.createElement('span'); l.className = 'text-white font-semibold'; l.textContent = m.symbol.replace('USDT', '');
+                    const p = document.createElement('span'); p.className = 'text-gray-300'; p.textContent = m.price ? priceTxt(m.price) : '-';
+                    const sName = m.strat && STRATEGIES[m.strat] ? STRATEGIES[m.strat].name : '';
+                    const r = document.createElement('span');
+                    r.className = m.inPosition ? 'text-emerald-400' : 'text-gray-500';
+                    r.textContent = m.inPosition ? 'i marknaden' + (sName ? ' · ' + sName : '') : (sName ? 'väntar · ' + sName : 'väntar');
+                    row.appendChild(l); row.appendChild(p); row.appendChild(r);
+                    el.markets.appendChild(row);
+                });
+            }
+
+            const list = Array.isArray(st.openPositions) ? st.openPositions : [];
+            if (list.length) {
+                el.pos.style.whiteSpace = 'pre-line';
+                el.pos.textContent = 'Öppna positioner (' + list.length + '):\n' + list.map(function (p) {
+                    const u = (typeof p.unrealized === 'number') ? ' | orealiserat ' + money(p.unrealized, true) : '';
+                    return p.symbol + ' köpt @ ' + priceTxt(p.entryPrice) + ' | stop ' + priceTxt(p.stop) + ' | mål ' + priceTxt(p.tp) + u;
+                }).join('\n');
+            } else {
+                el.pos.textContent = 'Ingen öppen position. Boten väntar på nästa signal.';
+            }
+            const c = st.config || {};
+            const syms = Array.isArray(c.symbols) ? c.symbols.join(', ') : (c.symbol || '');
+            el.note.textContent = 'Senaste körning ' + ago(st.lastRun) + ' | ' + syms + ' | ' + (c.interval || '') + ' | strategi ' + (c.strategy || '') + (c.noStops ? ' (ingen stop)' : '') + ' | simulerad handel';
+
+            el.log.textContent = '';
+            (st.log || []).slice(-8).reverse().forEach(function (l) {
+                const d = document.createElement('div');
+                d.className = l.k === 'success' ? 'text-emerald-400' : (l.k === 'danger' ? 'text-red-400' : 'text-gray-300');
+                const t = document.createElement('span');
+                t.className = 'text-gray-500';
+                t.textContent = '[' + new Date(l.t).toLocaleString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '] ';
+                d.appendChild(t);
+                d.appendChild(document.createTextNode(l.m));
+                el.log.appendChild(d);
+            });
+        } catch (e) {
+            badge('Kunde inte hämta', 'bad');
+            el.note.textContent = 'Kunde inte läsa statusen (' + e.message + ').';
+        }
+    }
+    return { load: load };
 }
+
+const serverPanels = [makeServerPanel('srv', 'state.json'), makeServerPanel('srv2', 'slow.json')];
+function loadServerBot() { serverPanels.forEach(function (p) { p.load(); }); }
 
 // ---------- Logga ut ----------
 const logoutBtn = document.getElementById('logout-btn');

@@ -21,7 +21,7 @@ const SOURCES = (process.env.BOT_API_BASES
     ? process.env.BOT_API_BASES.split(',')
     : ['https://data-api.binance.vision/api/v3', 'https://api.binance.com/api/v3', 'https://api.binance.us/api/v3']);
 
-const STEP = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 };
+const STEP = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 };
 const DECIMALS = { BTCUSDT: 2, ETHUSDT: 2, SOLUSDT: 2, XRPUSDT: 4 };
 const HISTORY = 1000;
 const START_BALANCE = 10000;
@@ -47,7 +47,10 @@ function loadConfig() {
         risk: Math.min(10, Math.max(1, Math.round(num(c.risk, 4)))),
         maxSpend: num(c.maxSpend, 1000) > 0 ? num(c.maxSpend, 1000) : 1000,
         // Köp bara när kursen ligger över medelvärdet av de senaste N candlesen (0 = av). Forskningen visade att det minskade förlusterna.
-        trendFilter: Math.max(0, Math.round(num(c.trendFilter, 200)))
+        trendFilter: Math.max(0, Math.round(num(c.trendFilter, 200))),
+        // noStops: ingen ATR-stop/take-profit, bara köp- och säljsignaler (långsam trendhandel, testad i forskningsrapporten)
+        noStops: c.noStops === true,
+        label: typeof c.label === 'string' ? c.label.slice(0, 40) : ''
     };
 }
 
@@ -59,7 +62,7 @@ function freshState() {
     return {
         v: 2, balance: START_BALANCE, peakBalance: START_BALANCE, pnl: 0,
         totalTrades: 0, winningTrades: 0, totalWinsAmount: 0, totalLossesAmount: 0,
-        returnsHistory: [], maxDrawdownVal: 0, markets: {}, trades: [], log: [], startedAt: new Date().toISOString()
+        returnsHistory: [], maxDrawdownVal: 0, markets: {}, baseline: {}, equity: [], trades: [], log: [], startedAt: new Date().toISOString()
     };
 }
 
@@ -172,10 +175,10 @@ function openPosition(st, m, log, cfg, symbol, price, closed, openCandleTime, st
     m.pos = {
         symbol: symbol, interval: cfg.interval, strat: stratId,
         entryPrice: price, entryTime: openCandleTime, entryAt: new Date().toISOString(),
-        exposure: exposure, stop: price - atr * 1.5 * rm, tp: price + atr * 2.5 * rm
+        exposure: exposure, stop: cfg.noStops ? null : price - atr * 1.5 * rm, tp: cfg.noStops ? null : price + atr * 2.5 * rm
     };
-    log('🟢 Köp ' + symbol + ' @ $' + price.toFixed(dec) + ' [' + STRATEGIES[stratId].name + '] | Stop $' +
-        m.pos.stop.toFixed(dec) + ' | TP $' + m.pos.tp.toFixed(dec), 'success');
+    log('🟢 Köp ' + symbol + ' @ $' + price.toFixed(dec) + ' [' + STRATEGIES[stratId].name + ']' +
+        (cfg.noStops ? ' | ingen stop, säljer på signal' : ' | Stop $' + m.pos.stop.toFixed(dec) + ' | TP $' + m.pos.tp.toFixed(dec)), 'success');
     st.trades.push({
         t: new Date().toISOString(), side: 'buy', symbol: symbol, price: price, strat: stratId,
         stop: m.pos.stop, tp: m.pos.tp
@@ -191,13 +194,13 @@ function catchUp(st, m, log, closed, livePrice) {
     for (let j = 0; j < closed.length; j++) {
         const c = closed[j];
         if (c.time <= p.entryTime) continue;
-        if (c.low <= p.stop) { closePosition(st, m, log, Math.min(c.open, p.stop), 'stop', c.time); return; }
-        if (c.high >= p.tp) { closePosition(st, m, log, Math.max(c.open, p.tp), 'tp', c.time); return; }
+        if (p.stop !== null && c.low <= p.stop) { closePosition(st, m, log, Math.min(c.open, p.stop), 'stop', c.time); return; }
+        if (p.tp !== null && c.high >= p.tp) { closePosition(st, m, log, Math.max(c.open, p.tp), 'tp', c.time); return; }
         if (sig.sell[j]) { closePosition(st, m, log, c.close, 'signal', c.time); return; }
     }
     // Candlen som pågår just nu: kolla mot livepriset
-    if (livePrice <= p.stop) closePosition(st, m, log, livePrice, 'stop');
-    else if (livePrice >= p.tp) closePosition(st, m, log, livePrice, 'tp');
+    if (p.stop !== null && livePrice <= p.stop) closePosition(st, m, log, livePrice, 'stop');
+    else if (p.tp !== null && livePrice >= p.tp) closePosition(st, m, log, livePrice, 'tp');
 }
 
 // AUTO: välj strategi (samma logik som på hemsidan)
@@ -241,6 +244,7 @@ async function runMarket(st, cfg, symbol, log) {
     const livePrice = parseFloat(ticker.price);
     st.source = source;
     m.lastPrice = livePrice;
+    if (!st.baseline[symbol]) st.baseline[symbol] = livePrice;
 
     const all = raw.map(toCandle);
     const now = Date.now();
@@ -319,6 +323,16 @@ function finish(st, errored) {
             unrealized: m.lastPrice ? ((m.lastPrice - m.pos.entryPrice) / m.pos.entryPrice) * m.pos.exposure - m.pos.exposure * FEE * 2 : null
         });
     }
+    // Kapitalkurva: saldo + orealiserat, och vad samma pengar hade blivit med buy & hold (lika delar i bevakade valutor)
+    const unreal = views.reduce((a, v) => a + (v.unrealized || 0), 0);
+    const rets = Object.entries(st.markets).filter(([k, m]) => st.baseline[k] && m.lastPrice).map(([k, m]) => m.lastPrice / st.baseline[k] - 1);
+    const bh = rets.length ? START_BALANCE * (1 + rets.reduce((a, b) => a + b, 0) / rets.length) : START_BALANCE;
+    const nowT = Date.now(), lastPt = st.equity[st.equity.length - 1];
+    if (!lastPt || nowT - lastPt[0] > 50 * 60000) {
+        st.equity.push([nowT, Math.round((st.balance + unreal) * 100) / 100, Math.round(bh * 100) / 100]);
+        if (st.equity.length > 1000) st.equity.splice(0, st.equity.length - 1000);
+    }
+    st.buyHoldValue = Math.round(bh * 100) / 100;
     st.openPositions = views;
     st.openPositionView = views[0] || null; // äldre panelversioner
     st.marketsView = Object.entries(st.markets).map(([sym, m]) => ({

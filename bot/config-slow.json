@@ -1,0 +1,11 @@
+{
+  "label": "Dagbot (experiment)",
+  "enabled": true,
+  "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"],
+  "interval": "1d",
+  "strategy": "supertrend",
+  "risk": 4,
+  "maxSpend": 1000,
+  "trendFilter": 0,
+  "noStops": true
+}

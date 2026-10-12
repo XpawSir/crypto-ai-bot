@@ -27,26 +27,27 @@ jobs:
           if git ls-remote --exit-code --heads origin bot-state >/dev/null 2>&1; then
             git fetch --depth=1 origin bot-state
             git show FETCH_HEAD:state.json > state/state.json || rm -f state/state.json
+            git show FETCH_HEAD:slow.json > state/slow.json 2>/dev/null || rm -f state/slow.json
           else
             echo "Ingen bot-state-gren än, börjar från noll."
           fi
 
-      - name: Installera Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Kör boten
+      # Node finns redan förinstallerat på GitHubs servrar (sparar en nedladdning per körning)
+      - name: Kör boten (4h, med stop/mål)
         run: node bot/run.mjs
+
+      - name: Kör dagboten (experiment, utan stop)
+        run: BOT_CONFIG=bot/config-slow.json BOT_STATE=state/slow.json node bot/run.mjs
 
       - name: Spara läget på grenen bot-state
         run: |
           rm -rf state-repo && mkdir state-repo && cd state-repo
           git init -q -b bot-state
           cp ../state/state.json .
+          cp ../state/slow.json . 2>/dev/null || true
           # Vercel läser inställningen från grenen som pushas: stäng av bygge/deploy för bot-state
           echo '{"git":{"deploymentEnabled":false}}' > vercel.json
-          git add state.json vercel.json
+          git add -A
           git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "bot state $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           git push -q --force origin bot-state

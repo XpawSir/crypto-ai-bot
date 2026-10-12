@@ -64,33 +64,49 @@
     </header>
 
     <main class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-[1700px] mx-auto w-full flex-grow">
-        <section class="lg:col-span-4">
+        <section class="lg:col-span-4 grid grid-cols-1 xl:grid-cols-2 gap-6">
             <div class="glass p-5">
-                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Serverbot · körs 24/7</h2><p class="text-[12px] text-gray-500 mt-1">Handlar BTC, ETH, SOL och XRP med låtsaspengar, även när sidan är stängd.</p></div>
+                <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                    <div><h2 class="h-sec">Serverbot · 4h med stop och mål</h2><p class="text-[12px] text-gray-500 mt-1">Handlar BTC, ETH, SOL och XRP med låtsaspengar, även när sidan är stängd.</p></div>
                     <div id="srv-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
-                    <div class="tile p-3">
-                        <span class="text-gray-400 text-[10px] block">Saldo</span>
-                        <span id="srv-balance" class="text-white font-bold text-xl">-</span>
-                    </div>
-                    <div class="tile p-3">
-                        <span class="text-gray-400 text-[10px] block">Resultat</span>
-                        <span id="srv-pnl" class="text-white font-bold text-xl">-</span>
-                    </div>
-                    <div class="tile p-3">
-                        <span class="text-gray-400 text-[10px] block">Affärer</span>
-                        <span id="srv-trades" class="text-white font-bold text-xl">-</span>
-                    </div>
-                    <div class="tile p-3">
-                        <span class="text-gray-400 text-[10px] block">Win Rate</span>
-                        <span id="srv-winrate" class="text-white font-bold text-xl">-</span>
-                    </div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv-balance" class="text-white font-bold text-xl">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv-pnl" class="text-white font-bold text-xl">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv-trades" class="text-white font-bold text-xl">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Win Rate</span><span id="srv-winrate" class="text-white font-bold text-xl">-</span></div>
                 </div>
+                <p id="srv-bh" class="mt-3 text-[11px] font-mono text-gray-400"></p>
+                <div id="srv-chart" class="mt-2 w-full h-[180px]"></div>
+                <div id="srv-markets" class="mt-3 grid grid-cols-1 gap-2"></div>
                 <p id="srv-pos" class="mt-3 text-[11px] font-mono text-gray-300"></p>
                 <p id="srv-note" class="mt-1 text-[11px] font-mono text-gray-500"></p>
-                <div id="srv-log" class="mt-3 bg-darkbg border border-cardborder rounded-lg p-3 text-[11px] font-mono space-y-1 max-h-[130px] overflow-y-auto"></div>
+                <div id="srv-log" class="mt-3 tile p-3 text-[11px] font-mono space-y-1 max-h-[130px] overflow-y-auto"></div>
+            </div>
+            <div class="glass p-5">
+                <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                    <div><h2 class="h-sec">Dagbot · experiment utan stop</h2><p class="text-[12px] text-gray-500 mt-1">Dagliga candles, SuperTrend, säljer bara på signal. Körs sida vid sida för jämförelse.</p></div>
+                    <div id="srv2-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv2-balance" class="text-white font-bold text-xl">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv2-pnl" class="text-white font-bold text-xl">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv2-trades" class="text-white font-bold text-xl">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Win Rate</span><span id="srv2-winrate" class="text-white font-bold text-xl">-</span></div>
+                </div>
+                <p id="srv2-bh" class="mt-3 text-[11px] font-mono text-gray-400"></p>
+                <div id="srv2-chart" class="mt-2 w-full h-[180px]"></div>
+                <div id="srv2-markets" class="mt-3 grid grid-cols-1 gap-2"></div>
+                <p id="srv2-pos" class="mt-3 text-[11px] font-mono text-gray-300"></p>
+                <p id="srv2-note" class="mt-1 text-[11px] font-mono text-gray-500"></p>
+                <div id="srv2-log" class="mt-3 tile p-3 text-[11px] font-mono space-y-1 max-h-[130px] overflow-y-auto"></div>
+            </div>
+            <div class="xl:col-span-2 text-[11px] font-mono text-gray-500">
+                Rapporter från historiktesterna (uppdateras varje söndag):
+                <a class="text-sky-400 hover:underline" target="_blank" rel="noopener" href="https://github.com/XpawSir/crypto-ai-bot/blob/research-report/REPORT.md">Huvudrapport</a> ·
+                <a class="text-sky-400 hover:underline" target="_blank" rel="noopener" href="https://github.com/XpawSir/crypto-ai-bot/blob/research-report/REPORT-AUTO.md">AUTO-varianter</a> ·
+                <a class="text-sky-400 hover:underline" target="_blank" rel="noopener" href="https://github.com/XpawSir/crypto-ai-bot/blob/research-report/REPORT-SLOW.md">Dag/vecka</a>.
+                Ingen riktig handel, och historik garanterar inget.
             </div>
         </section>
 
