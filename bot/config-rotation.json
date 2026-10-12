@@ -1,0 +1,9 @@
+{
+  "label": "Rotationsbot (experiment)",
+  "enabled": true,
+  "universe": ["BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "LTCUSDT", "TRXUSDT", "LINKUSDT", "SOLUSDT", "DOGEUSDT"],
+  "lookback": 120,
+  "top": 3,
+  "trendFilter": 100,
+  "rebalDays": 7
+}

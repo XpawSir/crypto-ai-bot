@@ -28,6 +28,7 @@ jobs:
             git fetch --depth=1 origin bot-state
             git show FETCH_HEAD:state.json > state/state.json || rm -f state/state.json
             git show FETCH_HEAD:slow.json > state/slow.json 2>/dev/null || rm -f state/slow.json
+            git show FETCH_HEAD:rotation.json > state/rotation.json 2>/dev/null || rm -f state/rotation.json
           else
             echo "Ingen bot-state-gren än, börjar från noll."
           fi
@@ -39,12 +40,16 @@ jobs:
       - name: Kör dagboten (experiment, utan stop)
         run: BOT_CONFIG=bot/config-slow.json BOT_STATE=state/slow.json node bot/run.mjs
 
+      - name: Kör rotationsboten (experiment, veckovis momentum)
+        run: node bot/rotation.mjs
+
       - name: Spara läget på grenen bot-state
         run: |
           rm -rf state-repo && mkdir state-repo && cd state-repo
           git init -q -b bot-state
           cp ../state/state.json .
           cp ../state/slow.json . 2>/dev/null || true
+          cp ../state/rotation.json . 2>/dev/null || true
           # Vercel läser inställningen från grenen som pushas: stäng av bygge/deploy för bot-state
           echo '{"git":{"deploymentEnabled":false}}' > vercel.json
           git add -A

@@ -1353,7 +1353,7 @@ function makeServerPanel(prefix, file) {
                 if (typeof st.buyHoldValue === 'number') {
                     const botNow = st.equity && st.equity.length ? st.equity[st.equity.length - 1][1] : st.balance;
                     const diff = botNow - st.buyHoldValue;
-                    el.bh.textContent = 'Buy & hold sedan start: ' + money(st.buyHoldValue) + ' · boten ' + (diff >= 0 ? 'ligger ' + money(diff) + ' före' : 'ligger ' + money(-diff) + ' efter');
+                    el.bh.textContent = (st.buyHoldLabel || 'Buy & hold') + ' sedan start: ' + money(st.buyHoldValue) + ' · boten ' + (diff >= 0 ? 'ligger ' + money(diff) + ' före' : 'ligger ' + money(-diff) + ' efter');
                     el.bh.className = 'text-[11px] font-mono ' + (diff >= 0 ? 'text-emerald-400' : 'text-gray-400');
                 } else el.bh.textContent = '';
             }
@@ -1381,14 +1381,15 @@ function makeServerPanel(prefix, file) {
                 el.pos.style.whiteSpace = 'pre-line';
                 el.pos.textContent = 'Öppna positioner (' + list.length + '):\n' + list.map(function (p) {
                     const u = (typeof p.unrealized === 'number') ? ' | orealiserat ' + money(p.unrealized, true) : '';
-                    return p.symbol + ' köpt @ ' + priceTxt(p.entryPrice) + ' | stop ' + priceTxt(p.stop) + ' | mål ' + priceTxt(p.tp) + u;
+                    return p.symbol + ' köpt @ ' + priceTxt(p.entryPrice) + ((p.stop === null || p.stop === undefined) && (p.tp === null || p.tp === undefined) ? '' : ' | stop ' + priceTxt(p.stop) + ' | mål ' + priceTxt(p.tp)) + u;
                 }).join('\n');
             } else {
                 el.pos.textContent = 'Ingen öppen position. Boten väntar på nästa signal.';
             }
             const c = st.config || {};
-            const syms = Array.isArray(c.symbols) ? c.symbols.join(', ') : (c.symbol || '');
-            el.note.textContent = 'Senaste körning ' + ago(st.lastRun) + ' | ' + syms + ' | ' + (c.interval || '') + ' | strategi ' + (c.strategy || '') + (c.noStops ? ' (ingen stop)' : '') + ' | simulerad handel';
+            const syms = Array.isArray(c.symbols) ? c.symbols.join(', ') : (Array.isArray(c.universe) ? c.universe.length + ' valutor' : (c.symbol || ''));
+            const stratTxt = c.strategy ? c.strategy + (c.noStops ? ' (ingen stop)' : '') : (c.lookback ? 'momentum ' + c.lookback + 'd, topp ' + c.top + ', ombalans var ' + c.rebalDays + ':e dag' : '');
+            el.note.textContent = 'Senaste körning ' + ago(st.lastRun) + ' | ' + syms + ' | ' + (c.interval || '') + ' | ' + stratTxt + ' | simulerad handel';
 
             el.log.textContent = '';
             (st.log || []).slice(-8).reverse().forEach(function (l) {
@@ -1409,7 +1410,7 @@ function makeServerPanel(prefix, file) {
     return { load: load };
 }
 
-const serverPanels = [makeServerPanel('srv', 'state.json'), makeServerPanel('srv2', 'slow.json')];
+const serverPanels = [makeServerPanel('srv', 'state.json'), makeServerPanel('srv2', 'slow.json'), makeServerPanel('srv3', 'rotation.json')];
 function loadServerBot() { serverPanels.forEach(function (p) { p.load(); }); }
 
 // ---------- Logga ut ----------
