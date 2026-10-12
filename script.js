@@ -1,21 +1,24 @@
 // ============================================================
-//   CryptoAI Pro Terminal – script.js (v2.2: med Firebase & Moln-synk)
+//   CryptoAI Pro Terminal – script.js (med dina korrekta Firebase-nycklar)
 // ============================================================
 
 // ---------- Firebase & Inloggningsskydd ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 
 const firebaseConfig = {
-    apiKey: "DIN_API_KEY",
-    authDomain: "ditt-projekt.firebaseapp.com",
-    projectId: "ditt-projekt",
-    storageBucket: "ditt-projekt.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123:web:abc"
+    apiKey: "AIzaSyD2y98EZ9kUpzP24IE_rFRqL-sZ5w04ttc",
+    authDomain: "cryptoai-a74a4.firebaseapp.com",
+    projectId: "cryptoai-a74a4",
+    storageBucket: "cryptoai-a74a4.firebasestorage.app",
+    messagingSenderId: "517561549498",
+    appId: "1:517561549498:web:61c7cb06424406f3b67883",
+    measurementId: "G-RC6WWS0G2W"
 };
 
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 const auth = getAuth(app);
 
 // Skydda sidan: Skicka direkt till login.html om ingen är inloggad
@@ -250,46 +253,3 @@ const STRATEGIES = {
             r.text = function (i) { return 'ADX ' + (x.adx[i] === null ? '-' : x.adx[i].toFixed(1)) + ' / +DI ' + (x.pdi[i] === null ? '-' : x.pdi[i].toFixed(1)) + ' / -DI ' + (x.mdi[i] === null ? '-' : x.mdi[i].toFixed(1)); };
             return r;
         }
-    },
-    'ichimoku': {
-        name: 'Ichimoku (TK-kors över molnet)', kind: 'trend', osc: false, colors: ['#facc15', '#38bdf8'],
-        legend: [['Tenkan:', '9'], ['Kijun:', '26']],
-        compute: function (d) {
-            function mid(p) {
-                const o = [];
-                for (let i = 0; i < d.length; i++) {
-                    if (i < p - 1) { o.push(null); continue; }
-                    let h = -Infinity, l = Infinity;
-                    for (let j = i - p + 1; j <= i; j++) { h = Math.max(h, d[j].high); l = Math.min(l, d[j].low); }
-                    o.push((h + l) / 2);
-                }
-                return o;
-            }
-            const t = mid(9), k = mid(26), b52 = mid(52), top = [], bot = [];
-            for (let i = 0; i < d.length; i++) {
-                const a = (i >= 26 && t[i - 26] !== null && k[i - 26] !== null) ? (t[i - 26] + k[i - 26]) / 2 : null;
-                const b = i >= 26 ? b52[i - 26] : null;
-                if (a === null || b === null) { top.push(null); bot.push(null); }
-                else { top.push(Math.max(a, b)); bot.push(Math.min(a, b)); }
-            }
-            const r = signals(d.length,
-                function (i) { return crossUp(t, k, i) && top[i] !== null && d[i].close > top[i]; },
-                function (i) { return crossDown(t, k, i) || (bot[i] !== null && d[i].close < bot[i]); });
-            r.lines = [t, k];
-            r.text = function (i) { return 'Tenkan ' + fmtN(t[i]) + ' / Kijun ' + fmtN(k[i]) + ' / moln över ' + fmtN(top[i]); };
-            return r;
-        }
-    },
-    'keltner': {
-        name: 'Keltner breakout (EMA 20 + 2 ATR)', kind: 'trend', osc: false, colors: ['#fb923c', '#facc15', '#fb923c'],
-        legend: [['Kanal:', 'EMA 20 ± 2 ATR']],
-        compute: function (d) {
-            const c = closes(d), m = emaArr(c, 20), at = atrSimple(d, 10);
-            const up = m.map(function (x, i) { return x + 2 * at[i]; }), lo = m.map(function (x, i) { return x - 2 * at[i]; });
-            const r = signals(d.length, function (i) { return i >= 20 && c[i] > up[i]; }, function (i) { return i >= 20 && c[i] < m[i]; });
-            r.lines = [up, m, lo];
-            r.text = function (i) { return 'Pris ' + fmt(c[i]) + ' / övre ' + fmt(up[i]) + ' / mitt ' + fmt(m[i]); };
-            return r;
-        }
-    },
-    'donchian': donchianStrategy('Donchian 20/10 (breakout)', 20, 10
