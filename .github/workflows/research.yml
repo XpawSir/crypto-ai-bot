@@ -1,0 +1,40 @@
+name: Research (strategitest mot buy & hold)
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "17 3 * * 0"   # varje söndag natt, så rapporten hålls färsk
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crypto-research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Kör forskningen
+        run: node bot/research.mjs
+      - name: Spara rapporten som artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: research
+          path: research-out/
+      - name: Publicera rapporten på grenen research-report
+        run: |
+          rm -rf rep && mkdir rep && cd rep
+          git init -q -b research-report
+          cp ../research-out/REPORT.md ../research-out/results.json .
+          echo '{"git":{"deploymentEnabled":false}}' > vercel.json
+          git add .
+          git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "research $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git push -q --force origin research-report
