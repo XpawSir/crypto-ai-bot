@@ -44,7 +44,9 @@ jobs:
           rm -rf state-repo && mkdir state-repo && cd state-repo
           git init -q -b bot-state
           cp ../state/state.json .
-          git add state.json
+          # Vercel läser inställningen från grenen som pushas: stäng av bygge/deploy för bot-state
+          echo '{"git":{"deploymentEnabled":false}}' > vercel.json
+          git add state.json vercel.json
           git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "bot state $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           git push -q --force origin bot-state
