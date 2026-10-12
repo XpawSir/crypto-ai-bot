@@ -8,25 +8,11 @@
     <script>document.documentElement.style.visibility = 'hidden';
         try { document.documentElement.dataset.theme = localStorage.getItem('cryptoai_theme') === 'light' ? 'light' : 'dark'; } catch (e) { document.documentElement.dataset.theme = 'dark'; }</script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
-    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link rel="stylesheet" href="tailwind.css">
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- TradingView Lightweight Charts (candlesticks) -->
     <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkbg: '#0b0e11',
-                        cardbg: '#0f1420',
-                        cardborder: 'rgba(255,255,255,0.08)'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         :root, html[data-theme=dark] { --bg:#000; --card:rgba(255,255,255,.028); --line:rgba(255,255,255,.085); --muted:#8a8f9c; --chart:#030405; --accent:#e5e7eb; }
         html[data-theme=light] { --bg:#f4f5f7; --card:#ffffff; --line:rgba(15,23,42,.10); --muted:#5b6475; --chart:#ffffff; --accent:#111827; }
