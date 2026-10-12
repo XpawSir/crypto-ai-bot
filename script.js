@@ -610,10 +610,23 @@ function addLog(msg, type) {
     aiLog.scrollTop = aiLog.scrollHeight;
 }
 
+// Provar reservadresser om huvudadressen är blockerad (Binance.com stänger ute vissa länder, t.ex. USA)
+const API_FALLBACKS = ['https://data-api.binance.vision/api/v3', 'https://api.binance.us/api/v3'];
+let apiBase = API;
 async function getJSON(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return res.json();
+    const path = url.slice(API.length);
+    const order = [apiBase].concat([API].concat(API_FALLBACKS).filter(function (b) { return b !== apiBase; }));
+    let lastErr = null;
+    for (let i = 0; i < order.length; i++) {
+        try {
+            const res = await fetch(order[i] + path);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const j = await res.json();
+            apiBase = order[i];
+            return j;
+        } catch (e) { lastErr = e; }
+    }
+    throw lastErr;
 }
 
 function toCandle(k) {
