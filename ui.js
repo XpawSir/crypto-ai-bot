@@ -1,9 +1,11 @@
-// Flikar (Home / Latest Updates / Learn) och tema (mörkt/ljust). Fristående från script.js.
+// Flikar (Home / Market / Latest Updates / Learn) och tema (mörkt/ljust). Fristående från script.js.
 (function () {
-    var views = { home: 'view-home', updates: 'view-updates', learn: 'view-learn' };
+    var views = { home: 'view-home', market: 'view-market', updates: 'view-updates', learn: 'view-learn' };
 
+    var current = null;
     function show(name) {
         if (!views[name]) name = 'home';
+        if (current === 'market' && name !== 'market') window.dispatchEvent(new Event('market:hide'));
         Object.keys(views).forEach(function (k) {
             var el = document.getElementById(views[k]);
             if (el) el.classList.toggle('hidden', k !== name);
@@ -12,6 +14,8 @@
             if (a.getAttribute('data-tab') === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
         });
         window.scrollTo(0, 0);
+        if (name === 'market' && current !== 'market') window.dispatchEvent(new Event('market:show'));
+        current = name;
         // graferna måste få veta sin storlek igen när Home visas
         if (name === 'home') setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 30);
     }
