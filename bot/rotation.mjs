@@ -14,7 +14,7 @@ const STATE_FILE = process.env.BOT_STATE || path.join(HERE, '..', 'state', 'rota
 const SOURCES = (process.env.BOT_API_BASES
     ? process.env.BOT_API_BASES.split(',')
     : ['https://data-api.binance.vision/api/v3', 'https://api.binance.com/api/v3', 'https://api.binance.us/api/v3']);
-const DAY = 86400, COST = 0.0015, START = 10000;
+const DAY = 86400, COST = 0.001, SLIP = 0.0002, START = 10000;   // 0,1 % avgift + 0,02 % extra glapp; spreaden kommer från riktiga bud/utbud
 const ALLOWED = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'LTCUSDT', 'TRXUSDT', 'LINKUSDT', 'SOLUSDT', 'DOGEUSDT'];
 
 const num = (v, d) => (typeof v === 'number' && isFinite(v)) ? v : d;
@@ -93,13 +93,19 @@ export async function main() {
             const c = raw.filter(k => k[6] < now);
             if (c.length) { closes[s] = c.map(k => +k[4]); lastClosedTime[s] = Math.floor(c[c.length - 1][0] / 1000); }
         }
-        const live = {};
-        (await getJSON('/ticker/price')).forEach(t => { if (cfg.universe.includes(t.symbol)) live[t.symbol] = parseFloat(t.price); });
+        const live = {}, bid = {}, ask = {};
+        // bookTicker utan symbol ger bästa bud/utbud för alla par i ett anrop
+        (await getJSON('/ticker/bookTicker')).forEach(t => {
+            if (!cfg.universe.includes(t.symbol)) return;
+            const b = parseFloat(t.bidPrice), a = parseFloat(t.askPrice);
+            if (b > 0 && a >= b) { bid[t.symbol] = b; ask[t.symbol] = a; live[t.symbol] = (a + b) / 2; }
+        });
         st.source = source;
         if (!live.BTCUSDT || !closes.BTCUSDT) throw new Error('Saknar BTC-data');
-        if (!st.baseline) st.baseline = live.BTCUSDT;
+        if (!st.baseline) st.baseline = ask.BTCUSDT * (1 + SLIP);
 
-        const value = () => { let v = st.cash; for (const s in st.units) v += st.units[s] * (live[s] || 0); return v; };
+        // Portföljens värde räknas till säljpriset (bid): det man skulle få om man sålde allt nu
+        const value = () => { let v = st.cash; for (const s in st.units) v += st.units[s] * (bid[s] || 0); return v; };
         const refDay = lastClosedTime.BTCUSDT;
 
         if (cfg.enabled && (!st.lastRebal || refDay - st.lastRebal >= cfg.rebalDays * DAY)) {
@@ -108,8 +114,9 @@ export async function main() {
             let cost = 0;
             const all = new Set([...Object.keys(st.units), ...Object.keys(w)]);
             for (const s of all) {
-                const price = live[s]; if (!price) continue;
-                const cur = (st.units[s] || 0) * price, tgt = val * (1 - 2 * COST) * (w[s] || 0), diff = tgt - cur;
+                if (!bid[s]) continue;
+                const cur = (st.units[s] || 0) * bid[s], tgt = val * (1 - 2 * COST - 2 * SLIP - 0.0005) * (w[s] || 0), diff = tgt - cur;
+                const price = diff > 0 ? ask[s] * (1 + SLIP) : bid[s] * (1 - SLIP);
                 if (Math.abs(diff) < val * 0.002) continue;      // struntsummor handlas inte
                 cost += Math.abs(diff) * COST;
                 if (diff > 0) {
@@ -119,7 +126,7 @@ export async function main() {
                     st.trades.push({ t: new Date().toISOString(), side: 'buy', symbol: s, price });
                     log('🟢 Köper ' + s.replace('USDT', '') + ' @ $' + price + ' (mål ' + (100 * (w[s] || 0)).toFixed(0) + ' % av portföljen)', 'success');
                 } else {
-                    const sellU = Math.min(st.units[s], -diff / price), pnl = (price - st.cost[s]) * sellU - Math.abs(diff) * COST;
+                    const sellU = Math.min(st.units[s], -diff / bid[s]), pnl = (price - st.cost[s]) * sellU - Math.abs(diff) * COST;
                     st.units[s] -= sellU; st.cash += sellU * price;
                     if (st.units[s] * price < 1) {
                         delete st.units[s]; delete st.cost[s]; st.totalTrades++; if (pnl > 0) st.winningTrades++;
@@ -137,12 +144,12 @@ export async function main() {
         // vyer (samma format som övriga botar så att panelen kan återanvändas)
         st.balance = Math.round(value() * 100) / 100;
         st.pnl = st.balance - START;
-        const bh = START * live.BTCUSDT / st.baseline;
+        const bh = START * (1 - COST) * (1 - COST) * bid.BTCUSDT * (1 - SLIP) / st.baseline;
         st.buyHoldValue = Math.round(bh * 100) / 100;
         const lastPt = st.equity[st.equity.length - 1];
         if (!lastPt || Date.now() - lastPt[0] > 50 * 60000) { st.equity.push([Date.now(), st.balance, st.buyHoldValue]); if (st.equity.length > 1000) st.equity.shift(); }
-        st.openPositions = Object.keys(st.units).map(s => ({ symbol: s, strat: null, entryPrice: st.cost[s], stop: null, tp: null, exposure: st.units[s] * live[s], unrealized: (live[s] - st.cost[s]) * st.units[s] }));
-        st.marketsView = cfg.universe.map(s => ({ symbol: s, price: live[s] || null, strat: null, inPosition: !!st.units[s] }));
+        st.openPositions = Object.keys(st.units).map(s => ({ symbol: s, strat: null, entryPrice: st.cost[s], stop: null, tp: null, exposure: st.units[s] * (bid[s] || live[s]), unrealized: ((bid[s] || live[s]) - st.cost[s]) * st.units[s] }));
+        st.marketsView = cfg.universe.map(s => ({ symbol: s, price: live[s] || null, spreadPct: live[s] ? (ask[s] - bid[s]) / live[s] * 100 : null, strat: null, inPosition: !!st.units[s] }));
         st.cashShare = Math.round(100 * st.cash / Math.max(1, st.balance));
         st.lastError = null;
     } catch (e) {

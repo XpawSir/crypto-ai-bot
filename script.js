@@ -428,6 +428,10 @@ let posStrategyId = null;  // strategin som öppnade nuvarande position
 let candles = [];
 let markers = [];
 let currentPrice = 0;
+let currentBid = 0, currentAsk = 0;   // riktiga bud/utbud: köp fylls på ask, sälj på bid
+const SLIP = 0.0002;                  // extra glapp utöver spreaden (0,02 %)
+const buyPx = function () { return (currentAsk > 0 ? currentAsk : currentPrice) * (1 + SLIP); };
+const sellPx = function () { return (currentBid > 0 ? currentBid : currentPrice) * (1 - SLIP); };
 let historyReady = false;
 let loading = false;
 let loadToken = 0;
@@ -718,6 +722,7 @@ async function refreshMarket() {
 
         const bid = parseFloat(results[2].bidPrice);
         const ask = parseFloat(results[2].askPrice);
+        if (bid > 0 && ask >= bid) { currentBid = bid; currentAsk = ask; }
         if (ask > 0) marketSpreadEl.textContent = (((ask - bid) / ask) * 100).toFixed(4) + '%';
 
         setConnection(true);
@@ -1004,12 +1009,12 @@ function runBot() {
     if (!historyReady || candles.length < 25 || currentPrice <= 0) return;
 
     if (hasOpenPosition) {
-        if (currentPrice <= dynamicStopPrice) {
-            closePosition(currentPrice, 'stop');
+        if ((currentBid > 0 ? currentBid : currentPrice) <= dynamicStopPrice) {
+            closePosition(sellPx(), 'stop');
             return;
         }
-        if (currentPrice >= dynamicTakeProfitPrice) {
-            closePosition(currentPrice, 'tp');
+        if ((currentBid > 0 ? currentBid : currentPrice) >= dynamicTakeProfitPrice) {
+            closePosition(sellPx(), 'tp');
             return;
         }
     }
@@ -1038,9 +1043,9 @@ function runBot() {
 
     if (!hasOpenPosition && res.buy[n]) {
         posStrategyId = active.id;
-        openPosition(currentPrice);
+        openPosition(buyPx());
     } else if (hasOpenPosition && res.sell[n]) {
-        closePosition(currentPrice, 'signal');
+        closePosition(sellPx(), 'signal');
     } else {
         addLog('Analyserar ' + selectedSymbol + ' (' + selectedInterval + ', ' + active.name + '): ' + res.text(n), 'info');
     }
@@ -1201,12 +1206,12 @@ function resetAuto() {
 }
 
 cryptoSelect.addEventListener('change', function (e) {
-    if (hasOpenPosition) closePosition(currentPrice, 'switch');
+    if (hasOpenPosition) closePosition(sellPx(), 'switch');
     selectedSymbol = e.target.value;
     saveSetting('cryptoai_symbol', selectedSymbol);
     markers = [];
     candleSeries.setMarkers([]);
-    currentPrice = 0;
+    currentPrice = 0; currentBid = 0; currentAsk = 0;
     cryptoPriceEl.textContent = '$0.00';
     applyPrecision();
     resetAuto();
@@ -1366,7 +1371,7 @@ function makeServerPanel(prefix, file) {
                     const row = document.createElement('div');
                     row.className = 'tile px-3 py-2 flex items-center justify-between gap-3 text-[11px] font-mono';
                     const l = document.createElement('span'); l.className = 'text-white font-semibold'; l.textContent = m.symbol.replace('USDT', '');
-                    const p = document.createElement('span'); p.className = 'text-gray-300'; p.textContent = m.price ? priceTxt(m.price) : '-';
+                    const p = document.createElement('span'); p.className = 'text-gray-300'; p.textContent = m.price ? priceTxt(m.price) + (typeof m.spreadPct === 'number' ? ' · spread ' + m.spreadPct.toFixed(3) + '%' : '') : '-';
                     const sName = m.strat && STRATEGIES[m.strat] ? STRATEGIES[m.strat].name : '';
                     const r = document.createElement('span');
                     r.className = m.inPosition ? 'text-emerald-400' : 'text-gray-500';

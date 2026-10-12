@@ -25,6 +25,8 @@ const STEP = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1d': 8
 const DECIMALS = { BTCUSDT: 2, ETHUSDT: 2, SOLUSDT: 2, XRPUSDT: 4 };
 const HISTORY = 1000;
 const START_BALANCE = 10000;
+const SLIP = 0.0002;   // extra glapp utöver spreaden (0,02 %): ordrar fylls sällan exakt på bästa pris
+
 
 // ---------- Hjälpfunktioner ----------
 function num(v, def) { return (typeof v === 'number' && isFinite(v)) ? v : def; }
@@ -123,6 +125,18 @@ function toCandle(k) {
     return { time: Math.floor(k[0] / 1000), open: +k[1], high: +k[2], low: +k[3], close: +k[4], closeTime: k[6] };
 }
 
+// Riktiga köp/sälj-priser: Binance bookTicker (bästa bud och bästa utbud). Köp fylls på ask, sälj på bid.
+async function getQuote(symbol) {
+    try {
+        const q = await getJSON('/ticker/bookTicker?symbol=' + symbol);
+        const bid = parseFloat(q.bidPrice), ask = parseFloat(q.askPrice);
+        if (bid > 0 && ask >= bid) return { bid, ask, mid: (bid + ask) / 2 };
+    } catch (e) { /* faller tillbaka på senaste pris */ }
+    const t = await getJSON('/ticker/price?symbol=' + symbol);
+    const p = parseFloat(t.price);
+    return { bid: p, ask: p, mid: p };
+}
+
 // ---------- Logg ----------
 function makeLogger(st) {
     return function log(msg, type) {
@@ -187,20 +201,23 @@ function openPosition(st, m, log, cfg, symbol, price, closed, openCandleTime, st
 }
 
 // Ta igen allt som hänt med en öppen position sedan förra körningen
-function catchUp(st, m, log, closed, livePrice) {
+function catchUp(st, m, log, closed, quote) {
     const p = m.pos;
     const strat = STRATEGIES[p.strat];
     const sig = strat.compute(closed);
+    // Utgångar inne i gamla candles fylls med dagens spread som uppskattning, plus extra glapp
+    const hist = 1 - ((quote.ask - quote.bid) / 2 / quote.mid + SLIP);
     for (let j = 0; j < closed.length; j++) {
         const c = closed[j];
         if (c.time <= p.entryTime) continue;
-        if (p.stop !== null && c.low <= p.stop) { closePosition(st, m, log, Math.min(c.open, p.stop), 'stop', c.time); return; }
-        if (p.tp !== null && c.high >= p.tp) { closePosition(st, m, log, Math.max(c.open, p.tp), 'tp', c.time); return; }
-        if (sig.sell[j]) { closePosition(st, m, log, c.close, 'signal', c.time); return; }
+        if (p.stop !== null && c.low <= p.stop) { closePosition(st, m, log, Math.min(c.open, p.stop) * hist, 'stop', c.time); return; }
+        if (p.tp !== null && c.high >= p.tp) { closePosition(st, m, log, Math.max(c.open, p.tp) * hist, 'tp', c.time); return; }
+        if (sig.sell[j]) { closePosition(st, m, log, c.close * hist, 'signal', c.time); return; }
     }
-    // Candlen som pågår just nu: kolla mot livepriset
-    if (p.stop !== null && livePrice <= p.stop) closePosition(st, m, log, livePrice, 'stop');
-    else if (p.tp !== null && livePrice >= p.tp) closePosition(st, m, log, livePrice, 'tp');
+    // Candlen som pågår just nu: säljpriset (bid) avgör, eftersom det är det man faktiskt får
+    const sellPx = quote.bid * (1 - SLIP);
+    if (p.stop !== null && quote.bid <= p.stop) closePosition(st, m, log, sellPx, 'stop');
+    else if (p.tp !== null && quote.bid >= p.tp) closePosition(st, m, log, sellPx, 'tp');
 }
 
 // AUTO: välj strategi (samma logik som på hemsidan)
@@ -230,8 +247,8 @@ async function runMarket(st, cfg, symbol, log) {
     // Nytt tidsintervall: stäng positionen och börja om analysen
     if (m.interval !== cfg.interval) {
         if (m.pos) {
-            const t = await getJSON('/ticker/price?symbol=' + symbol);
-            closePosition(st, m, log, parseFloat(t.price), 'switch');
+            const q0 = await getQuote(symbol);
+            closePosition(st, m, log, q0.bid * (1 - SLIP), 'switch');
         }
         Object.assign(m, freshMarket(cfg.interval));
         log(symbol + ': tidsintervallet ändrades till ' + cfg.interval + '. Analysen börjar om.', 'info');
@@ -240,8 +257,9 @@ async function runMarket(st, cfg, symbol, log) {
     if (!cfg.enabled && !m.pos) return;
 
     const raw = await getJSON('/klines?symbol=' + symbol + '&interval=' + cfg.interval + '&limit=' + HISTORY);
-    const ticker = await getJSON('/ticker/price?symbol=' + symbol);
-    const livePrice = parseFloat(ticker.price);
+    const quote = await getQuote(symbol);
+    const livePrice = quote.mid;
+    m.spreadPct = quote.mid > 0 ? (quote.ask - quote.bid) / quote.mid * 100 : null;
     st.source = source;
     m.lastPrice = livePrice;
     if (!st.baseline[symbol]) st.baseline[symbol] = livePrice;
@@ -255,7 +273,7 @@ async function runMarket(st, cfg, symbol, log) {
     const rm = riskMultFor(cfg.risk);
 
     // 1) Öppen position: ta igen stop, mål och säljsignaler
-    if (m.pos) catchUp(st, m, log, closed, livePrice);
+    if (m.pos) catchUp(st, m, log, closed, quote);
 
     // 2) Ingen position: leta ny köpsignal, men bara på nystängda candles (inga gamla signaler)
     if (!m.pos && cfg.enabled) {
@@ -273,7 +291,7 @@ async function runMarket(st, cfg, symbol, log) {
                 const n = closed.length - 1;
                 const trendOk = !(cfg.trendFilter > 0) || smaFilterMask(closed, cfg.trendFilter)[n];
                 if (sig.buy[n] && !trendOk) log('Köpsignal på ' + symbol + ' ignorerad: kursen ligger under trendfiltret (SMA ' + cfg.trendFilter + ').', 'info');
-                else if (sig.buy[n]) openPosition(st, m, log, cfg, symbol, livePrice, closed, openCandle ? openCandle.time : lastClosed.time, active);
+                else if (sig.buy[n]) openPosition(st, m, log, cfg, symbol, quote.ask * (1 + SLIP), closed, openCandle ? openCandle.time : lastClosed.time, active);
                 else log('Analyserar ' + symbol + ' (' + cfg.interval + ', ' + STRATEGIES[active].name + '): ' + sig.text(n), 'info');
             }
         }
@@ -297,8 +315,8 @@ export async function main() {
         try {
             if (m.pos) {
                 setDecimals(DECIMALS[sym] ?? 2);
-                const t = await getJSON('/ticker/price?symbol=' + sym);
-                closePosition(st, m, log, parseFloat(t.price), 'switch');
+                const q0 = await getQuote(sym);
+                closePosition(st, m, log, q0.bid * (1 - SLIP), 'switch');
             }
             delete st.markets[sym];
         } catch (e) { errors.push(sym + ': ' + e.message); log('Fel (' + sym + '): ' + e.message, 'danger'); }
@@ -326,7 +344,7 @@ function finish(st, errored) {
     // Kapitalkurva: saldo + orealiserat, och vad samma pengar hade blivit med buy & hold (lika delar i bevakade valutor)
     const unreal = views.reduce((a, v) => a + (v.unrealized || 0), 0);
     const rets = Object.entries(st.markets).filter(([k, m]) => st.baseline[k] && m.lastPrice).map(([k, m]) => m.lastPrice / st.baseline[k] - 1);
-    const bh = rets.length ? START_BALANCE * (1 + rets.reduce((a, b) => a + b, 0) / rets.length) : START_BALANCE;
+    const bh = (rets.length ? START_BALANCE * (1 + rets.reduce((a, b) => a + b, 0) / rets.length) : START_BALANCE) * (1 - 2 * FEE);
     const nowT = Date.now(), lastPt = st.equity[st.equity.length - 1];
     if (!lastPt || nowT - lastPt[0] > 50 * 60000) {
         st.equity.push([nowT, Math.round((st.balance + unreal) * 100) / 100, Math.round(bh * 100) / 100]);
@@ -336,7 +354,7 @@ function finish(st, errored) {
     st.openPositions = views;
     st.openPositionView = views[0] || null; // äldre panelversioner
     st.marketsView = Object.entries(st.markets).map(([sym, m]) => ({
-        symbol: sym, price: m.lastPrice, strat: m.pos ? m.pos.strat : (m.autoPick || null), autoMode: m.autoMode, inPosition: !!m.pos
+        symbol: sym, price: m.lastPrice, spreadPct: m.spreadPct === undefined ? null : m.spreadPct, strat: m.pos ? m.pos.strat : (m.autoPick || null), autoMode: m.autoMode, inPosition: !!m.pos
     }));
     fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
     fs.writeFileSync(STATE_FILE, JSON.stringify(st, null, 1));
