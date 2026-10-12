@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
     STRATEGIES, BACKTEST_START, AUTO_WINDOW, AUTO_REEVAL, FEE, MODE_TEXT,
-    calculateATR, prepare, pickBest, riskMultFor, setDecimals
+    calculateATR, prepare, pickBest, riskMultFor, setDecimals, smaFilterMask
 } from './engine.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -45,7 +45,9 @@ function loadConfig() {
         interval: STEP[c.interval] ? c.interval : '1h',
         strategy: (c.strategy === 'auto' || (STRATEGIES[c.strategy] && c.strategy !== 'auto')) ? c.strategy : 'auto',
         risk: Math.min(10, Math.max(1, Math.round(num(c.risk, 4)))),
-        maxSpend: num(c.maxSpend, 1000) > 0 ? num(c.maxSpend, 1000) : 1000
+        maxSpend: num(c.maxSpend, 1000) > 0 ? num(c.maxSpend, 1000) : 1000,
+        // Köp bara när kursen ligger över medelvärdet av de senaste N candlesen (0 = av). Forskningen visade att det minskade förlusterna.
+        trendFilter: Math.max(0, Math.round(num(c.trendFilter, 200)))
     };
 }
 
@@ -199,7 +201,7 @@ function catchUp(st, m, log, closed, livePrice) {
 }
 
 // AUTO: välj strategi (samma logik som på hemsidan)
-function autoRepick(m, log, symbol, closed, rm) {
+function autoRepick(m, log, symbol, closed, rm, trendFilter) {
     const last = closed[closed.length - 1];
     const step = closed.length > 1 ? last.time - closed[closed.length - 2].time : 3600;
     if (m.autoLastPick && last.time - m.autoLastPick < AUTO_REEVAL * step) return;
@@ -207,7 +209,7 @@ function autoRepick(m, log, symbol, closed, rm) {
     const i = closed.length - 1;
     const win = Math.min(AUTO_WINDOW, i - BACKTEST_START);
     if (win < 200) { log('AUTO ' + symbol + ': för lite historik för att välja strategi.', 'warn'); return; }
-    const p = pickBest(prepare(closed), closed, i, win, rm, m.autoPick);
+    const p = pickBest(prepare(closed, trendFilter), closed, i, win, rm, m.autoPick);
     m.autoMode = p.mode;
     if (p.id !== m.autoPick) {
         m.autoPick = p.id;
@@ -260,12 +262,14 @@ async function runMarket(st, cfg, symbol, log) {
         } else if (lastClosed.time > m.lastEval) {
             m.lastEval = lastClosed.time;
             let active;
-            if (cfg.strategy === 'auto') { autoRepick(m, log, symbol, closed, rm); active = m.autoPick; }
+            if (cfg.strategy === 'auto') { autoRepick(m, log, symbol, closed, rm, cfg.trendFilter); active = m.autoPick; }
             else active = cfg.strategy;
             if (active) {
                 const sig = STRATEGIES[active].compute(closed);
                 const n = closed.length - 1;
-                if (sig.buy[n]) openPosition(st, m, log, cfg, symbol, livePrice, closed, openCandle ? openCandle.time : lastClosed.time, active);
+                const trendOk = !(cfg.trendFilter > 0) || smaFilterMask(closed, cfg.trendFilter)[n];
+                if (sig.buy[n] && !trendOk) log('Köpsignal på ' + symbol + ' ignorerad: kursen ligger under trendfiltret (SMA ' + cfg.trendFilter + ').', 'info');
+                else if (sig.buy[n]) openPosition(st, m, log, cfg, symbol, livePrice, closed, openCandle ? openCandle.time : lastClosed.time, active);
                 else log('Analyserar ' + symbol + ' (' + cfg.interval + ', ' + STRATEGIES[active].name + '): ' + sig.text(n), 'info');
             }
         }

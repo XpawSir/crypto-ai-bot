@@ -370,9 +370,23 @@ function simulate(getSig, d, atr, from, to, rm) {
 }
 
 // Förberäknar signaler för alla strategier (en gång per dataset)
-function prepare(d) {
+// trendFilter = n > 0: köpsignaler räknas bara när kursen ligger över SMA(n) (följ den stora trenden). Säljsignaler påverkas inte.
+export function smaFilterMask(d, n) {
+    const ok = new Array(d.length).fill(false);
+    let sum = 0;
+    for (let i = 0; i < d.length; i++) {
+        sum += d[i].close; if (i >= n) sum -= d[i - n].close;
+        if (i >= n - 1) ok[i] = d[i].close > sum / n;
+    }
+    return ok;
+}
+function prepare(d, trendFilter) {
     const sigs = {};
-    BASE_IDS.forEach(function (id) { sigs[id] = STRATEGIES[id].compute(d); });
+    const mask = trendFilter > 0 ? smaFilterMask(d, trendFilter) : null;
+    BASE_IDS.forEach(function (id) {
+        const sg = STRATEGIES[id].compute(d);
+        sigs[id] = mask ? { buy: sg.buy.map(function (b, i) { return b && mask[i]; }), sell: sg.sell } : sg;
+    });
     return { sigs: sigs, atr: atrSimple(d, 14), adx: adxCalc(d, 14).adx };
 }
 
