@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title>Logga in - CryptoAI Pro Terminal</title>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -34,26 +35,25 @@
 
         <div class="space-y-4">
             <div>
-                <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">E-postadress</label>
-                <input type="email" id="email" class="w-full bg-darkbg border border-cardborder rounded-lg px-3 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-gray-500" placeholder="din.epost@gmail.com">
+                <label for="email" class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">E-postadress</label>
+                <input type="email" id="email" autocomplete="username" class="w-full bg-darkbg border border-cardborder rounded-lg px-3 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-gray-500" placeholder="din.epost@gmail.com">
             </div>
             <div>
-                <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">Lösenord</label>
-                <input type="password" id="password" class="w-full bg-darkbg border border-cardborder rounded-lg px-3 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-gray-500" placeholder="••••••••">
+                <label for="password" class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">Lösenord</label>
+                <input type="password" id="password" autocomplete="current-password" class="w-full bg-darkbg border border-cardborder rounded-lg px-3 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-gray-500" placeholder="••••••••">
             </div>
-            
-            <div id="felMeddelande" class="text-red-400 text-xs font-mono text-center hidden"></div>
 
-            <button id="loginBtn" class="w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2 mt-2">
+            <div id="felMeddelande" role="alert" class="text-red-400 text-xs font-mono text-center hidden"></div>
+
+            <button id="loginBtn" class="w-full bg-white hover:bg-gray-200 disabled:opacity-60 text-black font-semibold py-2.5 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2 mt-2">
                 <i class="fa-solid fa-right-to-bracket"></i> Logga in
             </button>
         </div>
     </div>
 
-    <!-- Firebase Inloggningslogik -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD2y98EZ9kUpzP24IE_rFRqL-sZ5w04ttc",
@@ -71,22 +71,38 @@
         const loginBtn = document.getElementById("loginBtn");
         const felRuta = document.getElementById("felMeddelande");
 
+        // Redan inloggad? Gå direkt till terminalen.
+        onAuthStateChanged(auth, (user) => {
+            if (user) window.location.href = "index.html";
+        });
+
+        const meddelanden = {
+            "auth/invalid-credential": "Felaktig e-post eller lösenord.",
+            "auth/wrong-password": "Felaktig e-post eller lösenord.",
+            "auth/user-not-found": "Felaktig e-post eller lösenord.",
+            "auth/invalid-email": "Ogiltig e-postadress.",
+            "auth/too-many-requests": "För många försök. Vänta en stund och försök igen.",
+            "auth/network-request-failed": "Ingen nätverksanslutning. Försök igen.",
+            "auth/operation-not-allowed": "Inloggning med e-post och lösenord är inte påslagen i Firebase."
+        };
+
         loginBtn.addEventListener("click", async () => {
             const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value;
             felRuta.classList.add("hidden");
+            loginBtn.disabled = true;
 
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                window.location.href = "index.html"; // Skickas till terminalen vid lyckad inloggning
+                window.location.href = "index.html";
             } catch (error) {
-                felRuta.innerText = "Felaktig e-post eller lösenord!";
+                felRuta.innerText = meddelanden[error.code] || ("Inloggningen misslyckades (" + (error.code || "okänt fel") + ").");
                 felRuta.classList.remove("hidden");
+                loginBtn.disabled = false;
             }
         });
 
-        // Låt även användaren trycka Enter för att logga in
-        document.getElementById("password").addEventListener("keypress", (e) => {
+        document.getElementById("password").addEventListener("keydown", (e) => {
             if (e.key === "Enter") loginBtn.click();
         });
     </script>
