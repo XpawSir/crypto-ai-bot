@@ -25,6 +25,8 @@ jobs:
         run: node bot/research.mjs
       - name: Testa AUTO-varianter (långsammare, trendfilter)
         run: node bot/research-auto.mjs
+      - name: Testa långsam handel (dag och vecka)
+        run: node bot/research-slow.mjs
       - name: Spara rapporten som artefakt
         uses: actions/upload-artifact@v4
         with:
@@ -34,7 +36,7 @@ jobs:
         run: |
           rm -rf rep && mkdir rep && cd rep
           git init -q -b research-report
-          cp ../research-out/REPORT.md ../research-out/REPORT-AUTO.md ../research-out/results.json .
+          cp ../research-out/REPORT.md ../research-out/REPORT-AUTO.md ../research-out/REPORT-SLOW.md ../research-out/results.json .
           echo '{"git":{"deploymentEnabled":false}}' > vercel.json
           git add .
           git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "research $(date -u +%Y-%m-%dT%H:%M:%SZ)"
