@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "symbol": "BTCUSDT",
+  "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"],
   "interval": "1h",
   "strategy": "auto",
   "risk": 4,

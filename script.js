@@ -1319,16 +1319,20 @@ async function loadServerBot() {
         srvEl.trades.textContent = String(st.totalTrades);
         srvEl.winrate.textContent = st.totalTrades > 0 ? Math.round(100 * st.winningTrades / st.totalTrades) + '%' : '-';
 
-        const p = st.openPositionView;
-        if (p) {
-            const sName = (p.strat && p.strat.length) ? p.strat : '';
-            const u = (typeof p.unrealized === 'number') ? ' | orealiserat ' + (p.unrealized >= 0 ? '+' : '-') + '$' + Math.abs(p.unrealized).toFixed(2) : '';
-            srvEl.pos.textContent = 'Öppen position: ' + p.symbol + ' köpt @ $' + Number(p.entryPrice).toFixed(2) + ' (' + sName + ') | stop $' + Number(p.stop).toFixed(2) + ' | mål $' + Number(p.tp).toFixed(2) + u;
+        const list = Array.isArray(st.openPositions) ? st.openPositions : (st.openPositionView ? [st.openPositionView] : []);
+        if (list.length) {
+            srvEl.pos.textContent = list.map(function (p) {
+                const u = (typeof p.unrealized === 'number') ? ' | orealiserat ' + (p.unrealized >= 0 ? '+' : '-') + '$' + Math.abs(p.unrealized).toFixed(2) : '';
+                return p.symbol + ' köpt @ $' + Number(p.entryPrice).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + ' | stop $' + Number(p.stop).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + ' | mål $' + Number(p.tp).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + u;
+            }).join('\n');
+            srvEl.pos.style.whiteSpace = 'pre-line';
+            srvEl.pos.textContent = 'Öppna positioner (' + list.length + '):\n' + srvEl.pos.textContent;
         } else {
             srvEl.pos.textContent = 'Ingen öppen position. Boten väntar på nästa signal.';
         }
         const c = st.config || {};
-        srvEl.note.textContent = 'Senaste körning ' + ago(st.lastRun) + ' | ' + (c.symbol || '') + ' ' + (c.interval || '') + ' | strategi ' + (c.strategy || '') + ' | simulerad handel';
+        const syms = Array.isArray(c.symbols) ? c.symbols.join(', ') : (c.symbol || '');
+        srvEl.note.textContent = 'Senaste körning ' + ago(st.lastRun) + ' | bevakar ' + syms + ' | ' + (c.interval || '') + ' | strategi ' + (c.strategy || '') + ' | simulerad handel';
 
         srvEl.log.innerHTML = '';
         (st.log || []).slice(-8).reverse().forEach(function (l) {
