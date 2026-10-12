@@ -1263,6 +1263,90 @@ if (document.addEventListener) {
     });
 }
 
+// ---------- Serverbot (körs 24/7 av GitHub Actions) ----------
+// Panelen läser serverbotens sparade läge från grenen "bot-state" i ditt GitHub-repo.
+// Byt SERVER_REPO om ditt repo heter något annat. Repot måste vara publikt för att webbläsaren ska kunna läsa filen.
+const SERVER_REPO = 'XpawSir/crypto-ai-bot';
+const SERVER_STATE_URL = 'https://raw.githubusercontent.com/' + SERVER_REPO + '/bot-state/state.json';
+const srvEl = {
+    badge: document.getElementById('srv-badge'), balance: document.getElementById('srv-balance'),
+    pnl: document.getElementById('srv-pnl'), trades: document.getElementById('srv-trades'),
+    winrate: document.getElementById('srv-winrate'), pos: document.getElementById('srv-pos'),
+    note: document.getElementById('srv-note'), log: document.getElementById('srv-log')
+};
+
+function setSrvBadge(text, tone) {
+    if (!srvEl.badge) return;
+    const tones = {
+        ok: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        warn: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+        bad: 'bg-red-500/10 text-red-400 border-red-500/20',
+        off: 'bg-gray-900 text-gray-400 border-gray-800'
+    };
+    srvEl.badge.className = 'px-2.5 py-1 rounded-md text-[11px] font-semibold border ' + (tones[tone] || tones.off);
+    srvEl.badge.textContent = text;
+}
+
+function ago(iso) {
+    const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (!isFinite(m)) return '?';
+    if (m < 1) return 'nyss';
+    if (m < 90) return m + ' min sedan';
+    const h = Math.round(m / 60);
+    return h < 48 ? h + ' tim sedan' : Math.round(h / 24) + ' dygn sedan';
+}
+
+async function loadServerBot() {
+    if (!srvEl.badge) return;
+    try {
+        const res = await fetch(SERVER_STATE_URL + '?t=' + Date.now(), { cache: 'no-store' });
+        if (res.status === 404) {
+            setSrvBadge('Ingen data än', 'off');
+            srvEl.note.textContent = 'Serverboten har inte körts än. Starta workflow "Crypto bot" i GitHub (fliken Actions), så dyker den upp här. Är repot privat kan sidan inte läsa filen.';
+            return;
+        }
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const st = await res.json();
+        const minutes = (Date.now() - new Date(st.lastRun).getTime()) / 60000;
+        if (st.lastError) setSrvBadge('Fel vid senaste körning', 'bad');
+        else if (st.enabled === false) setSrvBadge('Avstängd i config.json', 'off');
+        else if (minutes > 45) setSrvBadge('Inte körts på ' + Math.round(minutes) + ' min', 'warn');
+        else setSrvBadge('Aktiv', 'ok');
+
+        srvEl.balance.textContent = '$' + Number(st.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        srvEl.pnl.textContent = (st.pnl >= 0 ? '+' : '-') + '$' + Math.abs(st.pnl).toFixed(2);
+        srvEl.pnl.className = 'font-bold text-sm ' + (st.pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
+        srvEl.trades.textContent = String(st.totalTrades);
+        srvEl.winrate.textContent = st.totalTrades > 0 ? Math.round(100 * st.winningTrades / st.totalTrades) + '%' : '-';
+
+        const p = st.openPositionView;
+        if (p) {
+            const sName = (p.strat && p.strat.length) ? p.strat : '';
+            const u = (typeof p.unrealized === 'number') ? ' | orealiserat ' + (p.unrealized >= 0 ? '+' : '-') + '$' + Math.abs(p.unrealized).toFixed(2) : '';
+            srvEl.pos.textContent = 'Öppen position: ' + p.symbol + ' köpt @ $' + Number(p.entryPrice).toFixed(2) + ' (' + sName + ') | stop $' + Number(p.stop).toFixed(2) + ' | mål $' + Number(p.tp).toFixed(2) + u;
+        } else {
+            srvEl.pos.textContent = 'Ingen öppen position. Boten väntar på nästa signal.';
+        }
+        const c = st.config || {};
+        srvEl.note.textContent = 'Senaste körning ' + ago(st.lastRun) + ' | ' + (c.symbol || '') + ' ' + (c.interval || '') + ' | strategi ' + (c.strategy || '') + ' | simulerad handel';
+
+        srvEl.log.innerHTML = '';
+        (st.log || []).slice(-8).reverse().forEach(function (l) {
+            const d = document.createElement('div');
+            d.className = l.k === 'success' ? 'text-emerald-400' : (l.k === 'danger' ? 'text-red-400' : 'text-gray-300');
+            const t = document.createElement('span');
+            t.className = 'text-gray-500';
+            t.textContent = '[' + new Date(l.t).toLocaleString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '] ';
+            d.appendChild(t);
+            d.appendChild(document.createTextNode(l.m));
+            srvEl.log.appendChild(d);
+        });
+    } catch (e) {
+        setSrvBadge('Kunde inte hämta', 'bad');
+        srvEl.note.textContent = 'Kunde inte läsa serverbotens status (' + e.message + ').';
+    }
+}
+
 // ---------- Logga ut ----------
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
@@ -1285,5 +1369,7 @@ function initApp() {
     loadHistory();
     runBacktests();
     makeTicker(refreshMarket, REFRESH_MS);
+    loadServerBot();
+    setInterval(loadServerBot, 60000);
     if (wasRunning) startBot(true);
 }

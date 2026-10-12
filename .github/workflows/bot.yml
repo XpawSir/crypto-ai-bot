@@ -1,0 +1,50 @@
+name: Crypto bot (paper trading)
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # var 10:e minut (GitHub kan fördröja körningar). Privat repo? Byt till "*/30 * * * *".
+  workflow_dispatch: {}       # gör att du kan starta en körning för hand i Actions-fliken
+
+permissions:
+  contents: write
+
+# Aldrig två körningar samtidigt, annars kan sparat läge skrivas över
+concurrency:
+  group: crypto-bot
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Hämta koden
+        uses: actions/checkout@v4
+
+      - name: Hämta sparat läge från grenen bot-state
+        run: |
+          mkdir -p state
+          if git ls-remote --exit-code --heads origin bot-state >/dev/null 2>&1; then
+            git fetch --depth=1 origin bot-state
+            git show FETCH_HEAD:state.json > state/state.json || rm -f state/state.json
+          else
+            echo "Ingen bot-state-gren än, börjar från noll."
+          fi
+
+      - name: Installera Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Kör boten
+        run: node bot/run.mjs
+
+      - name: Spara läget på grenen bot-state
+        run: |
+          rm -rf state-repo && mkdir state-repo && cd state-repo
+          git init -q -b bot-state
+          cp ../state/state.json .
+          git add state.json
+          git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "bot state $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git push -q --force origin bot-state

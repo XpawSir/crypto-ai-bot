@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "strategy": "auto",
+  "risk": 4,
+  "maxSpend": 1000
+}
