@@ -21,7 +21,7 @@ const SOURCES = (process.env.BOT_API_BASES
     ? process.env.BOT_API_BASES.split(',')
     : ['https://data-api.binance.vision/api/v3', 'https://api.binance.com/api/v3', 'https://api.binance.us/api/v3']);
 
-const STEP = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600 };
+const STEP = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 };
 const DECIMALS = { BTCUSDT: 2, ETHUSDT: 2, SOLUSDT: 2, XRPUSDT: 4 };
 const HISTORY = 1000;
 const START_BALANCE = 10000;

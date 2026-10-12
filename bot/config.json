@@ -1,7 +1,7 @@
 {
   "enabled": true,
   "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"],
-  "interval": "1h",
+  "interval": "4h",
   "strategy": "auto",
   "risk": 4,
   "maxSpend": 1000

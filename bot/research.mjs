@@ -329,7 +329,13 @@ function buildReport(results) {
     else verdict.push('AUTO slog buy & hold på avkastning i ungefär hälften av marknaderna, alltså inget tydligt övertag.');
     if (autoBeatsCalmar >= results.length * 0.6) verdict.push('På avkastning i förhållande till nedgångar (risk) var AUTO bättre än buy & hold i de flesta marknader. Det är den ärliga styrkan: mindre svängningar, inte nödvändigtvis mer pengar.');
     else verdict.push('Inte heller risken per avkastad krona var tydligt bättre än buy & hold.');
-    if (hoTot) verdict.push(hoBeatAll >= hoTot * 0.7 ? 'Håll-ut-testet visar att historiskt bra strategier tenderade att vara bra även efteråt.' : 'Håll-ut-testet visar att historiskt bra strategier INTE pålitligt var bra efteråt, vilket är tecken på att tidigare vinster till stor del var tur eller anpassning till just den perioden.');
+    if (hoTot) {
+        if (hoBeatBH >= hoTot * 0.6) verdict.push('Håll-ut-testet: de på förhand utvalda strategierna slog även buy & hold i de flesta marknader.');
+        else if (hoBeatAll >= hoTot * 0.7) verdict.push('Håll-ut-testet: de utvalda strategierna förlorade mindre än genomsnittet av alla strategier (' + hoBeatAll + ' av ' + hoTot + '), men slog buy & hold bara i ' + hoBeatBH + ' av ' + hoTot + '. Att välja bland strategier hjälper alltså lite, men räcker inte för att slå att bara köpa och behålla.');
+        else verdict.push('Håll-ut-testet: historiskt bra strategier var INTE pålitligt bra efteråt, tecken på att tidigare vinster till stor del var tur eller anpassning till just den perioden.');
+    }
+    const fastWorse = results.filter(r => r.tf === '1h').length && mean(results.filter(r => r.tf === '1h').map(r => r.byRisk[RK].auto.net)) < mean(results.filter(r => r.tf === '4h').map(r => r.byRisk[RK].auto.net));
+    if (fastWorse) verdict.push('Att handla snabbare (1h) gav sämre resultat än långsammare (4h): avgifterna och falska signaler äter upp vinsterna.');
     for (const v of verdict) P('- ' + v);
     P('');
     P('**Viktigt:** historik garanterar ingenting. Kryptomarknaden har haft både extrema uppgångar och fall under perioden, och resultaten beror mycket på just den. Testerna använder inga inställningar som trimmats mot datan (strategiernas parametrar är standardvärden), men att jag tittar på många strategier ökar ändå risken att någon ser bra ut av ren slump. Använd inte detta som finansiell rådgivning.');
