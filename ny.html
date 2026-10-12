@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="sv" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoAI - Ny design (test)</title>
+    <!-- Sidan är dold tills inloggningen är bekräftad (script.js visar den igen) -->
+    <script>document.documentElement.style.visibility = 'hidden';</script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- TradingView Lightweight Charts (candlesticks) -->
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0b0e11',
+                        cardbg: '#0f1420',
+                        cardborder: 'rgba(255,255,255,0.08)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --bg:#070a12; --card:rgba(255,255,255,.035); --line:rgba(255,255,255,.08); --accent:#34d399; --accent2:#38bdf8; }
+        body { font-family:'Inter',system-ui,sans-serif; background:
+            radial-gradient(900px 500px at 8% -10%, rgba(56,189,248,.10), transparent 60%),
+            radial-gradient(800px 500px at 100% 0%, rgba(52,211,153,.08), transparent 55%), var(--bg); }
+        .font-mono { font-family:'JetBrains Mono',ui-monospace,monospace !important; }
+        .glass { background:var(--card); border:1px solid var(--line); border-radius:18px; backdrop-filter:blur(8px); box-shadow:0 10px 40px -20px rgba(0,0,0,.8); }
+        .tile { background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:12px; }
+        .h-sec { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#8b93a7; font-weight:600; }
+        .grad-text { background:linear-gradient(90deg,var(--accent2),var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        select, input[type=number] { outline:none; } select:focus, input:focus { border-color:var(--accent2) !important; }
+        #tv-chart-container { height:440px !important; }
+        ::-webkit-scrollbar { width:8px; height:8px; } ::-webkit-scrollbar-thumb { background:rgba(255,255,255,.12); border-radius:8px; }
+    </style>
+</head>
+<body class="text-gray-200 antialiased min-h-screen flex flex-col justify-between">
+
+    <header class="border-b border-white/5 bg-[#070a12]/70 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="p-2.5 rounded-xl text-[#070a12]" style="background:linear-gradient(135deg,#38bdf8,#34d399)">
+                <i class="fa-solid fa-terminal text-sm"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm text-white">Crypto<span class="grad-text">AI</span> <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 font-mono">NY DESIGN</span></h1>
+                <p class="text-[11px] text-gray-400 font-mono">Paper trading, simulerad handel</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div id="bot-status-badge" class="px-3 py-1 rounded-md text-xs font-semibold bg-gray-900 text-gray-400 border border-gray-800 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-gray-600"></span> Bot Pausad
+            </div>
+            <button id="logout-btn" class="px-3 py-1.5 rounded-md text-xs font-semibold bg-red-900/30 text-red-400 border border-red-800/50 hover:bg-red-900/50 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-right-from-bracket"></i> Logga ut
+            </button>
+        </div>
+    </header>
+
+    <main class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-[1700px] mx-auto w-full flex-grow">
+        <section class="lg:col-span-4">
+            <div class="glass p-5">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <div><h2 class="h-sec">Serverbot · körs 24/7</h2><p class="text-[12px] text-gray-500 mt-1">Handlar BTC, ETH, SOL och XRP med låtsaspengar, även när sidan är stängd.</p></div>
+                    <div id="srv-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+                    <div class="tile p-3">
+                        <span class="text-gray-400 text-[10px] block">Saldo</span>
+                        <span id="srv-balance" class="text-white font-bold text-xl">-</span>
+                    </div>
+                    <div class="tile p-3">
+                        <span class="text-gray-400 text-[10px] block">Resultat</span>
+                        <span id="srv-pnl" class="text-white font-bold text-xl">-</span>
+                    </div>
+                    <div class="tile p-3">
+                        <span class="text-gray-400 text-[10px] block">Affärer</span>
+                        <span id="srv-trades" class="text-white font-bold text-xl">-</span>
+                    </div>
+                    <div class="tile p-3">
+                        <span class="text-gray-400 text-[10px] block">Win Rate</span>
+                        <span id="srv-winrate" class="text-white font-bold text-xl">-</span>
+                    </div>
+                </div>
+                <p id="srv-pos" class="mt-3 text-[11px] font-mono text-gray-300"></p>
+                <p id="srv-note" class="mt-1 text-[11px] font-mono text-gray-500"></p>
+                <div id="srv-log" class="mt-3 bg-darkbg border border-cardborder rounded-lg p-3 text-[11px] font-mono space-y-1 max-h-[130px] overflow-y-auto"></div>
+            </div>
+        </section>
+
+        
+        <div class="space-y-6">
+            <div class="glass p-5">
+                <h2 class="h-sec mb-4">AI Konfiguration</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">Strategi</label>
+                        <select id="strategy-select" class="w-full bg-darkbg border border-cardborder rounded-xl px-3 py-2 text-xs text-white font-mono">
+                            <option value="ema">EMA 9/21</option>
+                        </select>
+                        <p id="auto-info" class="mt-1.5 text-[10px] font-mono text-gray-500"></p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[11px] font-mono mb-1.5 text-gray-400">
+                            <span>Riskprofil</span>
+                            <span id="risk-value" class="text-white font-bold">4 / 10</span>
+                        </div>
+                        <input id="risk-range" type="range" min="1" max="10" value="4" class="w-full accent-white bg-darkbg cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">Max Kapital ($)</label>
+                        <input id="max-spend-input" type="number" min="1" value="1000" class="w-full bg-darkbg border border-cardborder rounded-xl px-3 py-2 text-xs text-white font-mono">
+                    </div>
+                    <button id="toggle-bot-btn" class="w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i> Starta AI-Robot
+                    </button>
+                    <p class="text-[10px] font-mono text-gray-500 leading-relaxed">Boten körs så länge fliken är öppen. Saldo och position sparas och återupptas automatiskt vid omladdning.</p>
+                </div>
+            </div>
+
+            <div class="glass p-5">
+                <h2 class="h-sec mb-4">Prestanda</h2>
+                <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div class="tile p-3">
+                        <span class="text-gray-400 text-[10px] block">Sharpe</span>
+                        <span id="metric-sharpe" class="text-white font-bold text-sm">0.00</span>
+                    </div>
+                    <div class="tile p-3">
+                        <span class="text-gray-400 text-[10px] block">Drawdown</span>
+                        <span id="metric-drawdown" class="text-white font-bold text-sm">0.00%</span>
+                    </div>
+                    <div class="tile p-3">
+                        <span class="text-gray-400 text-[10px] block">Win Rate</span>
+                        <span id="metric-winrate" class="text-white font-bold text-sm">0%</span>
+                    </div>
+                    <div class="tile p-3">
+                        <span class="text-gray-400 text-[10px] block">Profit Factor</span>
+                        <span id="metric-profitfactor" class="text-white font-bold text-sm">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-3 space-y-6 flex flex-col">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="glass p-4">
+                    <span class="text-[11px] font-mono text-gray-400">Saldo</span>
+                    <div id="total-balance" class="text-2xl font-mono font-bold text-white mt-1">$10,000.00</div>
+                </div>
+                <div class="glass p-4">
+                    <span class="text-[11px] font-mono text-gray-400">Realiserat PnL</span>
+                    <div id="daily-pnl" class="text-2xl font-mono font-bold text-gray-400 mt-1">$0.00</div>
+                </div>
+                <div class="glass p-4">
+                    <span class="text-[11px] font-mono text-gray-400">Spread</span>
+                    <div id="market-spread" class="text-2xl font-mono font-bold text-white mt-1">0.02%</div>
+                </div>
+            </div>
+
+            <div class="glass p-5 flex flex-col">
+                <div class="flex items-center justify-between mb-3 pb-3 border-b border-cardborder flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <select id="crypto-select" class="bg-darkbg border border-cardborder rounded-lg px-3 py-1.5 text-xs text-white font-mono">
+                            <option value="BTCUSDT">BTC/USDT</option>
+                            <option value="ETHUSDT">ETH/USDT</option>
+                            <option value="SOLUSDT">SOL/USDT</option>
+                            <option value="XRPUSDT">XRP/USDT</option>
+                        </select>
+                        <select id="interval-select" class="bg-darkbg border border-cardborder rounded-lg px-3 py-1.5 text-xs text-white font-mono">
+                            <option value="1m">1 min</option>
+                            <option value="5m">5 min</option>
+                            <option value="15m">15 min</option>
+                            <option value="1h">1 tim</option>
+                        </select>
+                    </div>
+                    <div class="text-right font-mono">
+                        <div id="crypto-price" class="text-lg font-bold text-white">$0.00</div>
+                        <div id="crypto-change" class="text-[11px] text-gray-400">0.00%</div>
+                    </div>
+                </div>
+                
+                <!-- Grafen ritas här. Containern måste ha en fast höjd. -->
+                <div id="tv-chart-container" class="w-full h-[400px] rounded-lg overflow-hidden bg-darkbg border border-cardborder/50"></div>
+
+                <div class="mt-3 pt-2 border-t border-cardborder/60 flex items-center justify-between flex-wrap gap-2 text-[11px] font-mono text-gray-400">
+                    <div id="legend-lines" class="flex items-center gap-4 flex-wrap"></div>
+                    <div><span class="text-[#0ecb81]">▲</span> Köp <span class="text-[#f6465d] ml-2">▼</span> Sälj</div>
+                </div>
+            </div>
+
+            <div class="glass p-5 flex flex-col h-[200px]">
+                <h2 class="h-sec mb-3">Exekveringslogg</h2>
+                <div id="ai-log" class="bg-darkbg border border-cardborder rounded-lg p-3 text-xs font-mono overflow-y-auto space-y-1 flex-grow">
+                    <div class="text-gray-400">[System] Lightweight Charts-motor initialiserad...</div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- type="module" krävs eftersom script.js använder import för Firebase -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
