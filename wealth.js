@@ -35,7 +35,7 @@
 
     function load() {
         try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && Array.isArray(s.items)) return s; } catch (e) { }
-        return { items: [], monthly: 0, years: 10 };
+        return { items: [], monthly: 0, years: 10, saveTo: 'global' };
     }
     function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { } }
     function guess(name) { for (var i = 0; i < GUESS.length; i++) if (GUESS[i][0].test(name)) return GUESS[i][1]; return 'stock'; }
@@ -50,13 +50,15 @@
     }
 
     // Monte Carlo för hela portföljen: en gemensam börsfaktor + egen slump per innehav, månadssparande fördelas som idag
-    function simulate(years) {
+    function simulate(years, monthly, sims) {
+        if (monthly === undefined) monthly = state.monthly;
         var items = state.items.filter(function (x) { return x.amount > 0; });
         var total = items.reduce(function (a, x) { return a + x.amount; }, 0);
-        var N = 3000, seed = 12345, out = [];
+        // månadssparandet går till en egen "hink" av vald typ (standard global indexfond)
+        items = items.concat([{ amount: 0, type: TYPES[state.saveTo] ? state.saveTo : 'global', bucket: true }]);
+        var N = sims || 3000, seed = 12345, out = [];
         function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
         function gauss() { var u = 0, v = 0; while (u === 0) u = rnd(); v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-        var shares = items.map(function (x) { return total > 0 ? x.amount / total : 1 / Math.max(1, items.length); });
         var paths = [];
         for (var n = 0; n < N; n++) {
             var vals = items.map(function (x) { return x.amount; }), row = [total];
@@ -67,17 +69,16 @@
                     var z = Math.sqrt(T.rho) * F + Math.sqrt(1 - T.rho) * gauss();
                     var g = Math.exp(Math.log(1 + T.mu) - T.sig * T.sig / 2 + T.sig * z);
                     // sparandet sätts in jämnt under året: i snitt halva årets avkastning
-                    vals[i] = vals[i] * g + state.monthly * 12 * shares[i] * Math.sqrt(g);
+                    vals[i] = vals[i] * g + (items[i].bucket ? monthly * 12 * Math.sqrt(g) : 0);
                     sum += vals[i];
                 }
-                if (!items.length) sum = row[y - 1] + state.monthly * 12;
                 row.push(sum);
             }
             paths.push(row);
         }
         for (var yy = 0; yy <= years; yy++) {
             var col = paths.map(function (r) { return r[yy]; }).sort(function (a, b) { return a - b; });
-            out.push({ y: yy, mean: col.reduce(function (a, b) { return a + b; }, 0) / N, p10: col[Math.floor(N * 0.1)], p50: col[Math.floor(N * 0.5)], p90: col[Math.floor(N * 0.9)], inv: total + state.monthly * 12 * yy, loss: col.filter(function (v) { return v < total + state.monthly * 12 * yy; }).length / N });
+            out.push({ y: yy, mean: col.reduce(function (a, b) { return a + b; }, 0) / N, p10: col[Math.floor(N * 0.1)], p50: col[Math.floor(N * 0.5)], p90: col[Math.floor(N * 0.9)], inv: total + monthly * 12 * yy, loss: col.filter(function (v) { return v < total + monthly * 12 * yy; }).length / N });
         }
         return out;
     }
@@ -162,11 +163,58 @@
         chart.timeScale().fitContent();
     }
 
+    // ---------- Väg till miljonen: hur många år till 1 och 10 miljoner ----------
+    var MAXY = 60;
+    // första året (med decimaler) då kolumnen key når målet, annars null
+    function yearsTo(sim, key, target) {
+        if (sim[0][key] >= target) return 0;
+        for (var y = 1; y < sim.length; y++) {
+            if (sim[y][key] >= target) { var a = sim[y - 1][key], b = sim[y][key]; return y - 1 + (target - a) / (b - a); }
+        }
+        return null;
+    }
+    // ungefärligt månadssparande som behövs för att nå målet på `years` år med 50 % chans
+    function neededMonthly(target, years) {
+        var lo = 0, hi = target / (12 * years) * 1.2 + 1000;
+        if (simulate(years, 0, 500)[years].p50 >= target) return 0;
+        for (var k = 0; k < 14; k++) { var mid = (lo + hi) / 2; if (simulate(years, mid, 500)[years].p50 >= target) hi = mid; else lo = mid; }
+        return Math.ceil(hi / 50) * 50;
+    }
+    function yrTxt(y) {
+        if (y === null) return 'över ' + MAXY + ' år';
+        if (y === 0) return 'redan nått';
+        var yr = new Date().getFullYear() + Math.ceil(y);
+        return (y < 10 ? y.toFixed(1).replace('.', ',') : Math.round(y)) + ' år <small>(' + yr + ')</small>';
+    }
+    function renderGoals() {
+        var box = $('wl-goals'); if (!box) return;
+        var total = state.items.reduce(function (a, x) { return a + x.amount; }, 0);
+        if (!total && !state.monthly) { box.innerHTML = '<p class="wl-empty">Lägg in innehav eller ett månadssparande ovan så räknas vägen fram.</p>'; return; }
+        var sim = simulate(MAXY, state.monthly, 1500), simMore = simulate(MAXY, state.monthly + 1000, 1000);
+        var goals = [1e6, 1e7];
+        var custom = +state.goal; if (custom > 0 && goals.indexOf(custom) < 0) goals.push(custom);
+        box.innerHTML = goals.map(function (g) {
+            var exp = yearsTo(sim, 'mean', g), med = yearsTo(sim, 'p50', g), safe = yearsTo(sim, 'p10', g), more = yearsTo(simMore, 'p50', g);
+            var horizon = g >= 1e7 ? 20 : 10, need = neededMonthly(g, horizon);
+            var title = g === 1e6 ? '1 miljon' : g === 1e7 ? '10 miljoner' : kr(g);
+            return '<div class="wl-goal">' +
+                '<div class="wl-goal-h">' + title + '</div>' +
+                '<div class="wl-goal-big">' + yrTxt(med) + '</div><div class="wl-goal-cap">med 50 % chans (mittenutfall)</div>' +
+                '<dl>' +
+                '<dt>Förväntat (snitt)</dt><dd>' + yrTxt(exp) + '</dd>' +
+                '<dt>Med 90 % chans</dt><dd>' + yrTxt(safe) + '</dd>' +
+                '<dt>Med 1 000 kr mer/mån</dt><dd>' + yrTxt(more) + '</dd>' +
+                '<dt>Sparande för ' + horizon + ' år</dt><dd>' + (need === 0 ? 'inget extra behövs' : kr(need) + '/mån') + '</dd>' +
+                '</dl></div>';
+        }).join('');
+    }
+
     function renderAll() {
         renderTable();
         var sim = simulate(state.years);
         renderSummary(sim);
         renderChart(sim);
+        renderGoals();
     }
 
     function init() {
@@ -187,6 +235,14 @@
         });
         var mon = $('wl-monthly'), yrs = $('wl-years');
         mon.value = state.monthly || ''; yrs.value = String(state.years);
+        var goal = $('wl-goal');
+        if (goal) { goal.value = state.goal || ''; goal.addEventListener('change', function () { state.goal = Math.max(0, +goal.value || 0); save(); renderGoals(); }); }
+        var st2 = $('wl-saveto');
+        if (st2) {
+            Object.keys(TYPES).forEach(function (k) { var o = document.createElement('option'); o.value = k; o.textContent = TYPES[k].name; st2.appendChild(o); });
+            st2.value = TYPES[state.saveTo] ? state.saveTo : 'global';
+            st2.addEventListener('change', function () { state.saveTo = st2.value; save(); renderAll(); });
+        }
         mon.addEventListener('change', function () { state.monthly = Math.max(0, +mon.value || 0); save(); renderAll(); });
         yrs.addEventListener('change', function () { state.years = +yrs.value || 10; save(); renderAll(); });
         // antagandena

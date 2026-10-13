@@ -121,6 +121,16 @@
         .wl-del { color:var(--muted); width:28px; height:28px; border-radius:8px; border:1px solid var(--line); } .wl-del:hover { color:#f87171; border-color:#f87171; }
         .wl-ctrl { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--muted); } .wl-ctrl label { display:flex; align-items:center; gap:6px; } .wl-ctrl .wl-input { width:auto; padding:5px 8px; }
         #wl-chart { height:300px; }
+        .wl-goals { display:grid; grid-template-columns:minmax(0,1fr); gap:14px; }
+        @media (min-width:768px) { .wl-goals { grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); } }
+        .wl-goal { border:1px solid var(--line); border-radius:14px; padding:16px; }
+        .wl-goal-h { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+        .wl-goal-big { font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:#34d399; margin-top:8px; line-height:1.1; }
+        .wl-goal-big small, .wl-goal dd small { font-size:12px; color:var(--muted); font-weight:500; }
+        .wl-goal-cap { font-size:11px; color:var(--muted); margin-top:2px; }
+        .wl-goal dl { display:grid; grid-template-columns:auto auto; gap:6px 12px; margin-top:14px; font-size:12px; }
+        .wl-goal dt { color:var(--muted); } .wl-goal dd { text-align:right; font-family:'JetBrains Mono',monospace; color:var(--accent); }
+        .wl-empty { font-size:13px; color:var(--muted); }
         .wl-notes { list-style:disc; padding-left:18px; font-size:12px; color:var(--muted); line-height:1.7; }
         /* trend-ensemble-sidan */
         .tr-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
@@ -531,12 +541,22 @@
                 <h3 class="h-sec">Prognos framåt</h3>
                 <div class="wl-ctrl">
                     <label>Sparar per månad <input id="wl-monthly" class="wl-input" type="number" min="0" step="100" placeholder="0" style="width:100px"> kr</label>
+                    <label>till <select id="wl-saveto" class="wl-input"></select></label>
                     <label>År <select id="wl-years" class="wl-input"><option value="1">1</option><option value="3">3</option><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="30">30</option></select></label>
                 </div>
             </div>
             <div id="wl-chart" class="w-full"></div>
             <div class="tr-legend mt-2"><span><i style="background:#34d399"></i>förväntat (snitt)</span><span><i style="background:rgba(52,211,153,.45)"></i>bra utfall (1 av 10 blir bättre)</span><span><i style="background:rgba(248,113,113,.6)"></i>dåligt utfall (1 av 10 blir sämre)</span><span><i style="background:#94a3b8"></i>insatta pengar</span></div>
             <ul id="wl-notes" class="wl-notes mt-3"></ul>
+        </section>
+
+        <section class="glass p-5 min-w-0">
+            <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <h3 class="h-sec">Väg till miljonen</h3>
+                <div class="wl-ctrl"><label>Eget mål <input id="wl-goal" class="wl-input" type="number" min="0" step="100000" placeholder="t.ex. 500000" style="width:130px"> kr</label></div>
+            </div>
+            <div id="wl-goals" class="wl-goals"></div>
+            <p class="mt-3 text-[11px] font-mono text-gray-500">Räknat på dina innehav och ditt månadssparande ovan, med samma antaganden som prognosen. "Med 90 % chans" betyder att 9 av 10 möjliga framtider når målet senast då. Sparande för 10 år (1 miljon) och 20 år (10 miljoner) gäller 50 % chans. Inflation är inte borträknad.</p>
         </section>
 
         <details class="glass p-5">
