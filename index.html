@@ -108,6 +108,20 @@
         .back-link { display:inline-flex; align-items:center; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:14px; }
         .back-link:hover { color:var(--accent); }
         .bot-detail [id$="-chart"] { height:300px !important; }
+        /* förmögenhet */
+        .wl-form { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; align-items:end; }
+        @media (min-width:768px) { .wl-form { grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1.4fr) auto; } }
+        .wl-form label span { display:block; font-size:10px; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px; }
+        .wl-input { width:100%; background:transparent; border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-size:13px; color:var(--accent); font-family:inherit; }
+        .wl-input option { background:var(--bg); color:var(--accent); }
+        .wl-add { background:var(--accent); color:var(--bg); font-weight:600; font-size:13px; border-radius:10px; padding:9px 16px; white-space:nowrap; }
+        .wl-add:hover { opacity:.88; }
+        .wl-table td { vertical-align:middle; } .wl-table td small { display:block; font-size:10px; color:var(--muted); margin-top:2px; }
+        .wl-table select.wl-input { min-width:170px; }
+        .wl-del { color:var(--muted); width:28px; height:28px; border-radius:8px; border:1px solid var(--line); } .wl-del:hover { color:#f87171; border-color:#f87171; }
+        .wl-ctrl { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--muted); } .wl-ctrl label { display:flex; align-items:center; gap:6px; } .wl-ctrl .wl-input { width:auto; padding:5px 8px; }
+        #wl-chart { height:300px; }
+        .wl-notes { list-style:disc; padding-left:18px; font-size:12px; color:var(--muted); line-height:1.7; }
         /* trend-ensemble-sidan */
         .tr-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
         @media (min-width:768px) { .tr-kpis { grid-template-columns:repeat(4,minmax(0,1fr)); } }
@@ -151,6 +165,7 @@
             <a href="#market" class="tab" data-tab="market"><i class="fa-solid fa-chart-line mr-1.5"></i>Market</a>
             <a href="#trend" class="tab" data-tab="trend"><i class="fa-solid fa-layer-group mr-1.5"></i>Trend</a>
             <a href="#updates" class="tab" data-tab="updates"><i class="fa-solid fa-bolt mr-1.5"></i>Latest Updates</a>
+            <a href="#wealth" class="tab" data-tab="wealth"><i class="fa-solid fa-piggy-bank mr-1.5"></i>Förmögenhet</a>
             <a href="#lab" class="tab" data-tab="lab"><i class="fa-solid fa-flask mr-1.5"></i>Testlabb</a>
             <a href="#learn" class="tab" data-tab="learn"><i class="fa-solid fa-graduation-cap mr-1.5"></i>Learn</a>
         </nav>
@@ -482,9 +497,65 @@
         </section>
     </main>
 
+    <main id="view-wealth" class="hidden p-4 md:p-6 max-w-[1200px] mx-auto w-full flex-grow space-y-6">
+        <div>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Förmögenhet</h2>
+            <p class="text-[13px] text-gray-400 mt-1">Skriv in vad du äger. Typen gissas från namnet och kan ändras. Uppskattningen bygger på antagna snitt och svängningar för varje typ, inte på någon spådom. Sparas bara i den här webbläsaren.</p>
+        </div>
+
+        <form id="wl-form" class="glass p-5 wl-form" autocomplete="off">
+            <label><span>Vad äger du?</span><input id="wl-name" class="wl-input" placeholder="t.ex. Avanza Zero" maxlength="40" required></label>
+            <label><span>Värde nu (kr)</span><input id="wl-amount" class="wl-input" type="number" min="1" step="1" placeholder="100" required></label>
+            <label><span>Typ</span><select id="wl-type" class="wl-input"></select></label>
+            <button type="submit" class="wl-add"><i class="fa-solid fa-plus mr-1.5"></i>Lägg till</button>
+        </form>
+
+        <div class="tr-kpis text-xs font-mono">
+            <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Totalt nu</span><span id="wl-total" class="stat-val text-white">-</span></div>
+            <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Om 1 år</span><span id="wl-1y" class="stat-val text-white">-</span><span id="wl-1y-sub" class="text-gray-500 text-[10px] block mt-1"></span></div>
+            <div class="tile p-3"><span id="wl-end-label" class="text-gray-400 text-[10px] block">Om 10 år</span><span id="wl-end" class="stat-val text-white">-</span><span id="wl-end-sub" class="text-gray-500 text-[10px] block mt-1"></span></div>
+            <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Andel hög risk</span><span id="wl-risk" class="stat-val text-white">-</span><span id="wl-risk-sub" class="text-gray-500 text-[10px] block mt-1"></span></div>
+        </div>
+
+        <section class="glass p-5 min-w-0">
+            <h3 class="h-sec mb-3">Dina innehav · uppskattning om 1 år</h3>
+            <div class="lb-wrap"><table class="lb-table wl-table">
+                <thead><tr><th>Innehav</th><th>Om 1 år · förväntat och intervall</th><th>Värde nu (kr)</th><th>Typ</th><th></th></tr></thead>
+                <tbody id="wl-body"></tbody>
+            </table></div>
+            <p class="mt-2 text-[11px] font-mono text-gray-500">Förväntat = snittet om man kunde leva samma år många gånger. Intervallet är 10–90 %: ungefär 8 av 10 år hamnar man där, 1 av 10 sämre och 1 av 10 bättre. Aktier som svänger mycket hamnar oftare under snittet än över, men när de går bra går de mycket bra.</p>
+        </section>
+
+        <section class="glass p-5 min-w-0">
+            <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <h3 class="h-sec">Prognos framåt</h3>
+                <div class="wl-ctrl">
+                    <label>Sparar per månad <input id="wl-monthly" class="wl-input" type="number" min="0" step="100" placeholder="0" style="width:100px"> kr</label>
+                    <label>År <select id="wl-years" class="wl-input"><option value="1">1</option><option value="3">3</option><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="30">30</option></select></label>
+                </div>
+            </div>
+            <div id="wl-chart" class="w-full"></div>
+            <div class="tr-legend mt-2"><span><i style="background:#34d399"></i>förväntat (snitt)</span><span><i style="background:rgba(52,211,153,.45)"></i>bra utfall (1 av 10 blir bättre)</span><span><i style="background:rgba(248,113,113,.6)"></i>dåligt utfall (1 av 10 blir sämre)</span><span><i style="background:#94a3b8"></i>insatta pengar</span></div>
+            <ul id="wl-notes" class="wl-notes mt-3"></ul>
+        </section>
+
+        <details class="glass p-5">
+            <summary class="h-sec" style="cursor:pointer">Antaganden per typ</summary>
+            <div class="lb-wrap mt-3"><table class="lb-table"><thead><tr><th>Typ</th><th>Snitt per år</th><th>Svängning per år</th><th>Ett år, 10–90 %</th></tr></thead><tbody id="wl-assume"></tbody></table></div>
+            <p class="mt-2 text-[11px] font-mono text-gray-500">Försiktiga antaganden utifrån lång historik. En aktie som Nvidia har stigit mycket mer, men tidigare vinnare brukar inte fortsätta i samma takt, därför antas samma snitt som för andra tillväxtaktier, med stor svängning. Ingen finansiell rådgivning.</p>
+        </details>
+    </main>
+
     <main id="view-updates" class="hidden p-4 md:p-6 max-w-3xl mx-auto w-full flex-grow">
         <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Latest Updates</h2>
             <p class="text-[13px] text-gray-400 mt-1">Det senaste som byggts och ändrats, nyast först. All handel är simulerad med låtsaspengar.</p></div>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Ny flik: Förmögenhet</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Skriv in vad du äger, till exempel Avanza Zero eller Nvidia, så gissas typen och du får en uppskattning om 1 år med intervall. Med månadssparande visas en prognos upp till 30 år med bra, förväntat och dåligt utfall, samt varningar om för mycket krypto eller enskilda aktier. Sparas i webbläsaren.</span></p>
+                </div>
+            </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
                     <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="chip imp">Improved</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
@@ -627,5 +698,6 @@
     <script type="module" src="script.js"></script>
     <script src="market.js" defer></script>
     <script src="ui.js" defer></script>
+    <script src="wealth.js" defer></script>
 </body>
 </html>
