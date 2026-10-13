@@ -118,6 +118,18 @@
         .tr-ma b { display:block; font-size:12px; color:var(--accent); } .tr-ma span { display:block; font-size:10px; color:var(--muted); margin-top:2px; }
         .tr-ma.on { border-color:rgba(52,211,153,.45); background:rgba(52,211,153,.08); } .tr-ma.on b { color:#34d399; }
         .tr-bar { height:10px; border-radius:999px; background:rgba(128,128,128,.18); overflow:hidden; } .tr-bar > i { display:block; height:100%; background:#34d399; border-radius:999px; transition:width .4s; }
+        .tr-stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+        @media (min-width:768px) { .tr-stats { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+        @media (min-width:1200px) { .tr-stats { grid-template-columns:repeat(6,minmax(0,1fr)); } }
+        .tr-stat { border:1px solid var(--line); border-radius:12px; padding:12px; }
+        .tr-stat span { display:block; font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+        .tr-stat b { display:block; font-size:17px; color:var(--accent); font-family:'JetBrains Mono',monospace; margin-top:4px; }
+        .tr-stat i { display:block; font-style:normal; font-size:10px; color:var(--muted); margin-top:2px; }
+        .mo-table { border-collapse:separate; border-spacing:3px; font-family:'JetBrains Mono',monospace; font-size:11px; white-space:nowrap; }
+        .mo-table th { color:var(--muted); font-weight:600; font-size:10px; padding:2px 4px; text-align:center; }
+        .mo-table td { text-align:center; padding:5px 6px; border-radius:6px; min-width:48px; color:var(--accent); }
+        .mo-table td small { display:block; font-size:9px; color:var(--muted); }
+        .mo-table td.y { font-weight:700; color:var(--muted); }
         #tr-price { height:420px; background:var(--chart); border-radius:12px; overflow:hidden; }
         #tr-hist, #srv4-chart { height:220px; }
         .tr-legend { display:flex; flex-wrap:wrap; gap:12px; font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
@@ -157,8 +169,8 @@
         </div>
 
         <div id="ov-cards" class="ov-cards">
-            <a href="#bot4h" class="glass ov-card" data-bot="srv"><div class="ov-head"><span class="h-sec">Serverbot 4h</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Stop och mål, BTC ETH SOL XRP</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
-            <a href="#botday" class="glass ov-card" data-bot="srv2"><div class="ov-head"><span class="h-sec">Dagbot</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">SuperTrend dagligen, utan stop</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+            <a href="#btceth" class="glass ov-card" data-bot="srv"><div class="ov-head"><span class="h-sec">Trend BTC + ETH</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">5 medelvärden, hälften BTC, hälften ETH</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+            <a href="#voltrend" class="glass ov-card" data-bot="srv2"><div class="ov-head"><span class="h-sec">Volatilitetsstyrd trend</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">BTC över 100-dagars medel, mindre när det svänger</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
             <a href="#botrot" class="glass ov-card" data-bot="srv3"><div class="ov-head"><span class="h-sec">Rotationsbot</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Topp 3 av 10 valutor, veckovis</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
             <a href="#trend" class="glass ov-card" data-bot="srv4"><div class="ov-head"><span class="h-sec">Trend-ensemble</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">0/50/100 % BTC efter 5 medelvärden</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
         </div>
@@ -187,11 +199,11 @@
             </div>
     </main>
 
-    <main id="view-bot4h" class="hidden p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow bot-detail">
+    <main id="view-btceth" class="hidden p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow bot-detail">
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Serverbot · 4h med stop och mål</h2><p class="text-[12px] text-gray-500 mt-1">Handlar BTC, ETH, SOL och XRP med låtsaspengar, även när sidan är stängd.</p></div>
+                    <div><h2 class="h-sec">Trend BTC + ETH · dagligen</h2><p class="text-[12px] text-gray-500 mt-1">Pengarna delas lika mellan BTC och ETH. För varje valuta: hur många av fem medelvärden (20, 50, 100, 150, 200 dagar) kursen ligger över styr hur stor del av dess halva som är investerad, i steg om 25 %. Beslut en gång per dygn. Test 2018–2026: ca +43 %/år, värsta ras −47 % (buy &amp; hold BTC +26 %/år, −77 %).</p></div>
                     <div id="srv-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
@@ -209,11 +221,11 @@
             </div>
     </main>
 
-    <main id="view-botday" class="hidden p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow bot-detail">
+    <main id="view-voltrend" class="hidden p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow bot-detail">
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Dagbot · experiment utan stop</h2><p class="text-[12px] text-gray-500 mt-1">Dagliga candles, SuperTrend, säljer bara på signal. Körs sida vid sida för jämförelse.</p></div>
+                    <div><h2 class="h-sec">Volatilitetsstyrd trend · BTC dagligen</h2><p class="text-[12px] text-gray-500 mt-1">Äger BTC bara när kursen ligger över sitt 100-dagars medelvärde, och köper mindre när marknaden svänger mycket: andel = 60 % / 30-dagars volatilitet (max 100 %, steg om 25 %). Beslut en gång per dygn. Test 2016–2026: ca +58 %/år, värsta ras −47 % (buy &amp; hold +63 %/år, −83 %).</p></div>
                     <div id="srv2-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
@@ -458,6 +470,16 @@
                 <p class="mt-2 text-[11px] font-mono text-gray-500">Samma regler på Binance-data bakåt (ca 2 år), 0,1 % avgift. Långtest BTC 2016–2026: ca +69 %/år och värsta ras −58 %, mot +63 %/år och −83 % för buy & hold. Historik garanterar inget.</p>
             </section>
         </div>
+        <section class="glass p-5 min-w-0">
+            <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <h3 class="h-sec">Statistik</h3>
+                <span id="tr-stat-src" class="text-[11px] font-mono text-gray-500"></span>
+            </div>
+            <div id="tr-stats" class="tr-stats"></div>
+            <h3 class="h-sec mt-5 mb-2">Resultat per månad · regeln (stor siffra) mot buy &amp; hold (liten)</h3>
+            <div class="lb-wrap"><table id="tr-months" class="mo-table"></table></div>
+            <p class="mt-2 text-[11px] font-mono text-gray-500">Från simuleringen ovan med samma regler. Livestatistiken visas överst så fort boten har gjort affärer.</p>
+        </section>
     </main>
 
     <main id="view-updates" class="hidden p-4 md:p-6 max-w-3xl mx-auto w-full flex-grow">
@@ -581,7 +603,7 @@
             <p class="text-[13px] text-gray-400 mt-1">Korta förklaringar av det du ser på sidan. Klicka på en fråga för att öppna den.</p></div>
         <div class="glass px-5 py-2">
             <details class="qa"><summary>Vad är det här för sida?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En terminal för en <strong>simulerad</strong> kryptoboot. Inga riktiga pengar och inga börsnycklar är inblandade. Botarna handlar med låtsaspengar mot riktiga priser från Binance, så du kan se hur en strategi hade klarat sig utan att riskera något.</span></p></details>
-            <details class="qa"><summary>Vilka botar finns och vad är skillnaden?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)"><strong>Serverbot 4h</strong> köper och säljer med stop-loss och take-profit på 4-timmarscandles. <strong>Dagbot</strong> använder dagliga candles och säljer bara på signal. <strong>Rotationsbot</strong> äger varje vecka de starkaste valutorna av tio. <strong>Trend-ensemble</strong> (fliken Trend) äger 0, 50 eller 100 % BTC efter hur många av fem medelvärden kursen ligger över. De fyra kör hela tiden på GitHub, även när sidan är stängd. Fliken Testlabb har en separat testbot i din webbläsare som bara går medan fliken är öppen.</span></p></details>
+            <details class="qa"><summary>Vilka botar finns och vad är skillnaden?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)"><strong>Trend BTC + ETH</strong> delar pengarna mellan BTC och ETH och investerar mer ju fler medelvärden kursen ligger över. <strong>Volatilitetsstyrd trend</strong> äger BTC över 100-dagars medelvärdet men mindre när det svänger mycket. <strong>Rotationsbot</strong> äger varje vecka de starkaste valutorna av tio. <strong>Trend-ensemble</strong> (fliken Trend) äger 0, 50 eller 100 % BTC efter hur många av fem medelvärden kursen ligger över. De fyra kör hela tiden på GitHub, även när sidan är stängd. Fliken Testlabb har en separat testbot i din webbläsare som bara går medan fliken är öppen.</span></p></details>
             <details class="qa"><summary>Vad är en candlestick?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Ett staplat "ljus" som visar ett tidsintervall. Kroppen går från öppningspris till stängningspris, och veken visar högsta och lägsta pris under tiden. Grönt betyder att priset steg, rött att det föll. Intervallet (1 min, 1 tim, 4 tim, dag) bestämmer hur lång tid varje ljus är.</span></p></details>
             <details class="qa"><summary>Vad är stop-loss och take-profit?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En stop-loss säljer automatiskt om priset faller till en viss nivå, så att en förlust inte växer. En take-profit säljer när vinsten nått ett mål. Här räknas nivåerna med ATR, ett mått på hur mycket priset brukar röra sig, och riskreglaget gör nivåerna tajtare eller längre ifrån.</span></p></details>
             <details class="qa"><summary>Vad är spread och avgifter?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Spread är skillnaden mellan bästa köppris (ask) och bästa säljpris (bid). Du köper på det högre och säljer på det lägre, så varje affär kostar lite. Dessutom tar börsen cirka 0,1 % avgift per köp och per sälj. Därför lönar sig inte att handla väldigt ofta: avgifterna äter upp vinsten.</span></p></details>

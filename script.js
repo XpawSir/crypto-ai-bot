@@ -1412,7 +1412,8 @@ function makeServerPanel(prefix, file, onState) {
                     const sName = m.strat && STRATEGIES[m.strat] ? STRATEGIES[m.strat].name : '';
                     const r = document.createElement('span');
                     r.className = m.inPosition ? 'text-emerald-400' : 'text-gray-500';
-                    r.textContent = m.inPosition ? 'i marknaden' + (sName ? ' · ' + sName : '') : (sName ? 'väntar · ' + sName : 'väntar');
+                    r.textContent = typeof m.target === 'number' ? 'mål ' + Math.round(100 * m.target) + ' %' + (m.why ? ' · ' + m.why : '') : (m.inPosition ? 'i marknaden' + (sName ? ' · ' + sName : '') : (sName ? 'väntar · ' + sName : 'väntar'));
+                    if (typeof m.target === 'number') r.className = m.target > 0 ? 'text-emerald-400' : 'text-gray-500';
                     row.appendChild(l); row.appendChild(p); row.appendChild(r);
                     el.markets.appendChild(row);
                 });
@@ -1531,14 +1532,66 @@ const trendView = (function () {
             document.getElementById('tr-hist-txt').textContent = 'Från ' + new Date(h.from * 1000).toLocaleDateString('sv-SE') + ': regeln ' + pct(h.total) + ' (värsta ras ' + pct(h.maxDD) + ') · buy & hold ' + pct(h.bhTotal) + ' (värsta ras ' + pct(h.bhMaxDD) + ') · ' + h.trades.length + ' justeringar';
         }
     }
-    return { render: render };
+    // Statistik och månadstabell (från simuleringen; live-siffror när boten gjort affärer)
+    function renderStats(st) {
+        const box = document.getElementById('tr-stats'), tbl = document.getElementById('tr-months');
+        const h = st.history; if (!box || !h || !h.stats) return;
+        const S = h.stats, months = S.months || [];
+        const done = months.filter(function (m) { return !m.partial; });
+        const best = done.reduce(function (a, m) { return !a || m.bot > a.bot ? m : a; }, null);
+        const worst = done.reduce(function (a, m) { return !a || m.bot < a.bot ? m : a; }, null);
+        const mName = function (m) { return m ? new Date(m.m + '-15').toLocaleDateString('sv-SE', { month: 'short', year: 'numeric' }) : '-'; };
+        const p1 = function (v) { return (v >= 0 ? '+' : '') + (100 * v).toFixed(1) + ' %'; };
+        const beat = done.filter(function (m) { return m.bot > m.bh; }).length;
+        const items = [
+            ['Dagar i BTC', Math.round(100 * S.daysIn / Math.max(1, S.days)) + ' %', S.daysIn + ' av ' + S.days + ' dagar'],
+            ['Snittandel i BTC', Math.round(100 * S.avgWeight) + ' %', 'resten kontanter'],
+            ['Justeringar per år', String(Math.round(S.tradesPerYear)), 'köp eller sälj'],
+            ['Längsta tid utan BTC', S.longestOut + ' dagar', 'i följd'],
+            ['Bästa månad', best ? p1(best.bot) : '-', mName(best) + (best ? ' · B&H ' + p1(best.bh) : '')],
+            ['Sämsta månad', worst ? p1(worst.bot) : '-', mName(worst) + (worst ? ' · B&H ' + p1(worst.bh) : '')]
+        ];
+        // Live: dagar sedan start och realiserat resultat
+        const liveDays = st.startedAt ? Math.max(0, Math.floor((Date.now() - new Date(st.startedAt).getTime()) / 86400000)) : 0;
+        document.getElementById('tr-stat-src').textContent = 'Simulering ' + new Date(h.from * 1000).toLocaleDateString('sv-SE') + ' – idag · ' + beat + ' av ' + done.length + ' månader bättre än buy & hold · live i ' + liveDays + ' dagar, ' + (st.trades || []).length + ' affärer';
+        box.textContent = '';
+        items.forEach(function (it) {
+            const d = document.createElement('div'); d.className = 'tr-stat';
+            const a = document.createElement('span'); a.textContent = it[0];
+            const b = document.createElement('b'); b.textContent = it[1];
+            if (/^[+-]/.test(it[1])) b.className = it[1][0] === '+' ? 'up' : 'down';
+            const c = document.createElement('i'); c.textContent = it[2];
+            d.appendChild(a); d.appendChild(b); d.appendChild(c); box.appendChild(d);
+        });
+        // Månadstabell: år som rader, månader som kolumner, sist hela året
+        if (tbl) {
+            const byYear = {};
+            months.forEach(function (m) { const y = m.m.slice(0, 4); (byYear[y] = byYear[y] || {})[+m.m.slice(5) - 1] = m; });
+            const MN = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+            let html = '<thead><tr><th></th>' + MN.map(function (x) { return '<th>' + x + '</th>'; }).join('') + '<th>år</th></tr></thead><tbody>';
+            Object.keys(byYear).sort().forEach(function (y) {
+                let yb = 1, yh = 1; html += '<tr><td class="y">' + y + '</td>';
+                for (let k = 0; k < 12; k++) {
+                    const m = byYear[y][k];
+                    if (!m) { html += '<td></td>'; continue; }
+                    yb *= 1 + m.bot; yh *= 1 + m.bh;
+                    const a = Math.min(1, Math.abs(m.bot) / 0.25) * 0.35;
+                    const bg = m.bot >= 0 ? 'rgba(52,211,153,' + a.toFixed(2) + ')' : 'rgba(248,113,113,' + a.toFixed(2) + ')';
+                    html += '<td style="background:' + bg + '" title="' + MN[k] + ' ' + y + (m.partial ? ' (pågår)' : '') + ': regeln ' + p1(m.bot) + ', buy & hold ' + p1(m.bh) + '">' + p1(m.bot).replace(' %', '') + '<small>' + p1(m.bh).replace(' %', '') + '</small></td>';
+                }
+                html += '<td class="y">' + p1(yb - 1).replace(' %', '') + '<small>' + p1(yh - 1).replace(' %', '') + '</small></td></tr>';
+            });
+            tbl.innerHTML = html + '</tbody>';
+        }
+    }
+    return { render: function (st) { render(st); renderStats(st); } };
 })();
 
 // ---------- Startsidan: kort per bot och topplista ----------
 const overview = (function () {
     const BOTS = {
-        srv: { name: 'Serverbot 4h', color: '#60a5fa', href: '#bot4h' },
-        srv2: { name: 'Dagbot', color: '#fbbf24', href: '#botday' },
+        srv: { name: 'Trend BTC + ETH', color: '#60a5fa', href: '#btceth' },
+        srv2: { name: 'Volatilitetsstyrd trend', color: '#fbbf24', href: '#voltrend' },
         srv3: { name: 'Rotationsbot', color: '#c084fc', href: '#botrot' },
         srv4: { name: 'Trend-ensemble', color: '#34d399', href: '#trend' }
     };
@@ -1661,7 +1714,7 @@ const overview = (function () {
     return { update: update, status: status };
 })();
 
-const serverPanels = [makeServerPanel('srv', 'state.json'), makeServerPanel('srv2', 'slow.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render)];
+const serverPanels = [makeServerPanel('srv', 'btceth.json'), makeServerPanel('srv2', 'voltrend.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render)];
 function loadServerBot() { serverPanels.forEach(function (p) { p.load(); }); }
 
 // ---------- Logga ut ----------

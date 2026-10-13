@@ -30,7 +30,7 @@ jobs:
           mkdir -p state
           if git ls-remote --exit-code --heads origin bot-state >/dev/null 2>&1; then
             git fetch --depth=1 origin bot-state
-            for f in state slow rotation ensemble; do git show FETCH_HEAD:$f.json > state/$f.json 2>/dev/null || rm -f state/$f.json; done
+            for f in $(git ls-tree --name-only FETCH_HEAD | grep '\.json$'); do git show FETCH_HEAD:$f > state/$f; done
           else
             echo "Ingen bot-state-gren än, börjar från noll."
           fi
@@ -38,6 +38,7 @@ jobs:
       - name: Kör botarna var 10:e minut i ca 5,5 timmar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}   # valfritt: ämne i ntfy-appen för push-notiser
         run: bash bot/loop.sh
 
       - name: Starta nästa körning

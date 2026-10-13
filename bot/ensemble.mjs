@@ -94,7 +94,7 @@ export function targetAt(i, closes, smas, cfg) {
 function backtest(candles, smas, cfg) {
     const closes = candles.map(k => k.c);
     // Beslut på dagens stängning, affären görs till samma stängningskurs (live sker den strax efter 00:00 UTC)
-    let cash = 1, units = 0, w = 0, first = null; const eq = [], trades = [];
+    let cash = 1, units = 0, w = 0, first = null; const eq = [], trades = [], ws = [];
     for (let i = 0; i < candles.length; i++) {
         const px = closes[i];
         const { target, above } = targetAt(i, closes, smas, cfg);
@@ -107,11 +107,28 @@ function backtest(candles, smas, cfg) {
             w = target;
         }
         eq.push([candles[i].t, r2(START * (cash + units * px)), r2(START * px / first)]);
+        ws.push(w);
     }
+    // Statistik: andel dagar i BTC, snittandel, justeringar per år och avkastning per månad (bot och buy & hold)
+    const months = []; let prev = eq.length ? eq[0] : null, cur = null;
+    for (const p of eq) {
+        const ym = new Date(p[0] * 1000).toISOString().slice(0, 7);
+        if (cur && cur.ym !== ym) { months.push({ m: cur.ym, bot: cur.end[1] / cur.start[1] - 1, bh: cur.end[2] / cur.start[2] - 1 }); prev = cur.end; cur = null; }
+        if (!cur) cur = { ym, start: prev, end: p };
+        cur.end = p;
+    }
+    if (cur) months.push({ m: cur.ym, bot: cur.end[1] / cur.start[1] - 1, bh: cur.end[2] / cur.start[2] - 1, partial: true });
+    const years = eq.length > 1 ? (eq[eq.length - 1][0] - eq[0][0]) / (365 * 86400) : 1;
+    let gap = 0, maxGap = 0; for (const x of ws) { gap = x > 0 ? 0 : gap + 1; maxGap = Math.max(maxGap, gap); }
+    const stats = {
+        daysIn: ws.filter(x => x > 0).length, days: ws.length, avgWeight: ws.length ? ws.reduce((a, b) => a + b, 0) / ws.length : 0,
+        tradesPerYear: trades.length / Math.max(years, 0.1), longestOut: maxGap,
+        months: months.map(o => ({ m: o.m, bot: Math.round(o.bot * 10000) / 10000, bh: Math.round(o.bh * 10000) / 10000, partial: !!o.partial }))
+    };
     let peak = 0, mdd = 0; for (const p of eq) { peak = Math.max(peak, p[1]); mdd = Math.min(mdd, p[1] / peak - 1); }
     let peakB = 0, mddB = 0; for (const p of eq) { peakB = Math.max(peakB, p[2]); mddB = Math.min(mddB, p[2] / peakB - 1); }
     const last = eq[eq.length - 1] || [0, START, START];
-    return { equity: eq, trades, total: last[1] / START - 1, bhTotal: last[2] / START - 1, maxDD: mdd, bhMaxDD: mddB, from: eq.length ? eq[0][0] : null };
+    return { stats, equity: eq, trades, total: last[1] / START - 1, bhTotal: last[2] / START - 1, maxDD: mdd, bhMaxDD: mddB, from: eq.length ? eq[0][0] : null };
 }
 
 export async function main() {
@@ -192,7 +209,7 @@ export async function main() {
         const sim = backtest(candles, smas, cfg);
         st.history = {
             from: sim.from, total: sim.total, bhTotal: sim.bhTotal, maxDD: sim.maxDD, bhMaxDD: sim.bhMaxDD,
-            trades: sim.trades, equity: sim.equity.filter((p, i, a) => i % 2 === 0 || i === a.length - 1)
+            trades: sim.trades, stats: sim.stats, equity: sim.equity.filter((p, i, a) => i % 2 === 0 || i === a.length - 1)
         };
         st.lastError = null;
     } catch (e) {
