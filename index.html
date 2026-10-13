@@ -476,7 +476,7 @@
                 <span id="tr-stat-src" class="text-[11px] font-mono text-gray-500"></span>
             </div>
             <div id="tr-stats" class="tr-stats"></div>
-            <h3 class="h-sec mt-5 mb-2">Resultat per månad · regeln (stor siffra) mot buy &amp; hold (liten)</h3>
+            <h3 class="h-sec mb-2" style="margin-top:22px">Resultat per månad · regeln (stor siffra) mot buy &amp; hold (liten)</h3>
             <div class="lb-wrap"><table id="tr-months" class="mo-table"></table></div>
             <p class="mt-2 text-[11px] font-mono text-gray-500">Från simuleringen ovan med samma regler. Livestatistiken visas överst så fort boten har gjort affärer.</p>
         </section>
@@ -485,6 +485,13 @@
     <main id="view-updates" class="hidden p-4 md:p-6 max-w-3xl mx-auto w-full flex-grow">
         <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Latest Updates</h2>
             <p class="text-[13px] text-gray-400 mt-1">Det senaste som byggts och ändrats, nyast först. All handel är simulerad med låtsaspengar.</p></div>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="chip imp">Improved</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Två nya trendbotar, push-notiser och statistik</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Serverbot 4h och Dagbot är borttagna: testerna visade att de förlorar mot buy &amp; hold. I stället kör <strong>Trend BTC + ETH</strong> (fem medelvärden, hälften i varje valuta) och <strong>Volatilitetsstyrd trend</strong> (BTC över 100-dagars medel, mindre när det svänger), båda med $10,000 från start. Botarna kan skicka en push-notis till mobilen via appen ntfy vid varje köp och sälj. Trend-sidan har fått statistik: dagar i BTC, justeringar per år, bästa och sämsta månad och en månadstabell mot buy &amp; hold.</span></p>
+                </div>
+            </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
                     <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip fix">Fix</span><span class="chip new">New</span><span class="chip imp">Improved</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
