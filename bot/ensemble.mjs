@@ -2,7 +2,8 @@
 //  Algiz trend-ensemble (PAPER TRADING, låtsaspengar). Körs av GitHub Actions tillsammans med övriga botar.
 //  Idé från historiktestet 2026-10-13 (BTC 2016–2026, dagliga candles, 0,1 % avgift):
 //  räkna hur många av fem medelvärden (20, 50, 100, 150, 200 dagar) som kursen ligger över.
-//  Andel BTC = antal / 5, avrundat till steg om 25 % (0, 25, 50, 75 eller 100 %). Resten är kontanter.
+//  Andel BTC = antal / 5, avrundat till steg om 50 %: 0–1 medelvärden -> 0 %, 2–3 -> 50 %, 4–5 -> 100 %. Resten kontanter.
+//  (Steg 50 % valdes 2026-10-13: bättre än 25 % i båda halvorna av testet 2018–2026, färre affärer.)
 //  Beslut tas en gång per dygn på STÄNGD dagscandle (00:00 UTC). Inga stop-loss, bara gradvis in/ut.
 //  Testresultat: ca +69 %/år, största nedgång -58 % (buy & hold: +63 %/år, -83 %). Historik garanterar inget.
 // ============================================================
@@ -28,7 +29,7 @@ function loadConfig() {
     const c = readJSON(CONFIG_FILE, {});
     let lengths = Array.isArray(c.lengths) ? c.lengths.map(n => Math.round(n)).filter(n => n >= 5 && n <= 300) : [];
     if (lengths.length < 2) lengths = [20, 50, 100, 150, 200];
-    const step = [0.1, 0.2, 0.25, 0.5, 1].includes(c.step) ? c.step : 0.25;
+    const step = [0.1, 0.2, 0.25, 0.5, 1].includes(c.step) ? c.step : 0.5;
     return {
         label: typeof c.label === 'string' ? c.label.slice(0, 40) : 'Trend-ensemble',
         enabled: c.enabled !== false,
@@ -93,7 +94,7 @@ export function targetAt(i, closes, smas, cfg) {
 function backtest(candles, smas, cfg) {
     const closes = candles.map(k => k.c);
     // Beslut på dagens stängning, affären görs till samma stängningskurs (live sker den strax efter 00:00 UTC)
-    let cash = 1, units = 0, w = 0, first = null; const eq = [], trades = [];
+    let cash = 1, units = 0, w = 0, first = null; const eq = [], trades = [], ws = [];
     for (let i = 0; i < candles.length; i++) {
         const px = closes[i];
         const { target, above } = targetAt(i, closes, smas, cfg);
@@ -106,11 +107,28 @@ function backtest(candles, smas, cfg) {
             w = target;
         }
         eq.push([candles[i].t, r2(START * (cash + units * px)), r2(START * px / first)]);
+        ws.push(w);
     }
+    // Statistik: andel dagar i BTC, snittandel, justeringar per år och avkastning per månad (bot och buy & hold)
+    const months = []; let prev = eq.length ? eq[0] : null, cur = null;
+    for (const p of eq) {
+        const ym = new Date(p[0] * 1000).toISOString().slice(0, 7);
+        if (cur && cur.ym !== ym) { months.push({ m: cur.ym, bot: cur.end[1] / cur.start[1] - 1, bh: cur.end[2] / cur.start[2] - 1 }); prev = cur.end; cur = null; }
+        if (!cur) cur = { ym, start: prev, end: p };
+        cur.end = p;
+    }
+    if (cur) months.push({ m: cur.ym, bot: cur.end[1] / cur.start[1] - 1, bh: cur.end[2] / cur.start[2] - 1, partial: true });
+    const years = eq.length > 1 ? (eq[eq.length - 1][0] - eq[0][0]) / (365 * 86400) : 1;
+    let gap = 0, maxGap = 0; for (const x of ws) { gap = x > 0 ? 0 : gap + 1; maxGap = Math.max(maxGap, gap); }
+    const stats = {
+        daysIn: ws.filter(x => x > 0).length, days: ws.length, avgWeight: ws.length ? ws.reduce((a, b) => a + b, 0) / ws.length : 0,
+        tradesPerYear: trades.length / Math.max(years, 0.1), longestOut: maxGap,
+        months: months.map(o => ({ m: o.m, bot: Math.round(o.bot * 10000) / 10000, bh: Math.round(o.bh * 10000) / 10000, partial: !!o.partial }))
+    };
     let peak = 0, mdd = 0; for (const p of eq) { peak = Math.max(peak, p[1]); mdd = Math.min(mdd, p[1] / peak - 1); }
     let peakB = 0, mddB = 0; for (const p of eq) { peakB = Math.max(peakB, p[2]); mddB = Math.min(mddB, p[2] / peakB - 1); }
     const last = eq[eq.length - 1] || [0, START, START];
-    return { equity: eq, trades, total: last[1] / START - 1, bhTotal: last[2] / START - 1, maxDD: mdd, bhMaxDD: mddB, from: eq.length ? eq[0][0] : null };
+    return { stats, equity: eq, trades, total: last[1] / START - 1, bhTotal: last[2] / START - 1, maxDD: mdd, bhMaxDD: mddB, from: eq.length ? eq[0][0] : null };
 }
 
 export async function main() {
@@ -140,6 +158,11 @@ export async function main() {
         st.signalClose = closes[n]; st.signalDay = refDay;
 
         // Ett beslut per stängd dag. Första körningen går direkt in på dagens mål.
+        // Nytt beslut direkt om inställningen (steg/medelvärden) ändrats sedan förra beslutet
+        const rules = cfg.step + '|' + cfg.lengths.join(',');
+        const prevRules = st.rules || (st.lastDecision ? '0.25|' + cfg.lengths.join(',') : rules);   // läge från före 13 okt saknar fältet
+        if (prevRules !== rules) { st.lastDecision = 0; log('Reglerna ändrade (steg ' + prevRules.split('|')[0] + ' → ' + cfg.step + '), fattar nytt beslut direkt.', 'info'); }
+        st.rules = rules;
         if (cfg.enabled && refDay > st.lastDecision) {
             const val = value(), curW = st.units * bid / Math.max(val, 1e-9);
             const diff = (sig.target - curW) * val;
@@ -186,7 +209,7 @@ export async function main() {
         const sim = backtest(candles, smas, cfg);
         st.history = {
             from: sim.from, total: sim.total, bhTotal: sim.bhTotal, maxDD: sim.maxDD, bhMaxDD: sim.bhMaxDD,
-            trades: sim.trades, equity: sim.equity.filter((p, i, a) => i % 2 === 0 || i === a.length - 1)
+            trades: sim.trades, stats: sim.stats, equity: sim.equity.filter((p, i, a) => i % 2 === 0 || i === a.length - 1)
         };
         st.lastError = null;
     } catch (e) {

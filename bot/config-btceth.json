@@ -1,0 +1,8 @@
+{
+  "label": "Trend BTC + ETH",
+  "enabled": true,
+  "mode": "ensemble",
+  "symbols": ["BTCUSDT", "ETHUSDT"],
+  "lengths": [20, 50, 100, 150, 200],
+  "step": 0.25
+}

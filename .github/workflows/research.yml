@@ -1,6 +1,6 @@
 name: Research (strategitest mot buy & hold)
 
-# Testgren: kör bara ensemble-förbättringstestet och lägger resultatet på grenen research-ensemble-out
+# Testgren: kör bara ensemble-förbättringstestet och lägger resultatet på grenen research-funding-out
 on:
   workflow_dispatch: {}
 
@@ -16,12 +16,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node bot/research-ensemble.mjs
+      - run: node bot/research-funding.mjs
       - name: Publicera
         run: |
           cd research-out
-          git init -q -b research-ensemble-out
+          git init -q -b research-funding-out
           echo '{"git":{"deploymentEnabled":false}}' > vercel.json
           git add . && git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "ensemble research"
           git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-          git push -q --force origin research-ensemble-out
+          git push -q --force origin research-funding-out
