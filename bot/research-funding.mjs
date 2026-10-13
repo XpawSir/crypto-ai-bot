@@ -16,11 +16,13 @@ const OUT = 'research-out';
 
 async function get(url) {
     for (let i = 0; i < 4; i++) {
-        try { const r = await fetch(url, { signal: AbortSignal.timeout(20000) }); if (r.ok) return r.json(); console.log('HTTP', r.status, url); } catch (e) { console.log('fel', e.message); }
+        try { const r = await fetch(url, { signal: AbortSignal.timeout(20000) }); if (r.ok) return r.json(); console.log('HTTP', r.status, url); if (r.status === 451 || r.status === 403) throw new Error('blockerad ' + r.status); } catch (e) { console.log('fel', e.message); }
         await new Promise(r => setTimeout(r, 1500));
     }
     throw new Error('misslyckades: ' + url);
 }
+import { execFileSync } from 'node:child_process';
+const VISION = 'https://data.binance.vision/data/futures/um/monthly';
 async function klines(base, sym) {
     let start = Date.UTC(2019, 8, 1), out = [];
     for (;;) {
@@ -31,23 +33,70 @@ async function klines(base, sym) {
     }
     return new Map(out);
 }
+// Månadsfiler (zip med CSV) från data.binance.vision. Rader som inte börjar med en siffra (rubriker) hoppas över.
+async function visionRows(kind, sym) {
+    const rows = [];
+    for (let y = 2019, m = 9; ; m++) {
+        if (m > 12) { m = 1; y++; }
+        const ym = y + '-' + String(m).padStart(2, '0');
+        if (Date.UTC(y, m - 1, 1) > Date.now() - 28 * DAY) break;
+        const url = kind === 'funding' ? `${VISION}/fundingRate/${sym}/${sym}-fundingRate-${ym}.zip` : `${VISION}/klines/${sym}/1d/${sym}-1d-${ym}.zip`;
+        try {
+            const r = await fetch(url, { signal: AbortSignal.timeout(30000) });
+            if (!r.ok) continue;
+            fs.writeFileSync('/tmp/f.zip', Buffer.from(await r.arrayBuffer()));
+            const txt = execFileSync('unzip', ['-p', '/tmp/f.zip']).toString();
+            for (const line of txt.split('\n')) { const c = line.split(','); if (/^\d/.test(c[0])) rows.push(c); }
+        } catch (e) { console.log('fel', url, e.message); }
+    }
+    return rows;
+}
+async function futKlines(sym) {
+    try { return await klines(FUT, sym); } catch (e) { console.log('fapi blockerad, använder månadsfiler'); }
+    return new Map((await visionRows('klines', sym)).map(c => [+c[0], +c[4]]));
+}
 async function funding(sym) {
-    let start = Date.UTC(2019, 8, 1), out = [];
-    for (;;) {
-        const f = await get(`${FUT}/fundingRate?symbol=${sym}&limit=1000&startTime=${start}`);
-        if (!f.length) break;
-        out.push(...f.map(x => [x.fundingTime, +x.fundingRate]));
-        if (f.length < 1000) break; start = f[f.length - 1][0] + 1;
+    let out = [];
+    try {
+        let start = Date.UTC(2019, 8, 1);
+        for (;;) {
+            const f = await get(`${FUT}/fundingRate?symbol=${sym}&limit=1000&startTime=${start}`);
+            if (!f.length) break;
+            out.push(...f.map(x => [x.fundingTime, +x.fundingRate]));
+            if (f.length < 1000) break; start = f[f.length - 1][0] + 1;
+        }
+    } catch (e) {
+        // CSV: calc_time, funding_interval_hours, last_funding_rate
+        out = (await visionRows('funding', sym)).map(c => [+c[0], +c[c.length - 1]]);
     }
     const byDay = new Map();
     for (const [t, r] of out) { const d = Math.floor(t / DAY) * DAY; byDay.set(d, (byDay.get(d) || 0) + r); }
     return byDay;
 }
 
+// Vilka börser går att nå härifrån (för en framtida livebot)?
+const probes = {
+    'Binance terminer (fapi)': 'https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT',
+    'Binance spot (data-api)': 'https://data-api.binance.vision/api/v3/ticker/bookTicker?symbol=BTCUSDT',
+    'OKX funding': 'https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP',
+    'Bybit tickers': 'https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT',
+    'Kraken Futures': 'https://futures.kraken.com/derivatives/api/v3/tickers',
+    'Deribit': 'https://www.deribit.com/api/v2/public/get_funding_rate_value?instrument_name=BTC-PERPETUAL&start_timestamp=' + (Date.now() - 86400000) + '&end_timestamp=' + Date.now(),
+    'Hyperliquid': 'https://api.hyperliquid.xyz/info'
+};
+let probeMd = '\n## Nåbara datakällor från GitHub Actions\n\n';
+for (const [n, u] of Object.entries(probes)) {
+    try {
+        const r = n === 'Hyperliquid' ? await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'metaAndAssetCtxs' }), signal: AbortSignal.timeout(15000) }) : await fetch(u, { signal: AbortSignal.timeout(15000) });
+        const t = await r.text(); probeMd += `- ${n}: HTTP ${r.status} ${t.slice(0, 120).replace(/\n/g, ' ')}\n`;
+    } catch (e) { probeMd += `- ${n}: fel ${e.message}\n`; }
+}
+console.log(probeMd);
+
 const data = {};
 for (const s of COINS) {
     try {
-        const [sp, pp, fr] = [await klines(SPOT, s), await klines(FUT, s), await funding(s)];
+        const [sp, pp, fr] = [await klines(SPOT, s), await futKlines(s), await funding(s)];
         const days = [...fr.keys()].filter(d => sp.has(d) && pp.has(d) && sp.has(d - DAY) && pp.has(d - DAY)).sort((a, b) => a - b);
         data[s] = { days, sp, pp, fr };
         console.log(s, days.length, 'dagar från', new Date(days[0]).toISOString().slice(0, 10));
@@ -121,6 +170,6 @@ for (let y = 2019; y <= new Date().getUTCFullYear(); y++) {
     md += '| ' + y + ' | ' + avail.map(s => { const v = [...data[s].fr.entries()].filter(([d]) => new Date(d).getUTCFullYear() === y).map(x => x[1]); return v.length ? f(v.reduce((a, b) => a + b, 0) / v.length * 365) : '-'; }).join(' | ') + ' |\n';
 }
 fs.mkdirSync(OUT, { recursive: true });
-fs.writeFileSync(OUT + '/REPORT-FUNDING.md', md);
+fs.writeFileSync(OUT + '/REPORT-FUNDING.md', md + probeMd);
 fs.writeFileSync(OUT + '/funding-results.json', JSON.stringify(res, null, 1));
 console.log(md);
