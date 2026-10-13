@@ -74,6 +74,20 @@
         html[data-theme=light] header { background:rgba(255,255,255,.85) !important; border-color:rgba(15,23,42,.08) !important; }
         html[data-theme=light] select, html[data-theme=light] input[type=number] { color:#0f172a !important; }
         html[data-theme=light] .bg-red-900\/30 { background:rgba(220,38,38,.08) !important; }
+        /* trend-ensemble-sidan */
+        .tr-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+        @media (min-width:768px) { .tr-kpis { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+        .tr-cols { display:grid; grid-template-columns:minmax(0,1fr); gap:24px; }
+        @media (min-width:1024px) { .tr-cols { grid-template-columns:minmax(0,2fr) minmax(0,1fr); } }
+        .tr-meter { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+        .tr-ma { border:1px solid var(--line); border-radius:12px; padding:10px 8px; text-align:center; font-family:'JetBrains Mono',monospace; }
+        .tr-ma b { display:block; font-size:12px; color:var(--accent); } .tr-ma span { display:block; font-size:10px; color:var(--muted); margin-top:2px; }
+        .tr-ma.on { border-color:rgba(52,211,153,.45); background:rgba(52,211,153,.08); } .tr-ma.on b { color:#34d399; }
+        .tr-bar { height:10px; border-radius:999px; background:rgba(128,128,128,.18); overflow:hidden; } .tr-bar > i { display:block; height:100%; background:#34d399; border-radius:999px; transition:width .4s; }
+        #tr-price { height:420px; background:var(--chart); border-radius:12px; overflow:hidden; }
+        #tr-hist, #srv4-chart { height:220px; }
+        .tr-legend { display:flex; flex-wrap:wrap; gap:12px; font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+        .tr-legend i { display:inline-block; width:10px; height:3px; border-radius:2px; margin-right:5px; vertical-align:middle; }
     </style>
 </head>
 <body class="text-gray-200 antialiased min-h-screen flex flex-col justify-between">
@@ -89,6 +103,7 @@
         <nav class="flex items-center gap-1 order-3 md:order-none w-full md:w-auto justify-center" aria-label="Huvudmeny">
             <a href="#home" class="tab" data-tab="home"><i class="fa-solid fa-house mr-1.5"></i>Home</a>
             <a href="#market" class="tab" data-tab="market"><i class="fa-solid fa-chart-line mr-1.5"></i>Market</a>
+            <a href="#trend" class="tab" data-tab="trend"><i class="fa-solid fa-layer-group mr-1.5"></i>Trend</a>
             <a href="#updates" class="tab" data-tab="updates"><i class="fa-solid fa-bolt mr-1.5"></i>Latest Updates</a>
             <a href="#learn" class="tab" data-tab="learn"><i class="fa-solid fa-graduation-cap mr-1.5"></i>Learn</a>
         </nav>
@@ -310,9 +325,74 @@
         </section>
     </main>
 
+    <main id="view-trend" class="hidden p-4 md:p-6 max-w-[1400px] mx-auto w-full flex-grow space-y-6">
+        <div class="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+                <h2 class="text-2xl font-bold text-white tracking-tight">Trend-ensemble · BTC</h2>
+                <p class="text-[13px] text-gray-400 mt-1">Kollar en gång per dygn hur många av fem medelvärden (20, 50, 100, 150 och 200 dagar) som kursen ligger över. Varje medelvärde ≈ en femtedel av pengarna i BTC, i steg om 25 %. Resten ligger som kontanter. Körs 24/7 på GitHub med låtsaspengar.</p>
+            </div>
+            <div id="srv4-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
+        </div>
+
+        <div class="tr-kpis text-xs font-mono">
+            <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv4-balance" class="stat-val text-white">-</span></div>
+            <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv4-pnl" class="stat-val text-white">-</span></div>
+            <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Andel i BTC nu</span><span id="tr-weight" class="stat-val text-white">-</span></div>
+            <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Avslutade affärer · Win Rate</span><span class="stat-val text-white"><span id="srv4-trades">-</span> · <span id="srv4-winrate">-</span></span></div>
+        </div>
+
+        <div class="tr-cols">
+            <section class="glass p-5 min-w-0">
+                <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+                    <h3 class="h-sec">BTC dagscandles med de fem medelvärdena</h3>
+                    <div class="tr-legend">
+                        <span><i style="background:#facc15"></i>20</span><span><i style="background:#fb923c"></i>50</span><span><i style="background:#f472b6"></i>100</span><span><i style="background:#a78bfa"></i>150</span><span><i style="background:#38bdf8"></i>200</span><span>▲ köp ▼ sälj</span>
+                    </div>
+                </div>
+                <div id="tr-price"></div>
+                <p class="mt-2 text-[11px] font-mono text-gray-500">Senaste året. Pilarna visar när regeln ökat eller minskat andelen BTC.</p>
+            </section>
+
+            <section class="glass p-5 min-w-0">
+                <h3 class="h-sec mb-3">Signalen just nu</h3>
+                <div id="tr-meter" class="tr-meter"></div>
+                <div class="mt-3 flex items-center justify-between text-[11px] font-mono text-gray-400"><span>Mål enligt senaste stängda dag</span><span id="tr-target" class="text-white font-semibold">-</span></div>
+                <div class="tr-bar mt-2"><i id="tr-bar" style="width:0%"></i></div>
+                <p id="tr-explain" class="mt-3 text-[12px] text-gray-400"></p>
+                <div id="srv4-markets" class="mt-3 grid grid-cols-1 gap-2"></div>
+                <p id="srv4-pos" class="mt-3 text-[11px] font-mono text-gray-300"></p>
+                <h3 class="h-sec mt-3 mb-2">Logg</h3>
+                <div id="srv4-log" class="tile p-3 text-[11px] font-mono space-y-1 max-h-[130px] overflow-y-auto"></div>
+            </section>
+        </div>
+
+        <div class="tr-cols">
+            <section class="glass p-5 min-w-0">
+                <h3 class="h-sec">Live sedan start · boten mot buy & hold</h3>
+                <p id="srv4-bh" class="mt-2 text-[11px] font-mono text-gray-400"></p>
+                <p id="tr-live-wait" class="mt-3 text-[12px] text-gray-500">Kurvan fylls på med en punkt i timmen när boten har kört en stund. Startkapital $10,000.</p>
+                <div id="srv4-chart" class="mt-2 w-full"></div>
+                <p id="srv4-note" class="mt-2 text-[11px] font-mono text-gray-500"></p>
+            </section>
+            <section class="glass p-5 min-w-0">
+                <h3 class="h-sec">Så hade regeln gått (simulering)</h3>
+                <p id="tr-hist-txt" class="mt-2 text-[11px] font-mono text-gray-400"></p>
+                <div id="tr-hist" class="mt-2 w-full"></div>
+                <p class="mt-2 text-[11px] font-mono text-gray-500">Samma regler på Binance-data bakåt (ca 2 år), 0,1 % avgift. Långtest BTC 2016–2026: ca +69 %/år och värsta ras −58 %, mot +63 %/år och −83 % för buy & hold. Historik garanterar inget.</p>
+            </section>
+        </div>
+    </main>
+
     <main id="view-updates" class="hidden p-4 md:p-6 max-w-3xl mx-auto w-full flex-grow">
         <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Latest Updates</h2>
             <p class="text-[13px] text-gray-400 mt-1">Det senaste som byggts och ändrats, nyast först. All handel är simulerad med låtsaspengar.</p></div>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="chip res">Research</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Ny flik: Trend, en fjärde bot som kör 24/7</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">16 nya regler testades på BTC-timdata 2016–2026 med avgifter. Trend-ensemblen gav bäst avkastning av de regler som höll även på den osedda andra halvan: ca +69 %/år med värsta ras −58 %, mot +63 %/år och −83 % för buy &amp; hold. Den äger 0–100 % BTC beroende på hur många av fem medelvärden kursen ligger över, och beslutar en gång per dygn. Egen sida med dagscandles, medelvärden, köp/sälj-pilar, signalmätare och simulering bakåt.</span></p>
+                </div>
+            </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
                     <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="chip imp">Improved</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
@@ -417,7 +497,7 @@
             <p class="text-[13px] text-gray-400 mt-1">Korta förklaringar av det du ser på sidan. Klicka på en fråga för att öppna den.</p></div>
         <div class="glass px-5 py-2">
             <details class="qa"><summary>Vad är det här för sida?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En terminal för en <strong>simulerad</strong> kryptoboot. Inga riktiga pengar och inga börsnycklar är inblandade. Botarna handlar med låtsaspengar mot riktiga priser från Binance, så du kan se hur en strategi hade klarat sig utan att riskera något.</span></p></details>
-            <details class="qa"><summary>Vilka botar finns och vad är skillnaden?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)"><strong>Serverbot 4h</strong> köper och säljer med stop-loss och take-profit på 4-timmarscandles. <strong>Dagbot</strong> använder dagliga candles och säljer bara på signal. <strong>Rotationsbot</strong> äger varje vecka de starkaste valutorna av tio. De tre kör hela tiden på GitHub, även när sidan är stängd. Knappen "Starta AI-Robot" styr en separat testbot i din webbläsare som bara går medan fliken är öppen.</span></p></details>
+            <details class="qa"><summary>Vilka botar finns och vad är skillnaden?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)"><strong>Serverbot 4h</strong> köper och säljer med stop-loss och take-profit på 4-timmarscandles. <strong>Dagbot</strong> använder dagliga candles och säljer bara på signal. <strong>Rotationsbot</strong> äger varje vecka de starkaste valutorna av tio. <strong>Trend-ensemble</strong> (fliken Trend) äger 0–100 % BTC efter hur många av fem medelvärden kursen ligger över. De fyra kör hela tiden på GitHub, även när sidan är stängd. Knappen "Starta AI-Robot" styr en separat testbot i din webbläsare som bara går medan fliken är öppen.</span></p></details>
             <details class="qa"><summary>Vad är en candlestick?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Ett staplat "ljus" som visar ett tidsintervall. Kroppen går från öppningspris till stängningspris, och veken visar högsta och lägsta pris under tiden. Grönt betyder att priset steg, rött att det föll. Intervallet (1 min, 1 tim, 4 tim, dag) bestämmer hur lång tid varje ljus är.</span></p></details>
             <details class="qa"><summary>Vad är stop-loss och take-profit?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En stop-loss säljer automatiskt om priset faller till en viss nivå, så att en förlust inte växer. En take-profit säljer när vinsten nått ett mål. Här räknas nivåerna med ATR, ett mått på hur mycket priset brukar röra sig, och riskreglaget gör nivåerna tajtare eller längre ifrån.</span></p></details>
             <details class="qa"><summary>Vad är spread och avgifter?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Spread är skillnaden mellan bästa köppris (ask) och bästa säljpris (bid). Du köper på det högre och säljer på det lägre, så varje affär kostar lite. Dessutom tar börsen cirka 0,1 % avgift per köp och per sälj. Därför lönar sig inte att handla väldigt ofta: avgifterna äter upp vinsten.</span></p></details>

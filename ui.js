@@ -1,6 +1,6 @@
 // Flikar (Home / Market / Latest Updates / Learn) och tema (mörkt/ljust). Fristående från script.js.
 (function () {
-    var views = { home: 'view-home', market: 'view-market', updates: 'view-updates', learn: 'view-learn' };
+    var views = { home: 'view-home', market: 'view-market', trend: 'view-trend', updates: 'view-updates', learn: 'view-learn' };
 
     var current = null;
     function show(name) {
@@ -17,7 +17,7 @@
         if (name === 'market' && current !== 'market') window.dispatchEvent(new Event('market:show'));
         current = name;
         // graferna måste få veta sin storlek igen när Home visas
-        if (name === 'home') setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 30);
+        if (name === 'home' || name === 'trend') setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 30);
     }
     function route() { show((location.hash || '#home').slice(1)); }
     window.addEventListener('hashchange', route);

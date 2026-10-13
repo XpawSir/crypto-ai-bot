@@ -29,20 +29,22 @@ jobs:
             git show FETCH_HEAD:state.json > state/state.json || rm -f state/state.json
             git show FETCH_HEAD:slow.json > state/slow.json 2>/dev/null || rm -f state/slow.json
             git show FETCH_HEAD:rotation.json > state/rotation.json 2>/dev/null || rm -f state/rotation.json
+            git show FETCH_HEAD:ensemble.json > state/ensemble.json 2>/dev/null || rm -f state/ensemble.json
           else
             echo "Ingen bot-state-gren än, börjar från noll."
           fi
 
-      # De tre botarna är oberoende: ett fel i en får aldrig stoppa de andra eller hindra att läget sparas.
+      # De fyra botarna är oberoende: ett fel i en får aldrig stoppa de andra eller hindra att läget sparas.
       # De körs samtidigt (olika tillståndsfiler) vilket gör körningen kortare.
-      - name: Kör alla tre botarna parallellt
+      - name: Kör alla fyra botarna parallellt
         run: |
           node bot/run.mjs > log-main.txt 2>&1 & p1=$!
           BOT_CONFIG=bot/config-slow.json BOT_STATE=state/slow.json node bot/run.mjs > log-slow.txt 2>&1 & p2=$!
           node bot/rotation.mjs > log-rot.txt 2>&1 & p3=$!
+          node bot/ensemble.mjs > log-ens.txt 2>&1 & p4=$!
           fail=0
-          for p in $p1 $p2 $p3; do wait $p || fail=1; done
-          for f in log-main.txt log-slow.txt log-rot.txt; do echo "::group::$f"; cat $f; echo "::endgroup::"; done
+          for p in $p1 $p2 $p3 $p4; do wait $p || fail=1; done
+          for f in log-main.txt log-slow.txt log-rot.txt log-ens.txt; do echo "::group::$f"; cat $f; echo "::endgroup::"; done
           if [ $fail = 1 ]; then echo "::warning::En av botarna avslutades med fel (se loggen ovan)"; fi
 
       - name: Spara läget på grenen bot-state
@@ -53,6 +55,7 @@ jobs:
           cp ../state/state.json .
           cp ../state/slow.json . 2>/dev/null || true
           cp ../state/rotation.json . 2>/dev/null || true
+          cp ../state/ensemble.json . 2>/dev/null || true
           # Vercel läser inställningen från grenen som pushas: stäng av bygge/deploy för bot-state
           echo '{"git":{"deploymentEnabled":false}}' > vercel.json
           git add -A

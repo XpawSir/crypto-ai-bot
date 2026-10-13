@@ -1327,7 +1327,7 @@ const money = function (v, sign) {
 };
 const priceTxt = function (v) { return v === null || v === undefined ? 'ingen' : '$' + Number(v).toFixed(4).replace(/0+$/, '').replace(/\.$/, ''); };
 
-function makeServerPanel(prefix, file) {
+function makeServerPanel(prefix, file, onState) {
     const el = {};
     ['badge', 'balance', 'pnl', 'trades', 'winrate', 'pos', 'note', 'log', 'chart', 'bh', 'markets'].forEach(function (k) {
         el[k] = document.getElementById(prefix + '-' + k);
@@ -1375,6 +1375,7 @@ function makeServerPanel(prefix, file) {
             }
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const st = await res.json();
+            if (onState) { try { onState(st); } catch (e) { console.warn('Panel ' + prefix + ':', e); } }
             const minutes = (Date.now() - new Date(st.lastRun).getTime()) / 60000;
             if (st.lastError) badge('Fel vid senaste körning', 'bad');
             else if (st.enabled === false) badge('Avstängd i config', 'off');
@@ -1449,7 +1450,89 @@ function makeServerPanel(prefix, file) {
     return { load: load };
 }
 
-const serverPanels = [makeServerPanel('srv', 'state.json'), makeServerPanel('srv2', 'slow.json'), makeServerPanel('srv3', 'rotation.json')];
+// ---------- Trend-ensemble-sidan (#trend) ----------
+// Prisgraf med de fem medelvärdena och köp/sälj-pilar, signalmätare och en simulering bakåt. Data kommer från ensemble.json.
+const trendView = (function () {
+    const MA_COLORS = ['#facc15', '#fb923c', '#f472b6', '#a78bfa', '#38bdf8'];
+    let priceChart = null, candleS = null, maS = [], histChart = null, histBot = null, histBh = null;
+    const pct = function (v) { return (v >= 0 ? '+' : '') + (100 * v).toFixed(0) + ' %'; };
+
+    function baseOpts(extra) {
+        const c = themeColors();
+        return Object.assign({
+            autoSize: true,
+            layout: { background: { type: LightweightCharts.ColorType.Solid, color: 'transparent' }, textColor: c.text },
+            grid: { vertLines: { visible: false }, horzLines: { color: c.grid } },
+            rightPriceScale: { borderVisible: false }, timeScale: { borderVisible: false }
+        }, extra || {});
+    }
+
+    function render(st) {
+        if (typeof LightweightCharts === 'undefined') return;
+        const w = typeof st.weight === 'number' ? st.weight : 0;
+        const wait = document.getElementById('tr-live-wait');
+        if (wait) wait.style.display = (st.equity && st.equity.length >= 2) ? 'none' : '';
+        const wEl = document.getElementById('tr-weight');
+        if (wEl) { wEl.textContent = Math.round(100 * w) + ' %'; wEl.className = 'stat-val ' + (w > 0 ? 'text-emerald-400' : 'text-white'); }
+
+        // Signalmätaren: en ruta per medelvärde
+        const meter = document.getElementById('tr-meter');
+        if (meter && Array.isArray(st.signal)) {
+            meter.textContent = '';
+            st.signal.forEach(function (s) {
+                const d = document.createElement('div'); d.className = 'tr-ma' + (s.above ? ' on' : '');
+                const b = document.createElement('b'); b.textContent = s.len + 'd';
+                const sp = document.createElement('span'); sp.textContent = (s.above ? 'över · ' : 'under · ') + '$' + Math.round(s.sma).toLocaleString('en-US');
+                d.appendChild(b); d.appendChild(sp); meter.appendChild(d);
+            });
+            const above = st.signal.filter(function (s) { return s.above; }).length;
+            const tgt = typeof st.target === 'number' ? st.target : 0;
+            document.getElementById('tr-target').textContent = Math.round(100 * tgt) + ' % i BTC';
+            document.getElementById('tr-bar').style.width = Math.round(100 * tgt) + '%';
+            document.getElementById('tr-explain').textContent = 'Stängningskursen $' + Math.round(st.signalClose || 0).toLocaleString('en-US') + ' ligger över ' + above + ' av ' + st.signal.length + ' medelvärden, alltså ' + above + '/' + st.signal.length + ' = ' + Math.round(100 * above / st.signal.length) + ' %, avrundat till ' + Math.round(100 * tgt) + ' %. Nästa beslut tas när dagens candle stänger (02:00 svensk tid).';
+        }
+
+        // Prisgraf: dagscandles + medelvärden + pilar för regelns affärer (simulering och live)
+        const box = document.getElementById('tr-price');
+        if (box && st.chart && Array.isArray(st.chart.candles)) {
+            if (!priceChart) {
+                priceChart = LightweightCharts.createChart(box, baseOpts({ timeScale: { borderVisible: false, timeVisible: false } }));
+                serverCharts.push(priceChart);
+                candleS = priceChart.addCandlestickSeries({ upColor: '#0ecb81', downColor: '#f6465d', borderVisible: false, wickUpColor: '#0ecb81', wickDownColor: '#f6465d', priceFormat: { type: 'price', precision: 0, minMove: 1 } });
+                maS = MA_COLORS.map(function (col) { return priceChart.addLineSeries({ color: col, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, priceFormat: { type: 'price', precision: 0, minMove: 1 } }); });
+            }
+            candleS.setData(st.chart.candles.map(function (k) { return { time: k[0], open: k[1], high: k[2], low: k[3], close: k[4] }; }));
+            (st.chart.smas || []).forEach(function (m, i) { if (maS[i]) maS[i].setData(m.data.map(function (p) { return { time: p[0], value: p[1] }; })); });
+            const first = st.chart.candles.length ? st.chart.candles[0][0] : 0, marks = {};
+            ((st.history && st.history.trades) || []).forEach(function (t) { if (t.t >= first) marks[t.t] = t; });
+            (st.trades || []).forEach(function (t) { const day = Math.floor(new Date(t.t).getTime() / 86400000) * 86400; marks[day] = { t: day, side: t.side, weight: t.weight }; });
+            candleS.setMarkers(Object.keys(marks).map(Number).sort(function (a, b) { return a - b; }).map(function (k) {
+                const t = marks[k], buy = t.side === 'buy';
+                return { time: k, position: buy ? 'belowBar' : 'aboveBar', color: buy ? '#34d399' : '#f87171', shape: buy ? 'arrowUp' : 'arrowDown', size: 0.6 };
+            }));
+            if (!priceChart._fitted) { priceChart.timeScale().fitContent(); priceChart._fitted = true; }
+        }
+
+        // Simulering bakåt
+        const hb = document.getElementById('tr-hist');
+        if (hb && st.history && Array.isArray(st.history.equity) && st.history.equity.length > 1) {
+            if (!histChart) {
+                histChart = LightweightCharts.createChart(hb, baseOpts({ handleScroll: false, handleScale: false, crosshair: { mode: 0 } }));
+                serverCharts.push(histChart);
+                histBot = histChart.addLineSeries({ color: '#34d399', lineWidth: 2, priceLineVisible: false, title: 'Regeln', priceFormat: { type: 'price', precision: 0, minMove: 1 } });
+                histBh = histChart.addLineSeries({ color: '#94a3b8', lineWidth: 1, lineStyle: 2, priceLineVisible: false, title: 'Buy & hold', priceFormat: { type: 'price', precision: 0, minMove: 1 } });
+            }
+            histBot.setData(st.history.equity.map(function (p) { return { time: p[0], value: p[1] }; }));
+            histBh.setData(st.history.equity.map(function (p) { return { time: p[0], value: p[2] }; }));
+            histChart.timeScale().fitContent();
+            const h = st.history;
+            document.getElementById('tr-hist-txt').textContent = 'Från ' + new Date(h.from * 1000).toLocaleDateString('sv-SE') + ': regeln ' + pct(h.total) + ' (värsta ras ' + pct(h.maxDD) + ') · buy & hold ' + pct(h.bhTotal) + ' (värsta ras ' + pct(h.bhMaxDD) + ') · ' + h.trades.length + ' justeringar';
+        }
+    }
+    return { render: render };
+})();
+
+const serverPanels = [makeServerPanel('srv', 'state.json'), makeServerPanel('srv2', 'slow.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render)];
 function loadServerBot() { serverPanels.forEach(function (p) { p.load(); }); }
 
 // ---------- Logga ut ----------

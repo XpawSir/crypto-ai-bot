@@ -1,0 +1,7 @@
+{
+  "label": "Trend-ensemble (BTC, dagligen)",
+  "enabled": true,
+  "symbol": "BTCUSDT",
+  "lengths": [20, 50, 100, 150, 200],
+  "step": 0.25
+}
