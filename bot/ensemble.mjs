@@ -2,7 +2,8 @@
 //  Algiz trend-ensemble (PAPER TRADING, låtsaspengar). Körs av GitHub Actions tillsammans med övriga botar.
 //  Idé från historiktestet 2026-10-13 (BTC 2016–2026, dagliga candles, 0,1 % avgift):
 //  räkna hur många av fem medelvärden (20, 50, 100, 150, 200 dagar) som kursen ligger över.
-//  Andel BTC = antal / 5, avrundat till steg om 25 % (0, 25, 50, 75 eller 100 %). Resten är kontanter.
+//  Andel BTC = antal / 5, avrundat till steg om 50 %: 0–1 medelvärden -> 0 %, 2–3 -> 50 %, 4–5 -> 100 %. Resten kontanter.
+//  (Steg 50 % valdes 2026-10-13: bättre än 25 % i båda halvorna av testet 2018–2026, färre affärer.)
 //  Beslut tas en gång per dygn på STÄNGD dagscandle (00:00 UTC). Inga stop-loss, bara gradvis in/ut.
 //  Testresultat: ca +69 %/år, största nedgång -58 % (buy & hold: +63 %/år, -83 %). Historik garanterar inget.
 // ============================================================
@@ -28,7 +29,7 @@ function loadConfig() {
     const c = readJSON(CONFIG_FILE, {});
     let lengths = Array.isArray(c.lengths) ? c.lengths.map(n => Math.round(n)).filter(n => n >= 5 && n <= 300) : [];
     if (lengths.length < 2) lengths = [20, 50, 100, 150, 200];
-    const step = [0.1, 0.2, 0.25, 0.5, 1].includes(c.step) ? c.step : 0.25;
+    const step = [0.1, 0.2, 0.25, 0.5, 1].includes(c.step) ? c.step : 0.5;
     return {
         label: typeof c.label === 'string' ? c.label.slice(0, 40) : 'Trend-ensemble',
         enabled: c.enabled !== false,
@@ -140,6 +141,11 @@ export async function main() {
         st.signalClose = closes[n]; st.signalDay = refDay;
 
         // Ett beslut per stängd dag. Första körningen går direkt in på dagens mål.
+        // Nytt beslut direkt om inställningen (steg/medelvärden) ändrats sedan förra beslutet
+        const rules = cfg.step + '|' + cfg.lengths.join(',');
+        const prevRules = st.rules || (st.lastDecision ? '0.25|' + cfg.lengths.join(',') : rules);   // läge från före 13 okt saknar fältet
+        if (prevRules !== rules) { st.lastDecision = 0; log('Reglerna ändrade (steg ' + prevRules.split('|')[0] + ' → ' + cfg.step + '), fattar nytt beslut direkt.', 'info'); }
+        st.rules = rules;
         if (cfg.enabled && refDay > st.lastDecision) {
             const val = value(), curW = st.units * bid / Math.max(val, 1e-9);
             const diff = (sig.target - curW) * val;
