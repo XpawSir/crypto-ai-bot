@@ -1,6 +1,8 @@
 // Flikar (Home / Market / Latest Updates / Learn) och tema (mörkt/ljust). Fristående från script.js.
 (function () {
-    var views = { home: 'view-home', market: 'view-market', trend: 'view-trend', updates: 'view-updates', learn: 'view-learn' };
+    var views = { home: 'view-home', market: 'view-market', trend: 'view-trend', bot4h: 'view-bot4h', botday: 'view-botday', botrot: 'view-botrot', lab: 'view-lab', updates: 'view-updates', learn: 'view-learn' };
+    // detaljsidorna hör till Home i menyn
+    var tabFor = { bot4h: 'home', botday: 'home', botrot: 'home' };
 
     var current = null;
     function show(name) {
@@ -11,13 +13,13 @@
             if (el) el.classList.toggle('hidden', k !== name);
         });
         document.querySelectorAll('[data-tab]').forEach(function (a) {
-            if (a.getAttribute('data-tab') === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+            if (a.getAttribute('data-tab') === (tabFor[name] || name)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
         });
         window.scrollTo(0, 0);
         if (name === 'market' && current !== 'market') window.dispatchEvent(new Event('market:show'));
         current = name;
         // graferna måste få veta sin storlek igen när Home visas
-        if (name === 'home' || name === 'trend') setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 30);
+        if (name !== 'market') setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 30);
     }
     function route() { show((location.hash || '#home').slice(1)); }
     window.addEventListener('hashchange', route);

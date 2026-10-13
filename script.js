@@ -1338,6 +1338,7 @@ function makeServerPanel(prefix, file, onState) {
     function badge(text, tone) {
         el.badge.className = 'px-2.5 py-1 rounded-md text-[11px] font-semibold border ' + (BADGE_TONES[tone] || BADGE_TONES.off);
         el.badge.textContent = text;
+        overview.status(prefix, text, tone);
     }
 
     function drawChart(points) {
@@ -1376,6 +1377,7 @@ function makeServerPanel(prefix, file, onState) {
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const st = await res.json();
             if (onState) { try { onState(st); } catch (e) { console.warn('Panel ' + prefix + ':', e); } }
+            try { overview.update(prefix, st); } catch (e) { console.warn('Översikt:', e); }
             const minutes = (Date.now() - new Date(st.lastRun).getTime()) / 60000;
             if (st.lastError) badge('Fel vid senaste körning', 'bad');
             else if (st.enabled === false) badge('Avstängd i config', 'off');
@@ -1530,6 +1532,133 @@ const trendView = (function () {
         }
     }
     return { render: render };
+})();
+
+// ---------- Startsidan: kort per bot och topplista ----------
+const overview = (function () {
+    const BOTS = {
+        srv: { name: 'Serverbot 4h', color: '#60a5fa', href: '#bot4h' },
+        srv2: { name: 'Dagbot', color: '#fbbf24', href: '#botday' },
+        srv3: { name: 'Rotationsbot', color: '#c084fc', href: '#botrot' },
+        srv4: { name: 'Trend-ensemble', color: '#34d399', href: '#trend' }
+    };
+    const START = 10000, states = {};
+    let lbChart = null, lbSeries = {}, timer = null;
+    const card = function (p) { return document.querySelector('.ov-card[data-bot="' + p + '"]'); };
+    const part = function (p, k) { const c = card(p); return c ? c.querySelector('[data-k="' + k + '"]') : null; };
+    const pctTxt = function (v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + ' %'; };
+
+    function lastBot(st) { return st.equity && st.equity.length ? st.equity[st.equity.length - 1][1] : st.balance; }
+    function maxDD(st) {
+        let pk = 0, dd = 0;
+        (st.equity || []).forEach(function (q) { pk = Math.max(pk, q[1]); if (pk) dd = Math.min(dd, q[1] / pk - 1); });
+        return dd;
+    }
+
+    // Liten kurva i SVG (boten heldragen, buy & hold streckad)
+    function spark(el, eq, color) {
+        el.textContent = '';
+        if (!eq || eq.length < 2) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">Kurvan fylls på när boten kört en stund</span>'; return; }
+        const W = 200, H = 56, xs = eq.map(function (q) { return q[0]; }), vals = [];
+        eq.forEach(function (q) { vals.push(q[1], q[2]); });
+        const x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+        const X = function (t) { return x1 > x0 ? (t - x0) / (x1 - x0) * W : 0; }, Y = function (v) { return hi > lo ? H - 3 - (v - lo) / (hi - lo) * (H - 6) : H / 2; };
+        const line = function (i) { return eq.map(function (q) { return X(q[0]).toFixed(1) + ',' + Y(q[i]).toFixed(1); }).join(' '); };
+        el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+            '<polyline points="' + line(2) + '" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>' +
+            '<polyline points="' + line(1) + '" fill="none" stroke="' + color + '" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>';
+    }
+
+    function status(p, text, tone) {
+        const b = part(p, 'badge'); if (!b) return;
+        b.textContent = text; b.className = 'ov-badge ' + (tone || '');
+        if (tone === 'bad' || text === 'Ingen data än') { states[p] = states[p] || null; schedule(); }
+    }
+
+    function update(p, st) {
+        states[p] = st;
+        const meta = BOTS[p], now = lastBot(st);
+        const bal = part(p, 'balance'); if (bal) bal.textContent = money(st.balance);
+        const pnl = part(p, 'pnl');
+        if (pnl) { const r = (now / START - 1) * 100; pnl.textContent = pctTxt(r) + ' sedan start'; pnl.className = r >= 0 ? 'up' : 'down'; }
+        const vs = part(p, 'vs');
+        if (vs) {
+            if (typeof st.buyHoldValue === 'number' && st.buyHoldValue > 0) { const d = (now / st.buyHoldValue - 1) * 100; vs.textContent = pctTxt(d) + ' mot B&H'; vs.className = d >= 0 ? 'up' : ''; }
+            else vs.textContent = '';
+        }
+        const sp = part(p, 'spark'); if (sp) spark(sp, st.equity, meta.color);
+        schedule();
+    }
+
+    function schedule() { clearTimeout(timer); timer = setTimeout(board, 150); }
+
+    function board() {
+        const list = Object.keys(BOTS).filter(function (p) { return states[p]; }).map(function (p) {
+            const st = states[p], now = lastBot(st);
+            return {
+                p: p, st: st, ret: now / START - 1, vs: typeof st.buyHoldValue === 'number' && st.buyHoldValue > 0 ? now / st.buyHoldValue - 1 : null,
+                dd: maxDD(st), started: st.startedAt ? new Date(st.startedAt) : null
+            };
+        }).sort(function (a, b) { return b.ret - a.ret; });
+
+        const body = document.getElementById('lb-body');
+        if (body) {
+            body.textContent = '';
+            if (!list.length) { body.innerHTML = '<tr><td colspan="8" class="muted">Ingen bot har data än.</td></tr>'; }
+            list.forEach(function (r, i) {
+                const tr = document.createElement('tr');
+                const cells = [
+                    [String(i + 1), 'muted'],
+                    ['<a href="' + BOTS[r.p].href + '" class="hover:underline"><span class="lb-dot" style="background:' + BOTS[r.p].color + '"></span>' + BOTS[r.p].name + '</a>', '', true],
+                    [money(r.st.balance), ''],
+                    [pctTxt(r.ret * 100), r.ret >= 0 ? 'up' : 'down'],
+                    [r.vs === null ? '-' : pctTxt(r.vs * 100), r.vs === null ? 'muted' : (r.vs >= 0 ? 'up' : 'down')],
+                    [(r.dd * 100).toFixed(2) + ' %', 'muted'],
+                    [String(r.st.totalTrades || 0), ''],
+                    [r.started ? r.started.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' }) : '-', 'muted']
+                ];
+                cells.forEach(function (c) { const td = document.createElement('td'); if (c[2]) td.innerHTML = c[0]; else td.textContent = c[0]; if (c[1]) td.className = c[1]; tr.appendChild(td); });
+                body.appendChild(tr);
+            });
+        }
+
+        // Gemensam graf i procent sedan respektive start, plus buy & hold BTC från den äldsta BTC-boten
+        const box = document.getElementById('lb-chart');
+        if (!box || typeof LightweightCharts === 'undefined') return;
+        if (!lbChart) {
+            lbChart = LightweightCharts.createChart(box, {
+                autoSize: true,
+                layout: { background: { type: LightweightCharts.ColorType.Solid, color: 'transparent' }, textColor: themeColors().text },
+                grid: { vertLines: { visible: false }, horzLines: { color: themeColors().grid } },
+                rightPriceScale: { borderVisible: false }, timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+                localization: { priceFormatter: function (v) { return (v >= 0 ? '+' : '') + v.toFixed(1) + ' %'; } }
+            });
+            serverCharts.push(lbChart);
+        }
+        const toPts = function (eq, i) {
+            const out = []; let last = 0;
+            (eq || []).forEach(function (q) { const t = Math.floor(q[0] / 1000); if (t <= last) return; last = t; out.push({ time: t, value: (q[i] / START - 1) * 100 }); });
+            return out;
+        };
+        const legend = [];
+        Object.keys(BOTS).forEach(function (p) {
+            const st = states[p]; if (!st) return;
+            if (!lbSeries[p]) lbSeries[p] = lbChart.addLineSeries({ color: BOTS[p].color, lineWidth: 2, priceLineVisible: false, lastValueVisible: true, title: '' });
+            lbSeries[p].setData(toPts(st.equity, 1));
+            legend.push('<span><i style="background:' + BOTS[p].color + '"></i>' + BOTS[p].name + '</span>');
+        });
+        const btcRef = Object.keys(BOTS).map(function (p) { return states[p]; })
+            .filter(function (st) { return st && st.buyHoldLabel === 'Buy & hold BTC' && st.equity && st.equity.length > 1; })
+            .sort(function (a, b) { return a.equity[0][0] - b.equity[0][0]; })[0];
+        if (btcRef) {
+            if (!lbSeries.bh) lbSeries.bh = lbChart.addLineSeries({ color: '#94a3b8', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: true });
+            lbSeries.bh.setData(toPts(btcRef.equity, 2));
+            legend.push('<span><i style="background:#94a3b8"></i>Buy &amp; hold BTC</span>');
+        }
+        const lg = document.getElementById('lb-legend'); if (lg) lg.innerHTML = legend.join('');
+        lbChart.timeScale().fitContent();
+    }
+    return { update: update, status: status };
 })();
 
 const serverPanels = [makeServerPanel('srv', 'state.json'), makeServerPanel('srv2', 'slow.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render)];

@@ -1,14 +1,18 @@
 name: Crypto bot (paper trading)
 
+# Varje körning loopar i ca 5,5 timmar och kör botarna var 10:e minut (bot/loop.sh),
+# och startar sedan nästa körning själv. GitHubs schema nedan är bara en reserv som
+# startar kedjan igen om den skulle brytas (GitHub kör det sällan i små repon).
 on:
   schedule:
-    - cron: "*/10 * * * *"   # var 10:e minut (GitHub kan fördröja körningar). Privat repo? Byt till "*/30 * * * *".
-  workflow_dispatch: {}       # gör att du kan starta en körning för hand i Actions-fliken
+    - cron: "7 */2 * * *"
+  workflow_dispatch: {}       # starta för hand i Actions-fliken
 
 permissions:
   contents: write
+  actions: write              # behövs för att starta nästa körning
 
-# Aldrig två körningar samtidigt, annars kan sparat läge skrivas över
+# Aldrig två körningar samtidigt. En väntande körning ersätts av den senaste, så det blir aldrig två kedjor.
 concurrency:
   group: crypto-bot
   cancel-in-progress: false
@@ -16,7 +20,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 350
     steps:
       - name: Hämta koden
         uses: actions/checkout@v4
@@ -26,39 +30,18 @@ jobs:
           mkdir -p state
           if git ls-remote --exit-code --heads origin bot-state >/dev/null 2>&1; then
             git fetch --depth=1 origin bot-state
-            git show FETCH_HEAD:state.json > state/state.json || rm -f state/state.json
-            git show FETCH_HEAD:slow.json > state/slow.json 2>/dev/null || rm -f state/slow.json
-            git show FETCH_HEAD:rotation.json > state/rotation.json 2>/dev/null || rm -f state/rotation.json
-            git show FETCH_HEAD:ensemble.json > state/ensemble.json 2>/dev/null || rm -f state/ensemble.json
+            for f in state slow rotation ensemble; do git show FETCH_HEAD:$f.json > state/$f.json 2>/dev/null || rm -f state/$f.json; done
           else
             echo "Ingen bot-state-gren än, börjar från noll."
           fi
 
-      # De fyra botarna är oberoende: ett fel i en får aldrig stoppa de andra eller hindra att läget sparas.
-      # De körs samtidigt (olika tillståndsfiler) vilket gör körningen kortare.
-      - name: Kör alla fyra botarna parallellt
-        run: |
-          node bot/run.mjs > log-main.txt 2>&1 & p1=$!
-          BOT_CONFIG=bot/config-slow.json BOT_STATE=state/slow.json node bot/run.mjs > log-slow.txt 2>&1 & p2=$!
-          node bot/rotation.mjs > log-rot.txt 2>&1 & p3=$!
-          node bot/ensemble.mjs > log-ens.txt 2>&1 & p4=$!
-          fail=0
-          for p in $p1 $p2 $p3 $p4; do wait $p || fail=1; done
-          for f in log-main.txt log-slow.txt log-rot.txt log-ens.txt; do echo "::group::$f"; cat $f; echo "::endgroup::"; done
-          if [ $fail = 1 ]; then echo "::warning::En av botarna avslutades med fel (se loggen ovan)"; fi
+      - name: Kör botarna var 10:e minut i ca 5,5 timmar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash bot/loop.sh
 
-      - name: Spara läget på grenen bot-state
-        if: always()
-        run: |
-          rm -rf state-repo && mkdir state-repo && cd state-repo
-          git init -q -b bot-state
-          cp ../state/state.json .
-          cp ../state/slow.json . 2>/dev/null || true
-          cp ../state/rotation.json . 2>/dev/null || true
-          cp ../state/ensemble.json . 2>/dev/null || true
-          # Vercel läser inställningen från grenen som pushas: stäng av bygge/deploy för bot-state
-          echo '{"git":{"deploymentEnabled":false}}' > vercel.json
-          git add -A
-          git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "bot state $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-          git push -q --force origin bot-state
+      - name: Starta nästa körning
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run bot.yml --ref main -R ${{ github.repository }}
