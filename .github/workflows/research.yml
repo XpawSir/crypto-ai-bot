@@ -32,6 +32,9 @@ jobs:
       - name: Testa aktier och ETF:er
         continue-on-error: true
         run: node bot/research-stocks.mjs
+      - name: Testa flerslag (krypto, ETF:er, guld, obligationer)
+        continue-on-error: true
+        run: node bot/research-multi.mjs
       - name: Spara rapporten som artefakt
         uses: actions/upload-artifact@v4
         with:
@@ -41,7 +44,7 @@ jobs:
         run: |
           rm -rf rep && mkdir rep && cd rep
           git init -q -b research-report
-          cp ../research-out/REPORT-STOCKS.md . 2>/dev/null || true
+          cp ../research-out/REPORT-STOCKS.md ../research-out/REPORT-MULTI.md . 2>/dev/null || true
           cp ../research-out/REPORT.md ../research-out/REPORT-AUTO.md ../research-out/REPORT-SLOW.md ../research-out/REPORT-PORTFOLIO.md ../research-out/results.json .
           echo '{"git":{"deploymentEnabled":false}}' > vercel.json
           git add .
