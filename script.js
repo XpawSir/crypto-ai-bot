@@ -1645,6 +1645,15 @@ const overview = (function () {
 
     function schedule() { clearTimeout(timer); timer = setTimeout(board, 150); }
 
+    // Affärer = köp och sälj. totalTrades räknar bara avslutade (sålda) affärer, så en bot som köpt men inte sålt visade 0.
+    function tradeText(st) {
+        const t = Array.isArray(st.trades) ? st.trades : [];
+        const buys = t.filter(function (x) { return x && x.side === 'buy'; }).length;
+        const sells = t.filter(function (x) { return x && x.side === 'sell'; }).length;
+        if (buys + sells === 0) return String(st.totalTrades || 0);
+        return buys + ' köp · ' + sells + ' sålda';
+    }
+
     function board() {
         const list = Object.keys(BOTS).filter(function (p) { return states[p]; }).map(function (p) {
             const st = states[p], now = lastBot(st);
@@ -1667,7 +1676,7 @@ const overview = (function () {
                     [pctTxt(r.ret * 100), r.ret >= 0 ? 'up' : 'down'],
                     [r.vs === null ? '-' : pctTxt(r.vs * 100), r.vs === null ? 'muted' : (r.vs >= 0 ? 'up' : 'down')],
                     [(r.dd * 100).toFixed(2) + ' %', 'muted'],
-                    [String(r.st.totalTrades || 0), ''],
+                    [tradeText(r.st), ''],
                     [r.started ? r.started.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' }) : '-', 'muted']
                 ];
                 cells.forEach(function (c) { const td = document.createElement('td'); if (c[2]) td.innerHTML = c[0]; else td.textContent = c[0]; if (c[1]) td.className = c[1]; tr.appendChild(td); });
