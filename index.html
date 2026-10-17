@@ -9,16 +9,16 @@
         try { document.documentElement.dataset.theme = localStorage.getItem('cryptoai_theme') === 'light' ? 'light' : 'dark'; } catch (e) { document.documentElement.dataset.theme = 'dark'; }</script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%23000%22/><path d=%22M12 3.8v16.4M12 13L6.4 5.8M12 13l5.6-7.2%22 stroke=%22%23fff%22 stroke-width=%222%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
     <link rel="stylesheet" href="tailwind.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- TradingView Lightweight Charts (candlesticks) -->
+    <!-- TradingView Lightweight Charts (ljusstakar) -->
     <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
     <style>
-        :root, html[data-theme=dark] { --bg:#000; --card:rgba(255,255,255,.028); --line:rgba(255,255,255,.085); --muted:#8a8f9c; --chart:#030405; --accent:#e5e7eb; }
-        html[data-theme=light] { --bg:#f4f5f7; --card:#ffffff; --line:rgba(15,23,42,.10); --muted:#5b6475; --chart:#ffffff; --accent:#111827; }
+        :root, html[data-theme=dark] { --bg:#08090b; --card:#0e1014; --sub:rgba(255,255,255,.04); --line:rgba(255,255,255,.07); --muted:#8b909c; --chart:#0a0b0e; --accent:#f3f4f6; }
+        html[data-theme=light] { --bg:#f5f6f8; --card:#ffffff; --sub:#f3f4f6; --line:rgba(15,23,42,.09); --muted:#5b6475; --chart:#ffffff; --accent:#111827; }
         body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); }
-        html[data-theme=dark] body { background:radial-gradient(1100px 420px at 50% -160px, rgba(255,255,255,.055), transparent 70%), #000; }
-        .font-mono { font-family:'JetBrains Mono',ui-monospace,monospace !important; }
+        
+        .font-mono { font-family:'Inter',system-ui,sans-serif !important; }
         .glass { background:var(--card); border:1px solid var(--line); border-radius:16px; }
         html[data-theme=light] .glass { box-shadow:0 1px 2px rgba(15,23,42,.05), 0 8px 24px -12px rgba(15,23,42,.10); }
         .tile { background:rgba(0,0,0,.35); border:1px solid var(--line); border-radius:12px; min-width:0; }
@@ -38,16 +38,16 @@
         .br-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
         .br-title { font-size:20px; font-weight:700; color:var(--accent); letter-spacing:-.01em; }
         .br-sum { color:var(--muted); font-size:13px; line-height:1.7; margin-top:6px; max-width:78ch; } .br-sum b { color:var(--accent); font-weight:600; }
-        .br-fresh { font-size:11px; font-family:'JetBrains Mono',monospace; color:var(--muted); display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+        .br-fresh { font-size:11px; font-family:'Inter',system-ui,sans-serif; color:var(--muted); display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
         .br-fresh::before { content:''; width:7px; height:7px; border-radius:50%; background:#34d399; } .br-fresh.warn::before { background:#fbbf24; } .br-fresh.bad::before { background:#f87171; }
         .br-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:16px; }
         .br-bot { display:flex; align-items:center; gap:10px; font-size:12px; padding:10px 12px; }
-        .br-bot .dot { width:8px; height:8px; border-radius:50%; flex:none; } .br-bot .nm { color:var(--accent); font-weight:600; } .br-bot .sub { color:var(--muted); font-size:11px; font-family:'JetBrains Mono',monospace; }
-        .br-bot .chg { margin-left:auto; font-family:'JetBrains Mono',monospace; font-weight:700; text-align:right; white-space:nowrap; }
+        .br-bot .dot { width:8px; height:8px; border-radius:50%; flex:none; } .br-bot .nm { color:var(--accent); font-weight:600; } .br-bot .sub { color:var(--muted); font-size:11px; font-family:'Inter',system-ui,sans-serif; }
+        .br-bot .chg { margin-left:auto; font-family:'Inter',system-ui,sans-serif; font-weight:700; text-align:right; white-space:nowrap; }
         .br-cols { display:grid; grid-template-columns:1fr; gap:16px; margin-top:16px; } @media(min-width:900px){ .br-cols { grid-template-columns:1.1fr 1fr; } }
         .br-list { list-style:none; padding:0; margin:8px 0 0; font-size:12px; color:var(--muted); line-height:1.8; } .br-list li { padding:3px 0; border-top:1px solid var(--line); } .br-list li:first-child { border-top:0; }
-        .br-days { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin-top:8px; }
-        .br-day { text-align:center; padding:8px 2px; border-radius:10px; border:1px solid var(--line); font-family:'JetBrains Mono',monospace; }
+        .br-days { display:grid; grid-template-columns:repeat(auto-fit,minmax(64px,1fr)); gap:6px; margin-top:8px; }
+        .br-day { text-align:center; padding:8px 2px; border-radius:10px; border:1px solid var(--line); font-family:'Inter',system-ui,sans-serif; }
         .br-day .d { font-size:10px; color:var(--muted); text-transform:uppercase; } .br-day .v { font-size:12px; font-weight:700; margin-top:2px; }
         .up { color:#34d399; } .down { color:#f87171; }
         /* market */
@@ -105,8 +105,8 @@
         .ov-badge { font-size:10px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
         .ov-badge.ok { color:#34d399; border-color:rgba(52,211,153,.35); } .ov-badge.warn { color:#fbbf24; border-color:rgba(251,191,36,.35); } .ov-badge.bad { color:#f87171; border-color:rgba(248,113,113,.35); }
         .ov-desc { font-size:12px; color:var(--muted); margin-top:4px; }
-        .ov-num { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:22px; color:var(--accent); margin-top:12px; }
-        .ov-sub { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); margin-top:2px; }
+        .ov-num { font-family:'Inter',system-ui,sans-serif; font-weight:700; font-size:22px; color:var(--accent); margin-top:12px; }
+        .ov-sub { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-family:'Inter',system-ui,sans-serif; font-size:11px; color:var(--muted); margin-top:2px; }
         .ov-spark { height:56px; margin-top:10px; }
         .ov-spark svg { width:100%; height:100%; display:block; overflow:visible; }
         .up { color:#34d399 !important; } .down { color:#f87171 !important; }
@@ -114,7 +114,7 @@
         /* topplista */
         #lb-chart { height:260px; }
         .lb-wrap { overflow-x:auto; }
-        .lb-table { width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12px; white-space:nowrap; }
+        .lb-table { width:100%; border-collapse:collapse; font-family:'Inter',system-ui,sans-serif; font-size:12px; white-space:nowrap; }
         .lb-table th { text-align:left; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; padding:8px 10px; border-bottom:1px solid var(--line); }
         .lb-table td { padding:9px 10px; border-bottom:1px solid var(--line); color:var(--accent); }
         .lb-table tr:last-child td { border-bottom:0; }
@@ -127,7 +127,7 @@
         /* förmögenhet */
         .wl-form { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; align-items:end; }
         @media (min-width:768px) { .wl-form { grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1.4fr) auto; } }
-        .wl-form label span { display:block; font-size:10px; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px; }
+        .wl-form label span { display:block; font-size:10px; font-family:'Inter',system-ui,sans-serif; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px; }
         .wl-input { width:100%; background:transparent; border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-size:13px; color:var(--accent); font-family:inherit; }
         .wl-input option { background:var(--bg); color:var(--accent); }
         .wl-add { background:var(--accent); color:var(--bg); font-weight:600; font-size:13px; border-radius:10px; padding:9px 16px; white-space:nowrap; }
@@ -141,11 +141,11 @@
         @media (min-width:768px) { .wl-goals { grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); } }
         .wl-goal { border:1px solid var(--line); border-radius:14px; padding:16px; }
         .wl-goal-h { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; }
-        .wl-goal-big { font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:#34d399; margin-top:8px; line-height:1.1; }
+        .wl-goal-big { font-family:'Inter',system-ui,sans-serif; font-size:28px; font-weight:700; color:#34d399; margin-top:8px; line-height:1.1; }
         .wl-goal-big small, .wl-goal dd small { font-size:12px; color:var(--muted); font-weight:500; }
         .wl-goal-cap { font-size:11px; color:var(--muted); margin-top:2px; }
         .wl-goal dl { display:grid; grid-template-columns:auto auto; gap:6px 12px; margin-top:14px; font-size:12px; }
-        .wl-goal dt { color:var(--muted); } .wl-goal dd { text-align:right; font-family:'JetBrains Mono',monospace; color:var(--accent); }
+        .wl-goal dt { color:var(--muted); } .wl-goal dd { text-align:right; font-family:'Inter',system-ui,sans-serif; color:var(--accent); }
         .wl-empty { font-size:13px; color:var(--muted); }
         .wl-notes { list-style:disc; padding-left:18px; font-size:12px; color:var(--muted); line-height:1.7; }
         /* trend-ensemble-sidan */
@@ -154,7 +154,7 @@
         .tr-cols { display:grid; grid-template-columns:minmax(0,1fr); gap:24px; }
         @media (min-width:1024px) { .tr-cols { grid-template-columns:minmax(0,2fr) minmax(0,1fr); } }
         .tr-meter { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
-        .tr-ma { border:1px solid var(--line); border-radius:12px; padding:10px 8px; text-align:center; font-family:'JetBrains Mono',monospace; }
+        .tr-ma { border:1px solid var(--line); border-radius:12px; padding:10px 8px; text-align:center; font-family:'Inter',system-ui,sans-serif; }
         .tr-ma b { display:block; font-size:12px; color:var(--accent); } .tr-ma span { display:block; font-size:10px; color:var(--muted); margin-top:2px; }
         .tr-ma.on { border-color:rgba(52,211,153,.45); background:rgba(52,211,153,.08); } .tr-ma.on b { color:#34d399; }
         .tr-bar { height:10px; border-radius:999px; background:rgba(128,128,128,.18); overflow:hidden; } .tr-bar > i { display:block; height:100%; background:#34d399; border-radius:999px; transition:width .4s; }
@@ -162,18 +162,86 @@
         @media (min-width:768px) { .tr-stats { grid-template-columns:repeat(3,minmax(0,1fr)); } }
         @media (min-width:1200px) { .tr-stats { grid-template-columns:repeat(6,minmax(0,1fr)); } }
         .tr-stat { border:1px solid var(--line); border-radius:12px; padding:12px; }
-        .tr-stat span { display:block; font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
-        .tr-stat b { display:block; font-size:17px; color:var(--accent); font-family:'JetBrains Mono',monospace; margin-top:4px; }
+        .tr-stat span { display:block; font-size:10px; color:var(--muted); font-family:'Inter',system-ui,sans-serif; }
+        .tr-stat b { display:block; font-size:17px; color:var(--accent); font-family:'Inter',system-ui,sans-serif; margin-top:4px; }
         .tr-stat i { display:block; font-style:normal; font-size:10px; color:var(--muted); margin-top:2px; }
-        .mo-table { border-collapse:separate; border-spacing:3px; font-family:'JetBrains Mono',monospace; font-size:11px; white-space:nowrap; }
+        .mo-table { border-collapse:separate; border-spacing:3px; font-family:'Inter',system-ui,sans-serif; font-size:11px; white-space:nowrap; }
         .mo-table th { color:var(--muted); font-weight:600; font-size:10px; padding:2px 4px; text-align:center; }
         .mo-table td { text-align:center; padding:5px 6px; border-radius:6px; min-width:48px; color:var(--accent); }
         .mo-table td small { display:block; font-size:9px; color:var(--muted); }
         .mo-table td.y { font-weight:700; color:var(--muted); }
         #tr-price { height:420px; background:var(--chart); border-radius:12px; overflow:hidden; }
         #tr-hist, #srv4-chart { height:220px; }
-        .tr-legend { display:flex; flex-wrap:wrap; gap:12px; font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+        .tr-legend { display:flex; flex-wrap:wrap; gap:12px; font-size:11px; color:var(--muted); font-family:'Inter',system-ui,sans-serif; }
         .tr-legend i { display:inline-block; width:10px; height:3px; border-radius:2px; margin-right:5px; vertical-align:middle; }
+
+        /* ===== Algiz design: lugn, luftig, proffsig ===== */
+        html { -webkit-font-smoothing:antialiased; }
+        body { letter-spacing:-.003em; line-height:1.55; }
+        .lb-table, .mo-table, .ov-num, .ov-sub, .stat-val, .br-day, .br-title, .tr-stat b, .wl-goal-big, .wl-table, #mk-price, .mk-row, .font-mono { font-variant-numeric:tabular-nums; }
+        /* ytor: fyllnad i stället för ramar i ramar */
+        .glass { background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:none; }
+        html[data-theme=light] .glass { box-shadow:0 1px 2px rgba(15,23,42,.04); }
+        .tile, .tr-stat, .tr-ma, .br-day, .wl-goal { background:var(--sub); border:0; border-radius:12px; }
+        .tr-ma.on { background:rgba(52,211,153,.10); }
+        html[data-theme=light] .tile { background:var(--sub); }
+        /* rubriker: vanlig text, inga versaler med gles bokstavsavstånd */
+        .h-sec, .wl-goal-h { font-size:12.5px; letter-spacing:0; text-transform:none; font-weight:500; color:var(--muted); }
+        h3.h-sec { font-size:15px; font-weight:600; color:var(--accent); letter-spacing:-.01em; }
+        .ov-head .h-sec { font-size:14px; font-weight:600; color:var(--accent); }
+        main h2.text-2xl { font-size:1.75rem; letter-spacing:-.025em; font-weight:700; line-height:1.2; }
+        main h2.text-2xl + p { font-size:14px; line-height:1.6; max-width:72ch; margin-top:8px; }
+        main[id^=view-] { padding-top:36px; padding-bottom:72px; }
+        @media (min-width:768px) { main[id^=view-] { padding-left:32px; padding-right:32px; } }
+        main.space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top:2rem !important; }
+        #view-home, #view-trend { max-width:1240px !important; }
+        /* huvud */
+        header { padding-top:14px !important; padding-bottom:14px !important; }
+        html[data-theme=dark] header { background:rgba(8,9,11,.82) !important; }
+        .brand-mark { background:var(--sub); border-color:transparent; box-shadow:none; }
+        .brand-name { font-size:16px; }
+        header p.text-gray-400 { font-size:11.5px; margin-top:2px; }
+        .tab { font-size:13px; font-weight:500; padding:8px 14px; }
+        .tab[aria-current=page] { color:var(--accent); background:var(--sub); border-color:transparent; font-weight:600; }
+        .iconbtn { border-color:transparent; background:var(--sub); }
+        #logout-btn { background:transparent !important; color:var(--muted) !important; border:1px solid var(--line) !important; font-size:12px; font-weight:500; }
+        #logout-btn:hover { color:#f87171 !important; border-color:rgba(248,113,113,.4) !important; }
+        /* etiketter */
+        .chip { font-size:11px; letter-spacing:0; text-transform:none; font-weight:600; padding:2px 10px; border-color:transparent; background:var(--sub); }
+        .chip.new { background:rgba(52,211,153,.12); } .chip.imp { background:rgba(96,165,250,.12); } .chip.res { background:rgba(192,132,252,.12); } .chip.fix { background:rgba(251,191,36,.12); }
+        .ov-badge { border-color:transparent; background:var(--sub); font-size:11px; padding:3px 9px; }
+        .ov-badge.ok { background:rgba(52,211,153,.12); } .ov-badge.warn { background:rgba(251,191,36,.12); } .ov-badge.bad { background:rgba(248,113,113,.12); }
+        /* startsidan */
+        .ov-card { padding:22px; } .ov-card:hover { border-color:rgba(128,128,128,.35); transform:none; }
+        .ov-desc { font-size:12.5px; line-height:1.5; min-height:38px; }
+        .ov-num { font-size:28px; letter-spacing:-.02em; margin-top:14px; }
+        .ov-sub { font-size:12px; }
+        .ov-spark { height:48px; margin-top:14px; }
+        .br-title { font-size:24px; letter-spacing:-.02em; margin-top:2px; }
+        .br-sum { font-size:14px; line-height:1.7; margin-top:10px; }
+        .br-fresh { font-size:12px; }
+        .br-cols { gap:32px; margin-top:24px; padding-top:20px; border-top:1px solid var(--line); }
+        .br-list { font-size:13px; } .br-list li { padding:7px 0; }
+        .br-day { padding:10px 2px; } .br-day .d { font-size:11px; text-transform:capitalize; } .br-day .v { font-size:12.5px; }
+        /* tabeller */
+        .lb-table { font-size:13px; }
+        .lb-table th { font-size:12px; letter-spacing:0; text-transform:none; font-weight:500; padding:10px 12px; }
+        .lb-table td { padding:13px 12px; }
+        .lb-table tr:hover td { background:var(--sub); }
+        .tl-dot { top:22px; }
+        .tr-stat span, .tr-stat i { font-size:12px; } .tr-stat b { font-size:18px; }
+        .tr-legend, .tr-ma span { font-size:12px; } .tr-ma b { font-size:13px; }
+        .wl-goal { padding:20px; } .wl-form label span { font-size:12px; letter-spacing:0; text-transform:none; font-weight:500; }
+        .mo-table { font-size:12px; } .mo-table th { font-size:11px; }
+        .seg { border-color:transparent; background:var(--sub); font-weight:500; } .seg[aria-pressed=true] { background:var(--accent); color:var(--bg); }
+        .mk-row { padding:12px; } .mk-row[aria-pressed=true] { background:var(--sub); border-color:transparent; }
+        .prose-s p, .prose-s li { font-size:13.5px; line-height:1.75; }
+        details.qa summary { font-size:15px; }
+        /* ljust läge: behåll luften men tona ned skuggor */
+        html[data-theme=light] header { background:rgba(255,255,255,.88) !important; }
+        main .uppercase { text-transform:none; letter-spacing:0; }
+        /* mindre rörelse om användaren vill det */
+        @media (prefers-reduced-motion:reduce) { * { animation:none !important; transition:none !important; } }
     </style>
 </head>
 <body class="text-gray-200 antialiased min-h-screen flex flex-col justify-between">
@@ -183,17 +251,17 @@
             <a href="#home" class="brand-mark" aria-label="Algiz, till startsidan"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2v17.6M12 13.2L5.8 5.4M12 13.2l6.2-7.8"/></svg></a>
             <div>
                 <h1 class="brand-name">Algiz</h1>
-                <p class="text-[11px] text-gray-400 font-mono">Paper trading, simulerad handel</p>
+                <p class="text-[11px] text-gray-400 font-mono">Simulerad handel med låtsaspengar</p>
             </div>
         </div>
         <nav class="main-nav flex items-center gap-1 order-3 md:order-none w-full md:w-auto" aria-label="Huvudmeny">
-            <a href="#home" class="tab" data-tab="home"><i class="fa-solid fa-house mr-1.5"></i>Home</a>
-            <a href="#market" class="tab" data-tab="market"><i class="fa-solid fa-chart-line mr-1.5"></i>Market</a>
-            <a href="#trend" class="tab" data-tab="trend"><i class="fa-solid fa-layer-group mr-1.5"></i>Trend</a>
-            <a href="#updates" class="tab" data-tab="updates"><i class="fa-solid fa-bolt mr-1.5"></i>Latest Updates</a>
-            <a href="#wealth" class="tab" data-tab="wealth"><i class="fa-solid fa-piggy-bank mr-1.5"></i>Förmögenhet</a>
-            <a href="#lab" class="tab" data-tab="lab"><i class="fa-solid fa-flask mr-1.5"></i>Testlabb</a>
-            <a href="#learn" class="tab" data-tab="learn"><i class="fa-solid fa-graduation-cap mr-1.5"></i>Learn</a>
+            <a href="#home" class="tab" data-tab="home">Översikt</a>
+            <a href="#market" class="tab" data-tab="market">Marknad</a>
+            <a href="#trend" class="tab" data-tab="trend">Trend</a>
+            <a href="#updates" class="tab" data-tab="updates">Uppdateringar</a>
+            <a href="#wealth" class="tab" data-tab="wealth">Förmögenhet</a>
+            <a href="#lab" class="tab" data-tab="lab">Testlabb</a>
+            <a href="#learn" class="tab" data-tab="learn">Lär dig</a>
         </nav>
         <div class="flex items-center gap-3">
             <button id="theme-btn" class="iconbtn" title="Växla mellan mörkt och ljust läge" aria-label="Växla tema"><i class="fa-solid fa-moon"></i></button>
@@ -215,7 +283,6 @@
                 <span id="br-fresh" class="br-fresh">väntar på data</span>
             </div>
             <p id="br-sum" class="br-sum"></p>
-            <div id="br-bots" class="br-grid"></div>
             <div class="br-cols">
                 <div><div class="h-sec">Senaste dygnet</div><ul id="br-events" class="br-list"></ul></div>
                 <div><div class="h-sec">Senaste 7 dagarna, alla botar tillsammans</div><div id="br-days" class="br-days"></div></div>
@@ -236,10 +303,10 @@
             </div>
             <div id="lb-chart" class="w-full"></div>
             <div class="lb-wrap mt-3"><table class="lb-table">
-                <thead><tr><th>#</th><th>Bot</th><th>Saldo</th><th>Resultat</th><th>Mot buy &amp; hold</th><th>Största nedgång</th><th>Affärer</th><th>Startade</th></tr></thead>
+                <thead><tr><th>#</th><th>Bot</th><th>Saldo</th><th>Resultat</th><th>Mot köp och behåll</th><th>Största nedgång</th><th>Affärer</th><th>Startade</th></tr></thead>
                 <tbody id="lb-body"><tr><td colspan="8">Hämtar...</td></tr></tbody>
             </table></div>
-            <p class="mt-2 text-[11px] font-mono text-gray-500">Procent sedan varje bots egen start. Buy &amp; hold BTC räknas från samma start som den äldsta boten. Botarna startade vid olika tidpunkter, så jämför helst kolumnen "Mot buy &amp; hold".</p>
+            <p class="mt-2 text-[11px] font-mono text-gray-500">Procent sedan varje bots egen start. Köp och behåll BTC räknas från samma start som den äldsta boten. Botarna startade vid olika tidpunkter, så jämför helst kolumnen "Mot köp och behåll".</p>
         </section>
 
             <div class="text-[11px] font-mono text-gray-500">
@@ -257,14 +324,14 @@
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Trend BTC + ETH · dagligen</h2><p class="text-[12px] text-gray-500 mt-1">Pengarna delas lika mellan BTC och ETH. För varje valuta: hur många av fem medelvärden (20, 50, 100, 150, 200 dagar) kursen ligger över styr hur stor del av dess halva som är investerad, i steg om 25 %. Beslut en gång per dygn. Test 2018–2026: ca +43 %/år, värsta ras −47 % (buy &amp; hold BTC +26 %/år, −77 %).</p></div>
+                    <div><h2 class="h-sec">Trend BTC + ETH · dagligen</h2><p class="text-[12px] text-gray-500 mt-1">Pengarna delas lika mellan BTC och ETH. För varje valuta: hur många av fem medelvärden (20, 50, 100, 150, 200 dagar) kursen ligger över styr hur stor del av dess halva som är investerad, i steg om 25 %. Beslut en gång per dygn. Test 2018–2026: ca +43 %/år, värsta ras −47 % (köp och behåll BTC +26 %/år, −77 %).</p></div>
                     <div id="srv-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv-balance" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv-pnl" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv-trades" class="stat-val text-white">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Win Rate</span><span id="srv-winrate" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Vinstandel</span><span id="srv-winrate" class="stat-val text-white">-</span></div>
                 </div>
                 <p id="srv-bh" class="mt-3 text-[11px] font-mono text-gray-400"></p>
                 <div id="srv-chart" class="mt-2 w-full h-[180px]"></div>
@@ -279,14 +346,14 @@
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Volatilitetsstyrd trend · BTC dagligen</h2><p class="text-[12px] text-gray-500 mt-1">Äger BTC bara när kursen ligger över sitt 100-dagars medelvärde, och köper mindre när marknaden svänger mycket: andel = 60 % / 30-dagars volatilitet (max 100 %, steg om 25 %). Beslut en gång per dygn. Test 2016–2026: ca +58 %/år, värsta ras −47 % (buy &amp; hold +63 %/år, −83 %).</p></div>
+                    <div><h2 class="h-sec">Volatilitetsstyrd trend · BTC dagligen</h2><p class="text-[12px] text-gray-500 mt-1">Äger BTC bara när kursen ligger över sitt 100-dagars medelvärde, och köper mindre när marknaden svänger mycket: andel = 60 % / 30-dagars volatilitet (max 100 %, steg om 25 %). Beslut en gång per dygn. Test 2016–2026: ca +58 %/år, värsta ras −47 % (köp och behåll +63 %/år, −83 %).</p></div>
                     <div id="srv2-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv2-balance" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv2-pnl" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv2-trades" class="stat-val text-white">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Win Rate</span><span id="srv2-winrate" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Vinstandel</span><span id="srv2-winrate" class="stat-val text-white">-</span></div>
                 </div>
                 <p id="srv2-bh" class="mt-3 text-[11px] font-mono text-gray-400"></p>
                 <div id="srv2-chart" class="mt-2 w-full h-[180px]"></div>
@@ -301,14 +368,14 @@
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Rotationsbot · veckovis momentum</h2><p class="text-[12px] text-gray-500 mt-1">Äger de 3 valutor (av 10) som stigit mest på 120 dagar och ligger över sitt medelvärde, resten kontanter. Ombalanserar varje vecka.</p></div>
+                    <div><h2 class="h-sec">Rotationsbot · veckovis trendstyrka</h2><p class="text-[12px] text-gray-500 mt-1">Äger de 3 valutor (av 10) som stigit mest på 120 dagar och ligger över sitt medelvärde, resten kontanter. Ombalanserar varje vecka.</p></div>
                     <div id="srv3-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv3-balance" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv3-pnl" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv3-trades" class="stat-val text-white">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Win Rate</span><span id="srv3-winrate" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Vinstandel</span><span id="srv3-winrate" class="stat-val text-white">-</span></div>
                 </div>
                 <p id="srv3-bh" class="mt-3 text-[11px] font-mono text-gray-400"></p>
                 <div id="srv3-chart" class="mt-2 w-full h-[180px]"></div>
@@ -326,12 +393,12 @@
                 <p class="text-[13px] text-gray-400 mt-1">En separat testbot som bara kör i din webbläsare medan den här fliken är öppen. Den påverkar inte de fyra botarna som kör dygnet runt.</p>
             </div>
             <div id="bot-status-badge" class="px-3 py-1 rounded-md text-xs font-semibold bg-gray-900 text-gray-400 border border-gray-800 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-gray-600"></span> Bot Pausad
+                <span class="w-2 h-2 rounded-full bg-gray-600"></span> Boten är pausad
             </div>
         </div>
         <div class="space-y-6">
             <div class="glass p-5">
-                <h2 class="h-sec mb-4">AI Konfiguration</h2>
+                <h2 class="h-sec mb-4">Inställningar</h2>
                 <div class="space-y-4">
                     <div>
                         <label class="block text-[11px] font-mono uppercase text-gray-400 mb-1.5">Strategi</label>
@@ -352,7 +419,7 @@
                         <input id="max-spend-input" type="number" min="1" value="1000" class="w-full bg-darkbg border border-cardborder rounded-xl px-3 py-2 text-xs text-white font-mono">
                     </div>
                     <button id="toggle-bot-btn" class="w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-play"></i> Starta AI-Robot
+                        <i class="fa-solid fa-play"></i> Starta testboten
                     </button>
                     <p class="text-[10px] font-mono text-gray-500 leading-relaxed">Boten körs så länge fliken är öppen. Saldo och position sparas och återupptas automatiskt vid omladdning.</p>
                 </div>
@@ -362,19 +429,19 @@
                 <h2 class="h-sec mb-4">Prestanda</h2>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
                     <div class="tile p-3">
-                        <span class="text-gray-400 text-[10px] block">Sharpe</span>
+                        <span class="text-gray-400 text-[10px] block">Sharpe-kvot</span>
                         <span id="metric-sharpe" class="text-white font-bold text-sm">0.00</span>
                     </div>
                     <div class="tile p-3">
-                        <span class="text-gray-400 text-[10px] block">Drawdown</span>
+                        <span class="text-gray-400 text-[10px] block">Största nedgång</span>
                         <span id="metric-drawdown" class="text-white font-bold text-sm">0.00%</span>
                     </div>
                     <div class="tile p-3">
-                        <span class="text-gray-400 text-[10px] block">Win Rate</span>
+                        <span class="text-gray-400 text-[10px] block">Vinstandel</span>
                         <span id="metric-winrate" class="text-white font-bold text-sm">0%</span>
                     </div>
                     <div class="tile p-3">
-                        <span class="text-gray-400 text-[10px] block">Profit Factor</span>
+                        <span class="text-gray-400 text-[10px] block">Vinstfaktor</span>
                         <span id="metric-profitfactor" class="text-white font-bold text-sm">0.00</span>
                     </div>
                 </div>
@@ -389,11 +456,11 @@
                     <div id="total-balance" class="text-2xl font-mono font-bold text-white mt-1">$10,000.00</div>
                 </div>
                 <div class="glass p-4">
-                    <span class="text-[11px] font-mono text-gray-400">Realiserat PnL</span>
+                    <span class="text-[11px] font-mono text-gray-400">Realiserat resultat</span>
                     <div id="daily-pnl" class="text-2xl font-mono font-bold text-gray-400 mt-1">$0.00</div>
                 </div>
                 <div class="glass p-4">
-                    <span class="text-[11px] font-mono text-gray-400" title="Skillnaden mellan bästa köp- och säljpris just nu. Köp fylls på det högre, sälj på det lägre.">Spread (riktig, från Binance)</span>
+                    <span class="text-[11px] font-mono text-gray-400" title="Skillnaden mellan bästa köp- och säljpris just nu. Köp fylls på det högre, sälj på det lägre.">Spread (köp/sälj, från Binance)</span>
                     <div id="market-spread" class="text-2xl font-mono font-bold text-white mt-1">0.02%</div>
                 </div>
             </div>
@@ -430,9 +497,9 @@
             </div>
 
             <div class="glass p-5 flex flex-col h-[200px]">
-                <h2 class="h-sec mb-3">Exekveringslogg</h2>
+                <h2 class="h-sec mb-3">Körlogg</h2>
                 <div id="ai-log" class="bg-darkbg border border-cardborder rounded-lg p-3 text-xs font-mono overflow-y-auto space-y-1 flex-grow">
-                    <div class="text-gray-400">[System] Lightweight Charts-motor initialiserad...</div>
+                    <div class="text-gray-400">Systemet är redo.</div>
                 </div>
             </div>
 
@@ -442,9 +509,9 @@
 
     <main id="view-market" class="hidden p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-[1400px] mx-auto w-full flex-grow">
         <section class="glass p-3 order-2 lg:order-1 lg:col-span-1 self-start">
-            <div class="flex items-center justify-between px-2 pt-1 pb-3"><span class="h-sec">Största kryptovalutorna</span><span id="mk-live">Live</span></div>
+            <div class="flex items-center justify-between px-2 pt-1 pb-3"><span class="h-sec">Största kryptovalutorna</span><span id="mk-live">Direkt</span></div>
             <div id="mk-list" class="flex flex-col gap-0.5"></div>
-            <p class="px-2 pt-3 text-[11px]" style="color:var(--muted)">Priser i USDT (ungefär dollar) från Binance, uppdateras live. Klicka på en valuta för att se grafen.</p>
+            <p class="px-2 pt-3 text-[11px]" style="color:var(--muted)">Priser i USDT (ungefär dollar) från Binance, uppdateras i realtid. Klicka på en valuta för att se grafen.</p>
         </section>
         <section class="glass p-4 md:p-5 order-1 lg:order-2 lg:col-span-2 min-w-0">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -461,7 +528,7 @@
             </div>
             <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <div id="mk-intervals" class="flex flex-wrap gap-1.5"></div>
-                <div id="mk-types" class="flex gap-1.5"><button type="button" class="seg" data-type="line">Linje</button><button type="button" class="seg" data-type="candle">Candles</button></div>
+                <div id="mk-types" class="flex gap-1.5"><button type="button" class="seg" data-type="line">Linje</button><button type="button" class="seg" data-type="ljusstake">Ljusstakar</button></div>
             </div>
             <div id="mk-chart"></div>
             <p id="mk-note" class="text-[11px] mt-2" style="color:var(--muted)"></p>
@@ -481,13 +548,13 @@
             <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv4-balance" class="stat-val text-white">-</span></div>
             <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv4-pnl" class="stat-val text-white">-</span></div>
             <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Andel i BTC nu</span><span id="tr-weight" class="stat-val text-white">-</span></div>
-            <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Avslutade affärer · Win Rate</span><span class="stat-val text-white"><span id="srv4-trades">-</span> · <span id="srv4-winrate">-</span></span></div>
+            <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Avslutade affärer · Vinstandel</span><span class="stat-val text-white"><span id="srv4-trades">-</span> · <span id="srv4-winrate">-</span></span></div>
         </div>
 
         <div class="tr-cols">
             <section class="glass p-5 min-w-0">
                 <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
-                    <h3 class="h-sec">BTC dagscandles med de fem medelvärdena</h3>
+                    <h3 class="h-sec">BTC dagskurs med de fem medelvärdena</h3>
                     <div class="tr-legend">
                         <span><i style="background:#facc15"></i>20</span><span><i style="background:#fb923c"></i>50</span><span><i style="background:#f472b6"></i>100</span><span><i style="background:#a78bfa"></i>150</span><span><i style="background:#38bdf8"></i>200</span><span>▲ köp ▼ sälj</span>
                     </div>
@@ -511,7 +578,7 @@
 
         <div class="tr-cols">
             <section class="glass p-5 min-w-0">
-                <h3 class="h-sec">Live sedan start · boten mot buy & hold</h3>
+                <h3 class="h-sec">Utfall sedan start · boten mot köp och behåll</h3>
                 <p id="srv4-bh" class="mt-2 text-[11px] font-mono text-gray-400"></p>
                 <p id="tr-live-wait" class="mt-3 text-[12px] text-gray-500">Kurvan fylls på med en punkt i timmen när boten har kört en stund. Startkapital $10,000.</p>
                 <div id="srv4-chart" class="mt-2 w-full"></div>
@@ -521,7 +588,7 @@
                 <h3 class="h-sec">Så hade regeln gått (simulering)</h3>
                 <p id="tr-hist-txt" class="mt-2 text-[11px] font-mono text-gray-400"></p>
                 <div id="tr-hist" class="mt-2 w-full"></div>
-                <p class="mt-2 text-[11px] font-mono text-gray-500">Samma regler på Binance-data bakåt (ca 2 år), 0,1 % avgift. Långtest BTC 2016–2026: ca +69 %/år och värsta ras −58 %, mot +63 %/år och −83 % för buy & hold. Historik garanterar inget.</p>
+                <p class="mt-2 text-[11px] font-mono text-gray-500">Samma regler på Binance-data bakåt (ca 2 år), 0,1 % avgift. Långtest BTC 2016–2026: ca +69 %/år och värsta ras −58 %, mot +63 %/år och −83 % för köp och behåll. Historik garanterar inget.</p>
             </section>
         </div>
         <section class="glass p-5 min-w-0">
@@ -530,7 +597,7 @@
                 <span id="tr-stat-src" class="text-[11px] font-mono text-gray-500"></span>
             </div>
             <div id="tr-stats" class="tr-stats"></div>
-            <h3 class="h-sec mb-2" style="margin-top:22px">Resultat per månad · regeln (stor siffra) mot buy &amp; hold (liten)</h3>
+            <h3 class="h-sec mb-2" style="margin-top:22px">Resultat per månad · regeln (stor siffra) mot köp och behåll (liten)</h3>
             <div class="lb-wrap"><table id="tr-months" class="mo-table"></table></div>
             <p class="mt-2 text-[11px] font-mono text-gray-500">Från simuleringen ovan med samma regler. Livestatistiken visas överst så fort boten har gjort affärer.</p>
         </section>
@@ -596,157 +663,164 @@
     </main>
 
     <main id="view-updates" class="hidden p-4 md:p-6 max-w-3xl mx-auto w-full flex-grow">
-        <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Latest Updates</h2>
+        <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Uppdateringar</h2>
             <p class="text-[13px] text-gray-400 mt-1">Det senaste som byggts och ändrats, nyast först. All handel är simulerad med låtsaspengar.</p></div>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">17 okt 2026</span></div>
-                    <h3 class="text-[15px] font-semibold text-white">Dagens sammanfattning på startsidan</h3>
-                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Överst på Home: hur alla botar tillsammans gått senaste dygnet och sedan start, jämfört med att bara ha hållit Bitcoin, plus en rad per bot (förändring och hur mycket som är investerat), köp och sälj senaste dygnet, de senaste sju dagarna och en hälsokontroll som visar när botarna senast körde (gul eller röd om de uteblivit). Allt räknas från botarnas egna data, inga notiser. Topplistan visar dessutom köp och sålda affärer separat, så en bot som köpt men inte sålt inte längre ser ut att ha 0 affärer.</span></p>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip imp">Förbättrat</span><span class="text-[11px] text-gray-500">17 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Helt svensk sida och lugnare design</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">All text är nu på svenska: flikarna heter Översikt, Marknad, Trend, Uppdateringar, Förmögenhet, Testlabb och Lär dig, och &quot;buy &amp; hold&quot; heter köp och behåll. Designen är städad med ett enda typsnitt, rubriker i vanlig text i stället för versaler, färre ramar i ramar, mer luft mellan sektionerna och en mjukare färgskala i både mörkt och ljust läge. Dubbletten i dagens sammanfattning (en rad per bot) är borttagen eftersom korten under visar samma sak.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="text-[11px] font-mono text-gray-500">17 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Dagens sammanfattning på startsidan</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Överst på Översikt: hur alla botar tillsammans gått senaste dygnet och sedan start, jämfört med att bara ha hållit Bitcoin, plus en rad per bot (förändring och hur mycket som är investerat), köp och sälj senaste dygnet, de senaste sju dagarna och en hälsokontroll som visar när botarna senast körde (gul eller röd om de uteblivit). Allt räknas från botarnas egna data, inga notiser. Topplistan visar dessutom köp och sålda affärer separat, så en bot som köpt men inte sålt inte längre ser ut att ha 0 affärer.</span></p>
+                </div>
+            </article>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Ny flik: Förmögenhet</h3>
                     <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Skriv in vad du äger, till exempel Avanza Zero eller Nvidia, så gissas typen och du får en uppskattning om 1 år med intervall. Med månadssparande visas en prognos upp till 30 år med bra, förväntat och dåligt utfall, samt varningar om för mycket krypto eller enskilda aktier. Sparas i webbläsaren.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="chip imp">Improved</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
-                    <h3 class="text-[15px] font-semibold text-white">Två nya trendbotar, push-notiser och statistik</h3>
-                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Serverbot 4h och Dagbot är borttagna: testerna visade att de förlorar mot buy &amp; hold. I stället kör <strong>Trend BTC + ETH</strong> (fem medelvärden, hälften i varje valuta) och <strong>Volatilitetsstyrd trend</strong> (BTC över 100-dagars medel, mindre när det svänger), båda med $10,000 från start. Botarna kan skicka en push-notis till mobilen via appen ntfy vid varje köp och sälj. Trend-sidan har fått statistik: dagar i BTC, justeringar per år, bästa och sämsta månad och en månadstabell mot buy &amp; hold.</span></p>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="chip imp">Förbättrat</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Två nya trendbotar, pushnotiser och statistik</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Serverbot 4h och Dagbot är borttagna: testerna visade att de förlorar mot köp och behåll. I stället kör <strong>Trend BTC + ETH</strong> (fem medelvärden, hälften i varje valuta) och <strong>Volatilitetsstyrd trend</strong> (BTC över 100-dagars medel, mindre när det svänger), båda med $10,000 från start. Botarna kan skicka en pushnotis till mobilen via appen ntfy vid varje köp och sälj. Trend-sidan har fått statistik: dagar i BTC, justeringar per år, bästa och sämsta månad och en månadstabell mot köp och behåll.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip fix">Fix</span><span class="chip new">New</span><span class="chip imp">Improved</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip fix">Rättat</span><span class="chip new">Nytt</span><span class="chip imp">Förbättrat</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Botarna kör nu var 10:e minut, ny startsida med topplista</h3>
-                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">GitHubs schema körde bara botarna några gånger per dygn. Nu håller varje körning igång i ca 5,5 timmar, kör botarna var 10:e minut och startar sedan nästa körning själv. Startsidan visar ett kort per bot och en topplista där alla fyra jämförs mot buy &amp; hold i samma graf. Varje bot har en egen sida, och webbläsarboten har flyttat till fliken Testlabb.</span></p>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">GitHubs schema körde bara botarna några gånger per dygn. Nu håller varje körning igång i ca 5,5 timmar, kör botarna var 10:e minut och startar sedan nästa körning själv. Startsidan visar ett kort per bot och en topplista där alla fyra jämförs mot köp och behåll i samma graf. Varje bot har en egen sida, och webbläsarboten har flyttat till fliken Testlabb.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="chip res">Research</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="chip res">Analys</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Ny flik: Trend, en fjärde bot som kör 24/7</h3>
-                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">16 nya regler testades på BTC-timdata 2016–2026 med avgifter. Trend-ensemblen gav bäst avkastning av de regler som höll även på den osedda andra halvan: ca +69 %/år med värsta ras −58 %, mot +63 %/år och −83 % för buy &amp; hold. Den äger 0, 50 eller 100 % BTC beroende på hur många av fem medelvärden kursen ligger över, och beslutar en gång per dygn. Steg om 50 % i stället för 25 % testades fram samma dag: bättre i båda halvorna 2018–2026 och färre affärer. Egen sida med dagscandles, medelvärden, köp/sälj-pilar, signalmätare och simulering bakåt.</span></p>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">16 nya regler testades på BTC-timdata 2016–2026 med avgifter. Trend-ensemblen gav bäst avkastning av de regler som höll även på den osedda andra halvan: ca +69 %/år med värsta ras −58 %, mot +63 %/år och −83 % för köp och behåll. Den äger 0, 50 eller 100 % BTC beroende på hur många av fem medelvärden kursen ligger över, och beslutar en gång per dygn. Steg om 50 % i stället för 25 % testades fram samma dag: bättre i båda halvorna 2018–2026 och färre affärer. Egen sida med dagskurs, medelvärden, köp/sälj-pilar, signalmätare och simulering bakåt.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="chip imp">Improved</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
-                    <h3 class="text-[15px] font-semibold text-white">Ny flik: Market</h3>
-                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Live-priser med logotyper för de 12 största kryptovalutorna, med 24-timmarsförändring, högsta, lägsta och volym. Välj en valuta för en graf över hela historiken (1 min till 1 vecka, linje eller candles) som uppdateras i realtid. Dessutom: sidan laddar snabbare (förkompilerad CSS) och de tre botarna körs nu parallellt och oberoende av varandra, så att ett fel i en aldrig stoppar de andra.</span></p>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="chip imp">Förbättrat</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Ny flik: Marknad</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Priser i realtid med logotyper för de 12 största kryptovalutorna, med 24-timmarsförändring, högsta, lägsta och volym. Välj en valuta för en graf över hela historiken (1 min till 1 vecka, linje eller ljusstakar) som uppdateras i realtid. Dessutom: sidan laddar snabbare (förkompilerad CSS) och de tre botarna körs nu parallellt och oberoende av varandra, så att ett fel i en aldrig stoppar de andra.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip res">Research</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip res">Analys</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Aktie- och ETF-test</h3>
                     <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Samma idéer som för krypto testade på ca 16 års kurser för amerikanska ETF:er och stora svenska aktier, med utdelning och håll-ut-test. Resultat: ingen aktiv strategi slog att bara köpa och behålla. Filter som flyttar till kontanter vid nedgång minskade däremot de värsta fallen kraftigt (till exempel -13 % mot -34 % för S&amp;P 500) men gav lägre tillväxt. Ingen aktiebot byggd, eftersom testet inte visade något övertag.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
-                    <h3 class="text-[15px] font-semibold text-white">Rotationsbot: veckovis momentum</h3>
-                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En tredje låtsasbot som varje vecka äger de 3 av 10 valutor som stigit mest på 120 dagar och ligger över sitt 100-dagarsmedelvärde. Resten är kontanter. Bygger på portföljtestet och har en egen panel med kapitalkurva mot buy & hold BTC.</span></p>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Rotationsbot: veckovis trendstyrka</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En tredje låtsasbot som varje vecka äger de 3 av 10 valutor som stigit mest på 120 dagar och ligger över sitt 100-dagarsmedelvärde. Resten är kontanter. Bygger på portföljtestet och har en egen panel med kapitalkurva mot köp och behåll BTC.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
-                    <h3 class="text-[15px] font-semibold text-white">Dagbot utan stop (experiment)</h3>
-                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Dagliga candles, SuperTrend, ingen stop-loss eller take-profit. Säljer bara på signal. Körs sida vid sida med 4h-boten så att de kan jämföras live med samma startkapital.</span></p>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Dagbot utan stopp (experiment)</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Dagliga ljusstakar, SuperTrend, ingen stoppnivå eller vinstmål. Säljer bara på signal. Körs sida vid sida med 4h-boten så att de kan jämföras i realtid med samma startkapital.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip imp">Improved</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip imp">Förbättrat</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Verklighetstrogen handel</h3>
                     <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Botarna köper på riktigt utbudspris (ask) och säljer på riktigt budpris (bid) från Binances orderbok, plus 0,02 % extra glapp och 0,1 % avgift. Spread visas per valuta, och spread-rutan i grafen är riktig data.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
-                    <h3 class="text-[15px] font-semibold text-white">Kapitalkurva mot buy & hold</h3>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Kapitalkurva mot köp och behåll</h3>
                     <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Varje panel visar botens värde över tid mot att bara köpa och behålla, med en rad som säger hur mycket före eller efter boten ligger. Det är den ärliga måttstocken.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Flera valutor samtidigt</h3>
                     <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Serverboten bevakar BTC, ETH, SOL och XRP på en gång med gemensamt saldo och tak så att den aldrig har mer ute än saldot. Fel på en valuta stoppar inte de andra.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip res">Research</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip res">Analys</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Portföljtest, dag/vecka och AUTO-varianter</h3>
-                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Fyra rapporter byggda på cirka sju års riktig Binance-data med avgifter och håll-ut-test. Slutsats hittills: ingen strategi slår buy & hold rakt av. Närmast kommer veckovis rotation mellan valutor, men valet av valutor flatterar den. Rapporterna körs om varje söndag.</span></p>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Fyra rapporter byggda på cirka sju års riktig Binance-data med avgifter och håll-ut-test. Slutsats hittills: ingen strategi slår köp och behåll rakt av. Närmast kommer veckovis rotation mellan valutor, men valet av valutor flatterar den. Rapporterna körs om varje söndag.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip res">Research</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip res">Analys</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Trendfilter och 4h-intervall</h3>
                     <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Testerna visade att 1h förlorar på avgifter och falska signaler. Serverboten kör därför 4h och köper bara när kursen ligger över sitt 200-medelvärde, vilket gav mindre förluster både på första och andra halvan av historiken.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip imp">Improved</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip imp">Förbättrat</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Ny design, flikar och ljust läge</h3>
-                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Svartare och stilrentare utseende, flikarna Home, Latest Updates och Learn, samt en knapp för mörkt och ljust läge som kommer ihåg ditt val.</span></p>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Svartare och stilrentare utseende, flikarna Översikt, Uppdateringar och Lär dig, samt en knapp för mörkt och ljust läge som kommer ihåg ditt val.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip fix">Fix</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip fix">Rättat</span><span class="text-[11px] font-mono text-gray-500">12 okt 2026</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Reservadresser för Binance-data</h3>
                     <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Om Binance.com är blockerat i ditt land provar sidan automatiskt data-api.binance.vision och api.binance.us.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">Tidigare</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="text-[11px] font-mono text-gray-500">Tidigare</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Körs 24/7 på GitHub</h3>
-                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Serverboten körs var 10:e minut av GitHub Actions, gratis och utan egen server. Läget sparas på en egen gren och visas på sidan. Boten tar igen stop, mål och signaler som hänt mellan körningarna.</span></p>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Serverboten körs var 10:e minut av GitHub Actions, gratis och utan egen server. Läget sparas på en egen gren och visas på sidan. Boten tar igen stopp, mål och signaler som hänt mellan körningarna.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">Tidigare</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="text-[11px] font-mono text-gray-500">Tidigare</span></div>
                     <h3 class="text-[15px] font-semibold text-white">15 strategier och AUTO-läge</h3>
                     <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">EMA, MACD, SuperTrend, Ichimoku, Donchian, RSI, Bollinger med flera, med stjärnbetyg efter hur de klarat sig historiskt. AUTO väljer själv strategi efter marknadsläge och senaste resultat.</span></p>
                 </div>
             </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
-                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">Tidigare</span></div>
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="text-[11px] font-mono text-gray-500">Tidigare</span></div>
                     <h3 class="text-[15px] font-semibold text-white">Inloggning och sparat läge</h3>
-                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Sidan kräver inloggning, och webbläsarbotens saldo och position sparas så du kan fortsätta där du slutade. Candlestick-graf med köp- och säljmarkeringar.</span></p>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Sidan kräver inloggning, och webbläsarbotens saldo och position sparas så du kan fortsätta där du slutade. Ljusstakegraf med köp- och säljmarkeringar.</span></p>
                 </div>
             </article>
     </main>
     <main id="view-learn" class="hidden p-4 md:p-6 max-w-3xl mx-auto w-full flex-grow">
-        <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Learn</h2>
+        <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Lär dig</h2>
             <p class="text-[13px] text-gray-400 mt-1">Korta förklaringar av det du ser på sidan. Klicka på en fråga för att öppna den.</p></div>
         <div class="glass px-5 py-2">
-            <details class="qa"><summary>Vad är det här för sida?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En terminal för en <strong>simulerad</strong> kryptoboot. Inga riktiga pengar och inga börsnycklar är inblandade. Botarna handlar med låtsaspengar mot riktiga priser från Binance, så du kan se hur en strategi hade klarat sig utan att riskera något.</span></p></details>
+            <details class="qa"><summary>Vad är det här för sida?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En sida för en <strong>simulerad</strong> kryptoboot. Inga riktiga pengar och inga börsnycklar är inblandade. Botarna handlar med låtsaspengar mot riktiga priser från Binance, så du kan se hur en strategi hade klarat sig utan att riskera något.</span></p></details>
             <details class="qa"><summary>Vilka botar finns och vad är skillnaden?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)"><strong>Trend BTC + ETH</strong> delar pengarna mellan BTC och ETH och investerar mer ju fler medelvärden kursen ligger över. <strong>Volatilitetsstyrd trend</strong> äger BTC över 100-dagars medelvärdet men mindre när det svänger mycket. <strong>Rotationsbot</strong> äger varje vecka de starkaste valutorna av tio. <strong>Trend-ensemble</strong> (fliken Trend) äger 0, 50 eller 100 % BTC efter hur många av fem medelvärden kursen ligger över. De fyra kör hela tiden på GitHub, även när sidan är stängd. Fliken Testlabb har en separat testbot i din webbläsare som bara går medan fliken är öppen.</span></p></details>
-            <details class="qa"><summary>Vad är en candlestick?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Ett staplat "ljus" som visar ett tidsintervall. Kroppen går från öppningspris till stängningspris, och veken visar högsta och lägsta pris under tiden. Grönt betyder att priset steg, rött att det föll. Intervallet (1 min, 1 tim, 4 tim, dag) bestämmer hur lång tid varje ljus är.</span></p></details>
-            <details class="qa"><summary>Vad är stop-loss och take-profit?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En stop-loss säljer automatiskt om priset faller till en viss nivå, så att en förlust inte växer. En take-profit säljer när vinsten nått ett mål. Här räknas nivåerna med ATR, ett mått på hur mycket priset brukar röra sig, och riskreglaget gör nivåerna tajtare eller längre ifrån.</span></p></details>
+            <details class="qa"><summary>Vad är en ljusstake?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Ett staplat "ljus" som visar ett tidsintervall. Kroppen går från öppningspris till stängningspris, och veken visar högsta och lägsta pris under tiden. Grönt betyder att priset steg, rött att det föll. Intervallet (1 min, 1 tim, 4 tim, dag) bestämmer hur lång tid varje ljus är.</span></p></details>
+            <details class="qa"><summary>Vad är stoppnivå och vinstmål?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En stoppnivå säljer automatiskt om priset faller till en viss nivå, så att en förlust inte växer. En vinstmål säljer när vinsten nått ett mål. Här räknas nivåerna med ATR, ett mått på hur mycket priset brukar röra sig, och riskreglaget gör nivåerna tajtare eller längre ifrån.</span></p></details>
             <details class="qa"><summary>Vad är spread och avgifter?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Spread är skillnaden mellan bästa köppris (ask) och bästa säljpris (bid). Du köper på det högre och säljer på det lägre, så varje affär kostar lite. Dessutom tar börsen cirka 0,1 % avgift per köp och per sälj. Därför lönar sig inte att handla väldigt ofta: avgifterna äter upp vinsten.</span></p></details>
-            <details class="qa"><summary>Vad är buy & hold?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Att köpa i början och bara sitta still. Det är måttstocken som varje bot jämförs mot. En strategi är bara värd något om den slår buy & hold efter avgifter, eller åtminstone har mycket mindre nedgångar.</span></p></details>
+            <details class="qa"><summary>Vad är köp och behåll?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Att köpa i början och bara sitta still. Det är måttstocken som varje bot jämförs mot. En strategi är bara värd något om den slår köp och behåll efter avgifter, eller åtminstone har mycket mindre nedgångar.</span></p></details>
             <details class="qa"><summary>Vad gör AUTO-läget?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Det mäter om marknaden trendar eller rör sig sidledes (med ADX), testar de passande strategierna på den senaste historiken och väljer den som gått bäst. Bara strategier som varit lönsamma får handla, annars väntar boten utanför marknaden. Valet kan inte titta in i framtiden.</span></p></details>
-            <details class="qa"><summary>Vad är momentum och trendfilter?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Momentum betyder att man äger det som stigit mest på sistone. Ett trendfilter betyder att man bara köper när kursen ligger över sitt medelvärde (till exempel de senaste 200 candlesen), alltså i en uppåtgående trend. Båda är kända idéer, och rotationsboten kombinerar dem.</span></p></details>
-            <details class="qa"><summary>Vad är overfitting och varför håll-ut-test?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Om man testar många strategier hittar man alltid någon som såg bra ut förr av ren slump. Därför delar rapporterna historiken på mitten: man väljer på första halvan och mäter på andra halvan som strategin aldrig sett. Håller resultatet inte där var det troligen tur.</span></p></details>
-            <details class="qa"><summary>Vad har testerna visat hittills?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Att ingen strategi slår buy & hold rakt av. Snabb handel (1 timme och kortare) förlorar på avgifter. Långsammare handel och rotation mellan flera valutor ser bäst ut, men valutorna i testet är sådana som är stora idag, vilket flatterar resultatet. Läs hela rapporterna via länkarna på Home.</span></p></details>
-            <details class="qa"><summary>Kan jag använda riktiga pengar?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Inget här är kopplat till riktiga pengar och det är ingen finansiell rådgivning. Historiska resultat garanterar inget om framtiden. Lägg aldrig börsnycklar bakom en öppen adress, och börja inte med riktiga pengar utan att först ha sett en bot klara sig i flera månader mot buy & hold.</span></p></details>
+            <details class="qa"><summary>Vad är trendstyrka och trendfilter?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Trendstyrka betyder att man äger det som stigit mest på sistone. Ett trendfilter betyder att man bara köper när kursen ligger över sitt medelvärde (till exempel de senaste 200 candlesen), alltså i en uppåtgående trend. Båda är kända idéer, och rotationsboten kombinerar dem.</span></p></details>
+            <details class="qa"><summary>Vad är överanpassning och varför håll-ut-test?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Om man testar många strategier hittar man alltid någon som såg bra ut förr av ren slump. Därför delar rapporterna historiken på mitten: man väljer på första halvan och mäter på andra halvan som strategin aldrig sett. Håller resultatet inte där var det troligen tur.</span></p></details>
+            <details class="qa"><summary>Vad har testerna visat hittills?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Att ingen strategi slår köp och behåll rakt av. Snabb handel (1 timme och kortare) förlorar på avgifter. Långsammare handel och rotation mellan flera valutor ser bäst ut, men valutorna i testet är sådana som är stora idag, vilket flatterar resultatet. Läs hela rapporterna via länkarna på Översikt.</span></p></details>
+            <details class="qa"><summary>Kan jag använda riktiga pengar?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Inget här är kopplat till riktiga pengar och det är ingen finansiell rådgivning. Historiska resultat garanterar inget om framtiden. Lägg aldrig börsnycklar bakom en öppen adress, och börja inte med riktiga pengar utan att först ha sett en bot klara sig i flera månader mot köp och behåll.</span></p></details>
         </div>
     </main>
 

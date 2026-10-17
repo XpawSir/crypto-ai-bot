@@ -64,6 +64,8 @@ const marketSpreadEl = document.getElementById('market-spread');
 
 // ---------- Inställningar ----------
 const API = 'https://api.binance.com/api/v3';
+// Visar 'Buy & hold' från botarnas tillståndsfiler på svenska
+const svBH = function (s) { return String(s).replace(/buy\s*(&|&amp;)\s*hold/gi, 'Köp och behåll'); };
 const HISTORY_LIMIT = 1000;     // candles som hämtas till grafen (AUTO behöver gott om historik)
 const MAX_CANDLES = 1300;
 const REFRESH_MS = 3000;
@@ -215,7 +217,7 @@ const STRATEGIES = {
         compute: function (d) { return NONE.compute(d); }
     },
     'ema': maStrategy('EMA 9/21', 9, 21, emaArr, 'EMA'),
-    'ema-50-200': maStrategy('EMA 50/200 (Golden Cross)', 50, 200, emaArr, 'EMA'),
+    'ema-50-200': maStrategy('EMA 50/200 (gyllene korset)', 50, 200, emaArr, 'EMA'),
     'sma-20-50': maStrategy('SMA 20/50', 20, 50, smaArr, 'SMA'),
     'ema-fast': maStrategy('EMA 3/8 (snabbtest)', 3, 8, emaArr, 'EMA', { auto: false }),
     'macd': {
@@ -298,7 +300,7 @@ const STRATEGIES = {
         }
     },
     'keltner': {
-        name: 'Keltner breakout (EMA 20 + 2 ATR)', kind: 'trend', osc: false, colors: ['#fb923c', '#facc15', '#fb923c'],
+        name: 'Keltner-utbrott (EMA 20 + 2 ATR)', kind: 'trend', osc: false, colors: ['#fb923c', '#facc15', '#fb923c'],
         legend: [['Kanal:', 'EMA 20 ± 2 ATR']],
         compute: function (d) {
             const c = closes(d), m = emaArr(c, 20), at = atrSimple(d, 10);
@@ -309,7 +311,7 @@ const STRATEGIES = {
             return r;
         }
     },
-    'donchian': donchianStrategy('Donchian 20/10 (breakout)', 20, 10),
+    'donchian': donchianStrategy('Donchian 20/10 (utbrott)', 20, 10),
     'donchian-55': donchianStrategy('Donchian 55/20 (Turtle)', 55, 20),
     'rsi': {
         name: 'RSI 14 (köp under 30, sälj över 70)', kind: 'revert', osc: true, colors: ['#a78bfa'],
@@ -336,7 +338,7 @@ const STRATEGIES = {
         }
     },
     'bb': {
-        name: 'Bollinger 20/2 (mean reversion)', kind: 'revert', osc: false, colors: ['#a78bfa', '#facc15', '#a78bfa'],
+        name: 'Bollinger 20/2 (återgång till medel)', kind: 'revert', osc: false, colors: ['#a78bfa', '#facc15', '#a78bfa'],
         legend: [['Band:', 'Övre/undre (2 std)'], ['Mitt:', 'Snitt 20']],
         compute: function (d) {
             const c = closes(d), mid = [], up = [], lo = [];
@@ -662,7 +664,7 @@ function setConnection(ok, err) {
     if (ok === connected) return;
     connected = ok;
     if (ok) {
-        addLog('Ansluten till Binance, live-data hämtas.', 'success');
+        addLog('Ansluten till Binance, realtidsdata hämtas.', 'success');
     } else {
         addLog('Kunde inte hämta data från Binance' + (err ? ' (' + err.message + ')' : ''), 'danger');
     }
@@ -820,7 +822,7 @@ function openPosition(price) {
 
     addMarker('buy', price);
     const by = posStrategyId ? ' [' + STRATEGIES[posStrategyId].name + ']' : '';
-    addLog('🟢 Köp @ $' + fmt(price) + by + ' | ATR Stop: $' + fmt(dynamicStopPrice) + ' | TP: $' + fmt(dynamicTakeProfitPrice), 'success');
+    addLog('🟢 Köp @ $' + fmt(price) + by + ' | ATR-stopp: $' + fmt(dynamicStopPrice) + ' | vinstmål: $' + fmt(dynamicTakeProfitPrice), 'success');
     saveBotState();
 }
 
@@ -849,9 +851,9 @@ function closePosition(price, reason, atTime) {
 
     const amount = (delta >= 0 ? '+$' : '-$') + Math.abs(delta).toFixed(2);
     if (reason === 'stop') {
-        addLog('🛑 Stop-loss utlöst @ $' + fmt(price) + ': ' + amount, 'danger');
+        addLog('🛑 Stoppnivå utlöst @ $' + fmt(price) + ': ' + amount, 'danger');
     } else if (reason === 'tp') {
-        addLog('🎯 Take-profit nådd @ $' + fmt(price) + ': ' + amount, 'success');
+        addLog('🎯 Vinstmål nått @ $' + fmt(price) + ': ' + amount, 'success');
     } else {
         addLog('🔴 Position stängd @ $' + fmt(price) + ': ' + amount, delta >= 0 ? 'success' : 'danger');
     }
@@ -1205,10 +1207,10 @@ function catchUp() {
 function startBot(resumed) {
     isRunning = true;
     toggleBtn.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2";
-    toggleBtn.innerHTML = '<i class="fa-solid fa-stop"></i> Stoppa AI-Robot';
+    toggleBtn.innerHTML = '<i class="fa-solid fa-stop"></i> Stoppa testboten';
     botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-2";
-    botStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Bot Aktiv';
-    addLog(resumed ? 'Robot återupptogs automatiskt efter omladdning.' : 'Robot startad.', 'success');
+    botStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Boten är aktiv';
+    addLog(resumed ? 'Testboten återupptogs automatiskt efter omladdning.' : 'Testboten startad.', 'success');
     if (candles.length > 1) lastEvalTime = candles[candles.length - 2].time;
     if (botTicker) botTicker.stop();
     botTicker = makeTicker(runBot, BOT_MS);
@@ -1219,10 +1221,10 @@ function startBot(resumed) {
 function stopBot() {
     isRunning = false;
     toggleBtn.className = "w-full bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2";
-    toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i> Starta AI-Robot';
+    toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i> Starta testboten';
     botStatusBadge.className = "px-3 py-1 rounded-md text-xs font-semibold bg-gray-900 text-gray-400 border border-gray-800 flex items-center gap-2";
-    botStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-gray-600"></span> Bot Pausad';
-    addLog("Robot pausad.", "warn");
+    botStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-gray-600"></span> Boten är pausad';
+    addLog("Testboten pausad.", "warn");
     if (botTicker) botTicker.stop();
     botTicker = null;
     releaseWakeLock();
@@ -1354,7 +1356,7 @@ function makeServerPanel(prefix, file, onState) {
             serverCharts.push(chart);
             chart.applyOptions({ layout: { textColor: themeColors().text }, grid: { horzLines: { color: themeColors().grid } } });
             botLine = chart.addLineSeries({ color: '#34d399', lineWidth: 2, priceLineVisible: false, title: 'Boten' });
-            bhLine = chart.addLineSeries({ color: '#94a3b8', lineWidth: 1, lineStyle: 2, priceLineVisible: false, title: 'Buy & hold' });
+            bhLine = chart.addLineSeries({ color: '#94a3b8', lineWidth: 1, lineStyle: 2, priceLineVisible: false, title: 'Köp och behåll' });
         }
         const a = [], b = []; let last = 0;
         points.forEach(function (p) {
@@ -1395,7 +1397,7 @@ function makeServerPanel(prefix, file, onState) {
                 if (typeof st.buyHoldValue === 'number') {
                     const botNow = st.equity && st.equity.length ? st.equity[st.equity.length - 1][1] : st.balance;
                     const diff = botNow - st.buyHoldValue;
-                    el.bh.textContent = (st.buyHoldLabel || 'Buy & hold') + ' sedan start: ' + money(st.buyHoldValue) + ' · boten ' + (diff >= 0 ? 'ligger ' + money(diff) + ' före' : 'ligger ' + money(-diff) + ' efter');
+                    el.bh.textContent = svBH(st.buyHoldLabel || 'Köp och behåll') + ' sedan start: ' + money(st.buyHoldValue) + ' · boten ' + (diff >= 0 ? 'ligger ' + money(diff) + ' före' : 'ligger ' + money(-diff) + ' efter');
                     el.bh.className = 'text-[11px] font-mono ' + (diff >= 0 ? 'text-emerald-400' : 'text-gray-400');
                 } else el.bh.textContent = '';
             }
@@ -1424,14 +1426,14 @@ function makeServerPanel(prefix, file, onState) {
                 el.pos.style.whiteSpace = 'pre-line';
                 el.pos.textContent = 'Öppna positioner (' + list.length + '):\n' + list.map(function (p) {
                     const u = (typeof p.unrealized === 'number') ? ' | orealiserat ' + money(p.unrealized, true) : '';
-                    return p.symbol + ' köpt @ ' + priceTxt(p.entryPrice) + ((p.stop === null || p.stop === undefined) && (p.tp === null || p.tp === undefined) ? '' : ' | stop ' + priceTxt(p.stop) + ' | mål ' + priceTxt(p.tp)) + u;
+                    return p.symbol + ' köpt @ ' + priceTxt(p.entryPrice) + ((p.stop === null || p.stop === undefined) && (p.tp === null || p.tp === undefined) ? '' : ' | stopp ' + priceTxt(p.stop) + ' | mål ' + priceTxt(p.tp)) + u;
                 }).join('\n');
             } else {
                 el.pos.textContent = 'Ingen öppen position. Boten väntar på nästa signal.';
             }
             const c = st.config || {};
             const syms = Array.isArray(c.symbols) ? c.symbols.join(', ') : (Array.isArray(c.universe) ? c.universe.length + ' valutor' : (c.symbol || ''));
-            const stratTxt = c.strategy ? c.strategy + (c.noStops ? ' (ingen stop)' : '') : (c.lookback ? 'momentum ' + c.lookback + 'd, topp ' + c.top + ', ombalans var ' + c.rebalDays + ':e dag' : '');
+            const stratTxt = c.strategy ? c.strategy + (c.noStops ? ' (inget stopp)' : '') : (c.lookback ? 'trendstyrka ' + c.lookback + 'd, topp ' + c.top + ', ombalans var ' + c.rebalDays + ':e dag' : '');
             el.note.textContent = 'Senaste körning ' + ago(st.lastRun) + ' | ' + syms + ' | ' + (c.interval || '') + ' | ' + stratTxt + ' | simulerad handel';
 
             el.log.textContent = '';
@@ -1492,7 +1494,7 @@ const trendView = (function () {
             const tgt = typeof st.target === 'number' ? st.target : 0;
             document.getElementById('tr-target').textContent = Math.round(100 * tgt) + ' % i BTC';
             document.getElementById('tr-bar').style.width = Math.round(100 * tgt) + '%';
-            document.getElementById('tr-explain').textContent = 'Stängningskursen $' + Math.round(st.signalClose || 0).toLocaleString('en-US') + ' ligger över ' + above + ' av ' + st.signal.length + ' medelvärden, alltså ' + above + '/' + st.signal.length + ' = ' + Math.round(100 * above / st.signal.length) + ' %, avrundat till ' + Math.round(100 * tgt) + ' %. Nästa beslut tas när dagens candle stänger (02:00 svensk tid).';
+            document.getElementById('tr-explain').textContent = 'Stängningskursen $' + Math.round(st.signalClose || 0).toLocaleString('en-US') + ' ligger över ' + above + ' av ' + st.signal.length + ' medelvärden, alltså ' + above + '/' + st.signal.length + ' = ' + Math.round(100 * above / st.signal.length) + ' %, avrundat till ' + Math.round(100 * tgt) + ' %. Nästa beslut tas när dagens handelsdag stänger (02:00 svensk tid).';
         }
 
         // Prisgraf: dagscandles + medelvärden + pilar för regelns affärer (simulering och live)
@@ -1523,13 +1525,13 @@ const trendView = (function () {
                 histChart = LightweightCharts.createChart(hb, baseOpts({ handleScroll: false, handleScale: false, crosshair: { mode: 0 } }));
                 serverCharts.push(histChart);
                 histBot = histChart.addLineSeries({ color: '#34d399', lineWidth: 2, priceLineVisible: false, title: 'Regeln', priceFormat: { type: 'price', precision: 0, minMove: 1 } });
-                histBh = histChart.addLineSeries({ color: '#94a3b8', lineWidth: 1, lineStyle: 2, priceLineVisible: false, title: 'Buy & hold', priceFormat: { type: 'price', precision: 0, minMove: 1 } });
+                histBh = histChart.addLineSeries({ color: '#94a3b8', lineWidth: 1, lineStyle: 2, priceLineVisible: false, title: 'Köp och behåll', priceFormat: { type: 'price', precision: 0, minMove: 1 } });
             }
             histBot.setData(st.history.equity.map(function (p) { return { time: p[0], value: p[1] }; }));
             histBh.setData(st.history.equity.map(function (p) { return { time: p[0], value: p[2] }; }));
             histChart.timeScale().fitContent();
             const h = st.history;
-            document.getElementById('tr-hist-txt').textContent = 'Från ' + new Date(h.from * 1000).toLocaleDateString('sv-SE') + ': regeln ' + pct(h.total) + ' (värsta ras ' + pct(h.maxDD) + ') · buy & hold ' + pct(h.bhTotal) + ' (värsta ras ' + pct(h.bhMaxDD) + ') · ' + h.trades.length + ' justeringar';
+            document.getElementById('tr-hist-txt').textContent = 'Från ' + new Date(h.from * 1000).toLocaleDateString('sv-SE') + ': regeln ' + pct(h.total) + ' (värsta ras ' + pct(h.maxDD) + ') · köp och behåll ' + pct(h.bhTotal) + ' (värsta ras ' + pct(h.bhMaxDD) + ') · ' + h.trades.length + ' justeringar';
         }
     }
     // Statistik och månadstabell (från simuleringen; live-siffror när boten gjort affärer)
@@ -1548,12 +1550,12 @@ const trendView = (function () {
             ['Snittandel i BTC', Math.round(100 * S.avgWeight) + ' %', 'resten kontanter'],
             ['Justeringar per år', String(Math.round(S.tradesPerYear)), 'köp eller sälj'],
             ['Längsta tid utan BTC', S.longestOut + ' dagar', 'i följd'],
-            ['Bästa månad', best ? p1(best.bot) : '-', mName(best) + (best ? ' · B&H ' + p1(best.bh) : '')],
-            ['Sämsta månad', worst ? p1(worst.bot) : '-', mName(worst) + (worst ? ' · B&H ' + p1(worst.bh) : '')]
+            ['Bästa månad', best ? p1(best.bot) : '-', mName(best) + (best ? ' · köp och behåll ' + p1(best.bh) : '')],
+            ['Sämsta månad', worst ? p1(worst.bot) : '-', mName(worst) + (worst ? ' · köp och behåll ' + p1(worst.bh) : '')]
         ];
         // Live: dagar sedan start och realiserat resultat
         const liveDays = st.startedAt ? Math.max(0, Math.floor((Date.now() - new Date(st.startedAt).getTime()) / 86400000)) : 0;
-        document.getElementById('tr-stat-src').textContent = 'Simulering ' + new Date(h.from * 1000).toLocaleDateString('sv-SE') + ' – idag · ' + beat + ' av ' + done.length + ' månader bättre än buy & hold · live i ' + liveDays + ' dagar, ' + (st.trades || []).length + ' affärer';
+        document.getElementById('tr-stat-src').textContent = 'Simulering ' + new Date(h.from * 1000).toLocaleDateString('sv-SE') + ' – idag · ' + beat + ' av ' + done.length + ' månader bättre än köp och behåll · i drift i ' + liveDays + ' dagar, ' + (st.trades || []).length + ' affärer';
         box.textContent = '';
         items.forEach(function (it) {
             const d = document.createElement('div'); d.className = 'tr-stat';
@@ -1577,7 +1579,7 @@ const trendView = (function () {
                     yb *= 1 + m.bot; yh *= 1 + m.bh;
                     const a = Math.min(1, Math.abs(m.bot) / 0.25) * 0.35;
                     const bg = m.bot >= 0 ? 'rgba(52,211,153,' + a.toFixed(2) + ')' : 'rgba(248,113,113,' + a.toFixed(2) + ')';
-                    html += '<td style="background:' + bg + '" title="' + MN[k] + ' ' + y + (m.partial ? ' (pågår)' : '') + ': regeln ' + p1(m.bot) + ', buy & hold ' + p1(m.bh) + '">' + p1(m.bot).replace(' %', '') + '<small>' + p1(m.bh).replace(' %', '') + '</small></td>';
+                    html += '<td style="background:' + bg + '" title="' + MN[k] + ' ' + y + (m.partial ? ' (pågår)' : '') + ': regeln ' + p1(m.bot) + ', köp och behåll ' + p1(m.bh) + '">' + p1(m.bot).replace(' %', '') + '<small>' + p1(m.bh).replace(' %', '') + '</small></td>';
                 }
                 html += '<td class="y">' + p1(yb - 1).replace(' %', '') + '<small>' + p1(yh - 1).replace(' %', '') + '</small></td></tr>';
             });
@@ -1608,7 +1610,7 @@ const overview = (function () {
         return dd;
     }
 
-    // Liten kurva i SVG (boten heldragen, buy & hold streckad)
+    // Liten kurva i SVG (boten heldragen, köp och behåll streckad)
     function spark(el, eq, color) {
         el.textContent = '';
         if (!eq || eq.length < 2) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">Kurvan fylls på när boten kört en stund</span>'; return; }
@@ -1636,7 +1638,7 @@ const overview = (function () {
         if (pnl) { const r = (now / START - 1) * 100; pnl.textContent = pctTxt(r) + ' sedan start'; pnl.className = r >= 0 ? 'up' : 'down'; }
         const vs = part(p, 'vs');
         if (vs) {
-            if (typeof st.buyHoldValue === 'number' && st.buyHoldValue > 0) { const d = (now / st.buyHoldValue - 1) * 100; vs.textContent = pctTxt(d) + ' mot B&H'; vs.className = d >= 0 ? 'up' : ''; }
+            if (typeof st.buyHoldValue === 'number' && st.buyHoldValue > 0) { const d = (now / st.buyHoldValue - 1) * 100; vs.textContent = pctTxt(d) + ' mot köp och behåll'; vs.className = d >= 0 ? 'up' : ''; }
             else vs.textContent = '';
         }
         const sp = part(p, 'spark'); if (sp) spark(sp, st.equity, meta.color);
@@ -1702,16 +1704,6 @@ const overview = (function () {
         // hälsokontroll: botarna ska köra var 10:e minut
         const fr = document.getElementById('br-fresh');
         if (latestRun) { const age = now - latestRun; fr.textContent = 'senast kört ' + ago(age); fr.className = 'br-fresh' + (age > 90 * 60000 ? ' bad' : age > 30 * 60000 ? ' warn' : ''); }
-
-        // bot för bot
-        const bots = document.getElementById('br-bots'); bots.textContent = '';
-        rows.forEach(function (r) {
-            const a = mk('a', 'tile br-bot'); a.href = BOTS[r.p].href;
-            const dot = mk('span', 'dot'); dot.style.background = BOTS[r.p].color;
-            const mid = mk('span', 'min-w-0'); mid.append(mk('div', 'nm', BOTS[r.p].name), mk('div', 'sub', r.n ? Math.round(r.inv * 100) + ' % investerat · ' + r.n + (r.n === 1 ? ' innehav' : ' innehav') : 'Kontanter'));
-            const c = mk('span', 'chg ' + (r.d24 >= 0 ? 'up' : 'down'), pctTxt(r.d24 * 100)); c.append(mk('div', 'sub', 'senaste dygnet'));
-            a.append(dot, mid, c); bots.appendChild(a);
-        });
 
         // händelser senaste dygnet
         const ev = document.getElementById('br-events'); ev.textContent = '';
@@ -1800,7 +1792,7 @@ const overview = (function () {
         if (btcRef) {
             if (!lbSeries.bh) lbSeries.bh = lbChart.addLineSeries({ color: '#94a3b8', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: true });
             lbSeries.bh.setData(toPts(btcRef.equity, 2));
-            legend.push('<span><i style="background:#94a3b8"></i>Buy &amp; hold BTC</span>');
+            legend.push('<span><i style="background:#94a3b8"></i>Köp och behåll BTC</span>');
         }
         const lg = document.getElementById('lb-legend'); if (lg) lg.innerHTML = legend.join('');
         lbChart.timeScale().fitContent();

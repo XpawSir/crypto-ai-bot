@@ -131,7 +131,7 @@
             series.setData(bars.map(point));
             lastBar = bars[bars.length - 1] || null;
             chart.timeScale().fitContent();
-            note.textContent = bars.length + ' staplar · ' + c.sym + '/USDT · uppdateras live';
+            note.textContent = bars.length + ' staplar · ' + c.sym + '/USDT · uppdateras i realtid';
             subscribeKline();
         } catch (e) {
             if (seq === loadSeq) note.textContent = 'Kunde inte hämta grafen just nu. Försöker igen vid nästa uppdatering.';
