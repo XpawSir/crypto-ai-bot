@@ -1654,7 +1654,92 @@ const overview = (function () {
         return buys + ' köp · ' + sells + ' sålda';
     }
 
+    // ---------- Dagens sammanfattning ----------
+    const DAY = 86400000;
+    function valueAt(st, t) { // botens värde vid tidpunkten t (före start: startkapital)
+        const eq = st.equity || []; let v = START;
+        for (let i = 0; i < eq.length; i++) { if (eq[i][0] <= t) v = eq[i][1]; else break; }
+        return v;
+    }
+    function ago(ms) { const m = Math.round(ms / 60000); return m < 1 ? 'nyss' : m < 90 ? m + ' min sedan' : Math.round(m / 60) + ' tim sedan'; }
+    function mk(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+    function sym(s) { return String(s || '').replace(/USDT$/, ''); }
+
+    function briefing() {
+        const root = document.getElementById('brief'); if (!root) return;
+        const keys = Object.keys(BOTS).filter(function (p) { return states[p]; });
+        if (!keys.length) return;
+        const now = Date.now(), h = new Date().getHours();
+        document.getElementById('br-kicker').textContent = (h < 5 ? 'God natt' : h < 10 ? 'God morgon' : h < 18 ? 'Hej' : 'God kväll') + ' · dagens sammanfattning';
+
+        // totalt läge
+        let total = 0, total24 = 0, bh = 0, bhN = 0, latest = 0, latestRun = 0;
+        const rows = keys.map(function (p) {
+            const st = states[p], v = lastBot(st), v24 = valueAt(st, now - DAY);
+            total += v; total24 += v24;
+            if (typeof st.buyHoldValue === 'number' && st.buyHoldValue > 0) { bh += st.buyHoldValue; bhN++; }
+            const lr = st.lastRun ? Date.parse(st.lastRun) : 0; if (lr) latestRun = Math.max(latestRun, lr);
+            const pos = st.openPositions || [], inv = pos.reduce(function (a, q) { return a + (q.exposure || 0); }, 0);
+            return { p: p, st: st, v: v, d24: v24 ? v / v24 - 1 : 0, inv: st.balance ? inv / st.balance : 0, n: pos.length };
+        });
+        const base = START * keys.length, ret = total / base - 1, d24 = total24 ? total / total24 - 1 : 0;
+        const best = rows.slice().sort(function (a, b) { return b.d24 - a.d24; });
+        const bhRet = bhN === keys.length ? bh / base - 1 : null;
+
+        const tt = document.getElementById('br-title');
+        tt.textContent = (d24 >= 0 ? 'Plus ' : 'Minus ') + Math.abs(d24 * 100).toFixed(2) + ' % senaste dygnet';
+        tt.className = 'br-title ' + (d24 >= 0 ? 'up' : 'down');
+
+        const sum = document.getElementById('br-sum'); sum.textContent = '';
+        const parts = [];
+        parts.push(['Alla ' + keys.length + ' botar tillsammans: ', money(total) + ' (' + pctTxt(ret * 100) + ' sedan start). ']);
+        if (bhRet !== null) { const diff = (ret - bhRet) * 100; parts.push([diff >= 0 ? 'Det är ' : 'Det är ', Math.abs(diff).toFixed(2) + ' procentenheter ' + (diff >= 0 ? 'före' : 'efter') + ' att bara ha hållit Bitcoin. ']); }
+        const moved = rows.reduce(function (a, r) { return a + (r.st.trades || []).filter(function (t) { return Date.parse(t.t) > now - DAY; }).length; }, 0);
+        parts.push([moved ? moved + (moved === 1 ? ' affär' : ' affärer') + ' gjordes senaste dygnet. ' : 'Inga affärer senaste dygnet: botarna väntar på sina signaler. ', '']);
+        parts.push(['Bäst senaste dygnet: ', BOTS[best[0].p].name + ' (' + pctTxt(best[0].d24 * 100) + '), svagast: ' + BOTS[best[best.length - 1].p].name + ' (' + pctTxt(best[best.length - 1].d24 * 100) + ').']);
+        parts.forEach(function (x) { if (x[1]) { const b = document.createElement('b'); b.textContent = x[1]; sum.append(x[0], b); } else sum.append(x[0]); });
+
+        // hälsokontroll: botarna ska köra var 10:e minut
+        const fr = document.getElementById('br-fresh');
+        if (latestRun) { const age = now - latestRun; fr.textContent = 'senast kört ' + ago(age); fr.className = 'br-fresh' + (age > 90 * 60000 ? ' bad' : age > 30 * 60000 ? ' warn' : ''); }
+
+        // bot för bot
+        const bots = document.getElementById('br-bots'); bots.textContent = '';
+        rows.forEach(function (r) {
+            const a = mk('a', 'tile br-bot'); a.href = BOTS[r.p].href;
+            const dot = mk('span', 'dot'); dot.style.background = BOTS[r.p].color;
+            const mid = mk('span', 'min-w-0'); mid.append(mk('div', 'nm', BOTS[r.p].name), mk('div', 'sub', r.n ? Math.round(r.inv * 100) + ' % investerat · ' + r.n + (r.n === 1 ? ' innehav' : ' innehav') : 'Kontanter'));
+            const c = mk('span', 'chg ' + (r.d24 >= 0 ? 'up' : 'down'), pctTxt(r.d24 * 100)); c.append(mk('div', 'sub', 'senaste dygnet'));
+            a.append(dot, mid, c); bots.appendChild(a);
+        });
+
+        // händelser senaste dygnet
+        const ev = document.getElementById('br-events'); ev.textContent = '';
+        const items = [];
+        rows.forEach(function (r) {
+            (r.st.trades || []).forEach(function (t) { const ts = Date.parse(t.t); if (ts > now - DAY) items.push({ ts: ts, text: (t.side === 'buy' ? 'Köpte ' : 'Sålde ') + sym(t.symbol) + (t.price ? ' @ ' + Number(t.price).toLocaleString('en-US', { maximumFractionDigits: 4 }) : '') + ' · ' + BOTS[r.p].name }); });
+        });
+        items.sort(function (a, b) { return b.ts - a.ts; });
+        if (!items.length) {
+            ev.appendChild(mk('li', '', 'Inga köp eller sälj. Trendbotar handlar sällan, och de behåller sina innehav så länge trenden håller.'));
+            const dec = rows.map(function (r) { const l = (r.st.log || []).slice().reverse().find(function (x) { return /Dagens beslut/.test(x.m); }); return l ? BOTS[r.p].name + ': ' + l.m.replace(/^Dagens beslut:\s*/, '') : null; }).filter(Boolean);
+            dec.slice(0, 4).forEach(function (d) { ev.appendChild(mk('li', '', d)); });
+        } else items.slice(0, 8).forEach(function (i) { ev.appendChild(mk('li', '', new Date(i.ts).toLocaleString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' · ' + i.text)); });
+
+        // sju dagar: totalvärde vid dygnets slut (lokal tid)
+        const dayBox = document.getElementById('br-days'); dayBox.textContent = '';
+        const end = new Date(); end.setHours(23, 59, 59, 999);
+        for (let i = 6; i >= 0; i--) {
+            const e = end.getTime() - i * DAY, e0 = e - DAY, cut = Math.min(e, now);
+            let a = 0, b = 0; keys.forEach(function (p) { a += valueAt(states[p], e0); b += valueAt(states[p], cut); });
+            const ch = a ? b / a - 1 : 0, started = keys.some(function (p) { const sa = states[p].startedAt ? Date.parse(states[p].startedAt) : 0; return sa && sa <= e; });
+            const box = mk('div', 'br-day'); box.append(mk('div', 'd', new Date(e - 1000).toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric' })), started ? mk('div', 'v ' + (ch >= 0 ? 'up' : 'down'), pctTxt(ch * 100)) : mk('div', 'v', '–'));
+            dayBox.appendChild(box);
+        }
+    }
+
     function board() {
+        briefing();
         const list = Object.keys(BOTS).filter(function (p) { return states[p]; }).map(function (p) {
             const st = states[p], now = lastBot(st);
             return {

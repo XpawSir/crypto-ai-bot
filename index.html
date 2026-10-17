@@ -34,6 +34,22 @@
         .brand-mark:hover { transform:translateY(-1px); border-color:var(--accent); }
         .brand-name { font-size:17px; line-height:1.1; font-weight:700; letter-spacing:.34em; text-transform:uppercase; margin-right:-.34em;
             background:linear-gradient(180deg, var(--accent) 30%, var(--muted)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        /* dagens sammanfattning */
+        .br-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .br-title { font-size:20px; font-weight:700; color:var(--accent); letter-spacing:-.01em; }
+        .br-sum { color:var(--muted); font-size:13px; line-height:1.7; margin-top:6px; max-width:78ch; } .br-sum b { color:var(--accent); font-weight:600; }
+        .br-fresh { font-size:11px; font-family:'JetBrains Mono',monospace; color:var(--muted); display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+        .br-fresh::before { content:''; width:7px; height:7px; border-radius:50%; background:#34d399; } .br-fresh.warn::before { background:#fbbf24; } .br-fresh.bad::before { background:#f87171; }
+        .br-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:16px; }
+        .br-bot { display:flex; align-items:center; gap:10px; font-size:12px; padding:10px 12px; }
+        .br-bot .dot { width:8px; height:8px; border-radius:50%; flex:none; } .br-bot .nm { color:var(--accent); font-weight:600; } .br-bot .sub { color:var(--muted); font-size:11px; font-family:'JetBrains Mono',monospace; }
+        .br-bot .chg { margin-left:auto; font-family:'JetBrains Mono',monospace; font-weight:700; text-align:right; white-space:nowrap; }
+        .br-cols { display:grid; grid-template-columns:1fr; gap:16px; margin-top:16px; } @media(min-width:900px){ .br-cols { grid-template-columns:1.1fr 1fr; } }
+        .br-list { list-style:none; padding:0; margin:8px 0 0; font-size:12px; color:var(--muted); line-height:1.8; } .br-list li { padding:3px 0; border-top:1px solid var(--line); } .br-list li:first-child { border-top:0; }
+        .br-days { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin-top:8px; }
+        .br-day { text-align:center; padding:8px 2px; border-radius:10px; border:1px solid var(--line); font-family:'JetBrains Mono',monospace; }
+        .br-day .d { font-size:10px; color:var(--muted); text-transform:uppercase; } .br-day .v { font-size:12px; font-weight:700; margin-top:2px; }
+        .up { color:#34d399; } .down { color:#f87171; }
         /* market */
         .mk-row { display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border-radius:12px; border:1px solid transparent; transition:.12s; }
         .mk-row:hover { background:rgba(128,128,128,.10); }
@@ -192,6 +208,19 @@
             <h2 class="text-2xl font-bold text-white tracking-tight">Botarna</h2>
             <p class="text-[13px] text-gray-400 mt-1">Fyra botar handlar med låtsaspengar dygnet runt på GitHub, var och en med $10,000 från start. Klicka på en bot för detaljer.</p>
         </div>
+
+        <section id="brief" class="glass p-5 min-w-0" aria-live="polite">
+            <div class="br-head">
+                <div class="min-w-0"><div class="h-sec" id="br-kicker">Dagens sammanfattning</div><div class="br-title" id="br-title">Hämtar läget…</div></div>
+                <span id="br-fresh" class="br-fresh">väntar på data</span>
+            </div>
+            <p id="br-sum" class="br-sum"></p>
+            <div id="br-bots" class="br-grid"></div>
+            <div class="br-cols">
+                <div><div class="h-sec">Senaste dygnet</div><ul id="br-events" class="br-list"></ul></div>
+                <div><div class="h-sec">Senaste 7 dagarna, alla botar tillsammans</div><div id="br-days" class="br-days"></div></div>
+            </div>
+        </section>
 
         <div id="ov-cards" class="ov-cards">
             <a href="#btceth" class="glass ov-card" data-bot="srv"><div class="ov-head"><span class="h-sec">Trend BTC + ETH</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">5 medelvärden, hälften BTC, hälften ETH</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
@@ -569,6 +598,13 @@
     <main id="view-updates" class="hidden p-4 md:p-6 max-w-3xl mx-auto w-full flex-grow">
         <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Latest Updates</h2>
             <p class="text-[13px] text-gray-400 mt-1">Det senaste som byggts och ändrats, nyast först. All handel är simulerad med låtsaspengar.</p></div>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">17 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Dagens sammanfattning på startsidan</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Överst på Home: hur alla botar tillsammans gått senaste dygnet och sedan start, jämfört med att bara ha hållit Bitcoin, plus en rad per bot (förändring och hur mycket som är investerat), köp och sälj senaste dygnet, de senaste sju dagarna och en hälsokontroll som visar när botarna senast körde (gul eller röd om de uteblivit). Allt räknas från botarnas egna data, inga notiser. Topplistan visar dessutom köp och sålda affärer separat, så en bot som köpt men inte sålt inte längre ser ut att ha 0 affärer.</span></p>
+                </div>
+            </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
                     <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">New</span><span class="text-[11px] font-mono text-gray-500">13 okt 2026</span></div>
