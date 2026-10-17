@@ -7,6 +7,7 @@ declare -A BOTS=(
   [btceth]="env BOT_CONFIG=bot/config-btceth.json BOT_STATE=state/btceth.json node bot/trendbot.mjs"
   [voltrend]="env BOT_CONFIG=bot/config-voltrend.json BOT_STATE=state/voltrend.json node bot/trendbot.mjs"
   [rotation]="node bot/rotation.mjs"
+  [multi]="node bot/multibot.mjs"
 )
 pids=()
 for name in "${!BOTS[@]}"; do

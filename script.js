@@ -1595,7 +1595,8 @@ const overview = (function () {
         srv: { name: 'Trend BTC + ETH', color: '#60a5fa', href: '#btceth' },
         srv2: { name: 'Volatilitetsstyrd trend', color: '#fbbf24', href: '#voltrend' },
         srv3: { name: 'Rotationsbot', color: '#c084fc', href: '#botrot' },
-        srv4: { name: 'Trend-ensemble', color: '#34d399', href: '#trend' }
+        srv4: { name: 'Trend-ensemble', color: '#34d399', href: '#trend' },
+        srv5: { name: 'Trendkorg flera tillgångar', color: '#f472b6', href: '#multi' }
     };
     const START = 10000, states = {};
     let lbChart = null, lbSeries = {}, timer = null;
@@ -1800,7 +1801,7 @@ const overview = (function () {
     return { update: update, status: status };
 })();
 
-const serverPanels = [makeServerPanel('srv', 'btceth.json'), makeServerPanel('srv2', 'voltrend.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render)];
+const serverPanels = [makeServerPanel('srv', 'btceth.json'), makeServerPanel('srv2', 'voltrend.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render), makeServerPanel('srv5', 'multi.json')];
 function loadServerBot() { serverPanels.forEach(function (p) { p.load(); }); }
 
 // ---------- Logga ut ----------
