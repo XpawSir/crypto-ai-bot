@@ -2,8 +2,13 @@
   "label": "Volatilitetsstyrd trend (BTC)",
   "enabled": true,
   "mode": "voltrend",
-  "symbols": ["BTCUSDT"],
-  "lengths": [100],
+  "symbols": [
+    "BTCUSDT"
+  ],
+  "lengths": [
+    50
+  ],
   "volTarget": 0.6,
-  "volDays": 30
+  "volDays": 30,
+  "allIn": true
 }

@@ -1,7 +1,15 @@
 {
   "label": "Trendkorg flera tillgångar",
   "enabled": true,
-  "symbols": ["SPY", "QQQ", "TLT", "GLD", "DBC", "BTC-USD", "ETH-USD"],
-  "sma": 150,
-  "rebalDays": 7
+  "symbols": [
+    "SPY",
+    "QQQ",
+    "TLT",
+    "GLD",
+    "DBC",
+    "BTC-USD",
+    "ETH-USD"
+  ],
+  "sma": 100,
+  "rebalDays": 1
 }

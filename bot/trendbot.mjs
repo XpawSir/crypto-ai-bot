@@ -44,6 +44,7 @@ function loadConfig() {
         step: [0.1, 0.2, 0.25, 0.5, 1].includes(c.step) ? c.step : 0.25,
         volTarget: Math.min(2, Math.max(0.1, num(c.volTarget, 0.6))),
         volDays: Math.min(90, Math.max(10, Math.round(num(c.volDays, 30)))),
+        allIn: c.allIn === true,           // allt eller inget: ingen del-storlek, ingen volatilitetsstyrning
         interval: '1d'
     };
 }
@@ -96,7 +97,7 @@ export function targetFor(closes, cfg) {
         const r = []; for (let i = n - cfg.volDays + 1; i <= n; i++) r.push(closes[i] / closes[i - 1] - 1);
         const mean = r.reduce((a, b) => a + b, 0) / r.length;
         const vol = Math.sqrt(r.reduce((a, b) => a + (b - mean) ** 2, 0) / (r.length - 1)) * Math.sqrt(365);
-        const t = Math.round(Math.min(1, cfg.volTarget / vol) / 0.25) * 0.25;
+        const t = cfg.allIn ? 1 : Math.round(Math.min(1, cfg.volTarget / vol) / 0.25) * 0.25;
         return { target: t, why: 'över ' + len + '-dagars medel, volatilitet ' + Math.round(vol * 100) + ' %/år' };
     }
     const maxLen = cfg.lengths[cfg.lengths.length - 1];
@@ -130,12 +131,14 @@ export async function main() {
         if (!st.baseline) st.baseline = btcAsk * (1 + SLIP);
 
         const value = () => { let v = st.cash; for (const s in st.units) v += st.units[s] * (bid[s] || 0); return v; };
-        const rules = cfg.mode + '|' + cfg.symbols.join(',') + '|' + cfg.lengths.join(',') + '|' + cfg.step + '|' + cfg.volTarget;
-        if (st.rules && st.rules !== rules) { st.lastDecision = 0; log('Reglerna ändrade, fattar nytt beslut direkt.', 'info'); }
+        const rules = cfg.mode + '|' + cfg.symbols.join(',') + '|' + cfg.lengths.join(',') + '|' + cfg.step + '|' + cfg.volTarget + '|' + cfg.allIn;
+        const migrating = !!(st.rules && st.rules !== rules);   // vid regelbyte får delpositioner justeras en sista gång
+        if (migrating) { st.lastDecision = 0; log('Reglerna ändrade, fattar nytt beslut direkt.', 'info'); }
         st.rules = rules;
 
         if (cfg.enabled && refDay > st.lastDecision) {
             const val = value(); let changed = 0;
+            const noTrim = !migrating && (cfg.mode === 'voltrend' ? cfg.allIn : cfg.step === 1);
             // sälj först (frigör kontanter), köp sedan
             const order = [...cfg.symbols].sort((a, b) => {
                 const da = sig[a].target / N * val - (st.units[a] || 0) * bid[a], db = sig[b].target / N * val - (st.units[b] || 0) * bid[b];
@@ -144,6 +147,8 @@ export async function main() {
             for (const s of order) {
                 const cur = (st.units[s] || 0) * bid[s], tgt = sig[s].target / N * val, diff = tgt - cur;
                 if (Math.abs(diff) < val * 0.01) continue;
+                // allt eller inget: handla bara när signalen byter (in/ut), aldrig små justeringar av en kvarvarande position
+                if (noTrim && (tgt > 0) === (cur > 1)) continue;
                 changed++;
                 if (diff > 0) {
                     const price = ask[s] * (1 + SLIP), spend = Math.min(diff, st.cash); if (spend <= 1) continue;

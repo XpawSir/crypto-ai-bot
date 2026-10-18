@@ -115,12 +115,13 @@ export async function main() {
             const all = new Set([...Object.keys(st.units), ...Object.keys(w)]);
             for (const s of all) {
                 if (!bid[s]) continue;
-                const cur = (st.units[s] || 0) * bid[s], tgt = val * (1 - 2 * COST - 2 * SLIP - 0.0005) * (w[s] || 0), diff = tgt - cur;
+                let cur = (st.units[s] || 0) * bid[s], tgt = val * (1 - 2 * COST - 2 * SLIP - 0.0005) * (w[s] || 0), diff = tgt - cur;
                 const price = diff > 0 ? ask[s] * (1 + SLIP) : bid[s] * (1 - SLIP);
                 if (Math.abs(diff) < val * 0.002) continue;      // struntsummor handlas inte
+                if (cur > 1 && tgt > 0) continue;                // allt eller inget: en kvarvarande position justeras inte
                 cost += Math.abs(diff) * COST;
                 if (diff > 0) {
-                    const prevU = st.units[s] || 0, addU = diff / price;
+                    const prevU = st.units[s] || 0; diff = Math.min(diff, st.cash); if (diff <= 1) continue; const addU = diff / price;
                     st.cost[s] = ((st.cost[s] || price) * prevU + price * addU) / (prevU + addU);
                     st.units[s] = prevU + addU; st.cash -= diff;
                     st.trades.push({ t: new Date().toISOString(), side: 'buy', symbol: s, price });
@@ -137,7 +138,7 @@ export async function main() {
             }
             st.cash -= cost;
             st.lastRebal = refDay;
-            log('Veckans ombalansering klar: ' + (Object.keys(w).length ? 'äger ' + Object.keys(w).map(s => s.replace('USDT', '')).join(', ') : 'allt i kontanter (ingen valuta klarar momentum + trendfilter)') + '. Kostnad $' + cost.toFixed(2), 'info');
+            log('Ombalansering klar: ' + (Object.keys(w).length ? 'äger ' + Object.keys(w).map(s => s.replace('USDT', '')).join(', ') : 'allt i kontanter (ingen valuta klarar momentum + trendfilter)') + '. Kostnad $' + cost.toFixed(2), 'info');
             if (st.trades.length > 60) st.trades.splice(0, st.trades.length - 60);
         }
 

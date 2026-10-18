@@ -87,7 +87,7 @@ function logger(st) {
 
 export async function main() {
     const cfg = loadConfig(), st = loadState(), log = logger(st);
-    st.config = Object.assign({}, cfg, { strategy: 'trendkorg SMA ' + cfg.sma + ', veckovis' });
+    st.config = Object.assign({}, cfg, { strategy: 'trendkorg SMA ' + cfg.sma + (cfg.rebalDays === 1 ? ', dagligen' : ', var ' + cfg.rebalDays + ':e dag') });
     st.lastRun = new Date().toISOString(); st.enabled = cfg.enabled;
     try {
         const N = cfg.symbols.length, px = {}, bid = {}, ask = {}, sig = {};
@@ -109,6 +109,7 @@ export async function main() {
             for (const s of order) {
                 const cur = (st.units[s] || 0) * bid[s], tgt = sig[s].target / N * val, diff = tgt - cur;
                 if (Math.abs(diff) < val * 0.01) continue;
+                if ((sig[s].target > 0) === (cur > 1)) continue;   // allt eller inget: handla bara när signalen byter, aldrig justera en kvarvarande position
                 changed++;
                 if (diff > 0) {
                     const price = ask[s] * (1 + SLIP), spend = Math.min(diff, st.cash); if (spend <= 1) continue;
@@ -127,8 +128,8 @@ export async function main() {
                     log((full ? '🔴 Säljer ' : '➖ Minskar (ombalansering) ') + nm(s) + ' för $' + got.toFixed(2) + ' @ $' + price.toFixed(2) + ' (' + (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2) + ', ' + sig[s].why + ')', full ? (pnl >= 0 ? 'success' : 'danger') : 'info');
                 }
             }
-            if (!changed) log('Veckans beslut: ' + cfg.symbols.map(s => nm(s) + ' ' + (sig[s].target ? 'in' : 'ut')).join(', ') + '. Ingen ändring.', 'info');
-            else log('Veckans beslut klart: äger ' + (cfg.symbols.filter(s => sig[s].target).map(nm).join(', ') || 'bara kontanter') + '.', 'info');
+            if (!changed) log('Dagens beslut: ' + cfg.symbols.map(s => nm(s) + ' ' + (sig[s].target ? 'in' : 'ut')).join(', ') + '. Ingen ändring.', 'info');
+            else log('Beslut klart: äger ' + (cfg.symbols.filter(s => sig[s].target).map(nm).join(', ') || 'bara kontanter') + '.', 'info');
             if (st.trades.length > 200) st.trades.splice(0, st.trades.length - 200);
             st.lastDecision = today;
         }
