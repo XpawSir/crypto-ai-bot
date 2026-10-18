@@ -1,0 +1,10 @@
+{
+  "label": "Veckosparande (DCA)",
+  "enabled": true,
+  "symbols": [
+    "BTC-USD",
+    "ETH-USD"
+  ],
+  "perBuy": 250,
+  "everyDays": 7
+}

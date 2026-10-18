@@ -8,6 +8,7 @@ declare -A BOTS=(
   [voltrend]="env BOT_CONFIG=bot/config-voltrend.json BOT_STATE=state/voltrend.json node bot/trendbot.mjs"
   [rotation]="node bot/rotation.mjs"
   [multi]="node bot/multibot.mjs"
+  [dca]="node bot/dcabot.mjs"
 )
 pids=()
 for name in "${!BOTS[@]}"; do

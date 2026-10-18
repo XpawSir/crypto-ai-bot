@@ -1387,8 +1387,10 @@ function makeServerPanel(prefix, file, onState) {
             else badge('Aktiv', 'ok');
 
             el.balance.textContent = money(st.balance);
-            el.pnl.textContent = money(st.pnl, true);
-            el.pnl.className = 'stat-val ' + (st.pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
+            // Resultat sedan start = nuvarande värde minus startkapitalet (samma som på korten), inte bara avslutade affärer
+            const totNow = (st.equity && st.equity.length ? st.equity[st.equity.length - 1][1] : st.balance) - 10000;
+            el.pnl.textContent = money(totNow, true);
+            el.pnl.className = 'stat-val ' + (totNow >= 0 ? 'text-emerald-400' : 'text-red-400');
             el.trades.textContent = String(st.totalTrades);
             el.winrate.textContent = st.totalTrades > 0 ? Math.round(100 * st.winningTrades / st.totalTrades) + '%' : '-';
 
@@ -1400,6 +1402,11 @@ function makeServerPanel(prefix, file, onState) {
                     el.bh.textContent = svBH(st.buyHoldLabel || 'Köp och behåll') + ' sedan start: ' + money(st.buyHoldValue) + ' · boten ' + (diff >= 0 ? 'ligger ' + money(diff) + ' före' : 'ligger ' + money(-diff) + ' efter');
                     el.bh.className = 'text-[11px] font-mono ' + (diff >= 0 ? 'text-emerald-400' : 'text-gray-400');
                 } else el.bh.textContent = '';
+                // Orealiserat och ungefärlig skatt (30 % på vinst; ISK och andra konton beskattas annorlunda)
+                let ex = el.bh.nextElementSibling;
+                if (!ex || !ex.classList.contains('bot-extra')) { ex = document.createElement('div'); ex.className = 'bot-extra text-[11px] font-mono text-gray-400'; el.bh.after(ex); }
+                const unreal = (Array.isArray(st.openPositions) ? st.openPositions : []).reduce(function (a, q) { return a + (typeof q.unrealized === 'number' ? q.unrealized : 0); }, 0);
+                ex.textContent = 'Orealiserat i öppna positioner: ' + money(unreal, true) + ' · ' + (totNow > 0 ? 'ungefärlig skatt om allt såldes nu (30 %): ' + money(totNow * 0.3) : 'ingen skatt att betala vid förlust');
             }
             drawChart(st.equity);
 
@@ -1596,7 +1603,8 @@ const overview = (function () {
         srv2: { name: 'Volatilitetsstyrd trend', color: '#fbbf24', href: '#voltrend' },
         srv3: { name: 'Rotationsbot', color: '#c084fc', href: '#botrot' },
         srv4: { name: 'Trend-ensemble', color: '#34d399', href: '#trend' },
-        srv5: { name: 'Trendkorg flera tillgångar', color: '#f472b6', href: '#multi' }
+        srv5: { name: 'Trendkorg flera tillgångar', color: '#f472b6', href: '#multi' },
+        srv6: { name: 'Veckosparande (DCA)', color: '#38bdf8', href: '#dca' }
     };
     const START = 10000, states = {};
     let lbChart = null, lbSeries = {}, timer = null;
@@ -1643,6 +1651,13 @@ const overview = (function () {
             else vs.textContent = '';
         }
         const sp = part(p, 'spark'); if (sp) spark(sp, st.equity, meta.color);
+        // Orealiserat i öppna positioner, så att "mot köp och behåll" inte förväxlas med vinst
+        if (vs && vs.parentElement) {
+            let ex = vs.parentElement.nextElementSibling;
+            if (!ex || !ex.classList.contains('ov-extra')) { ex = document.createElement('div'); ex.className = 'ov-sub ov-extra'; vs.parentElement.after(ex); }
+            const unreal = (Array.isArray(st.openPositions) ? st.openPositions : []).reduce(function (a, q) { return a + (typeof q.unrealized === 'number' ? q.unrealized : 0); }, 0);
+            ex.textContent = (st.openPositions || []).length ? 'Öppna positioner: ' + money(unreal, true) + ' orealiserat' : 'Inga öppna positioner';
+        }
         schedule();
     }
 
@@ -1731,15 +1746,29 @@ const overview = (function () {
         }
     }
 
+    // Köp och behåll BTC från den äldsta botens start: referens som alla botar jämförs med
+    function btcRefState() {
+        return Object.keys(BOTS).map(function (p) { return states[p]; })
+            .filter(function (st) { return st && st.buyHoldLabel === 'Buy & hold BTC' && st.equity && st.equity.length > 1; })
+            .sort(function (a, b) { return a.equity[0][0] - b.equity[0][0]; })[0];
+    }
     function board() {
         briefing();
+        const refSt = btcRefState();
         const list = Object.keys(BOTS).filter(function (p) { return states[p]; }).map(function (p) {
             const st = states[p], now = lastBot(st);
             return {
                 p: p, st: st, ret: now / START - 1, vs: typeof st.buyHoldValue === 'number' && st.buyHoldValue > 0 ? now / st.buyHoldValue - 1 : null,
                 dd: maxDD(st), started: st.startedAt ? new Date(st.startedAt) : null
             };
-        }).sort(function (a, b) { return b.ret - a.ret; });
+        });
+        if (refSt) {
+            const eqB = refSt.equity.map(function (q) { return [q[0], q[2]]; });
+            let pk = 0, dd = 0; eqB.forEach(function (q) { pk = Math.max(pk, q[1]); if (pk) dd = Math.min(dd, q[1] / pk - 1); });
+            const last = eqB[eqB.length - 1][1];
+            list.push({ ref: true, ret: last / START - 1, vs: null, dd: dd, bal: last, started: new Date(refSt.equity[0][0]) });
+        }
+        list.sort(function (a, b) { return b.ret - a.ret; });
 
         const body = document.getElementById('lb-body');
         if (body) {
@@ -1749,12 +1778,13 @@ const overview = (function () {
                 const tr = document.createElement('tr');
                 const cells = [
                     [String(i + 1), 'muted'],
-                    ['<a href="' + BOTS[r.p].href + '" class="hover:underline"><span class="lb-dot" style="background:' + BOTS[r.p].color + '"></span>' + BOTS[r.p].name + '</a>', '', true],
-                    [money(r.st.balance), ''],
+                    r.ref ? ['<span class="lb-dot" style="background:#94a3b8"></span>Köp och behåll BTC <span class="muted">(referens)</span>', '', true]
+                          : ['<a href="' + BOTS[r.p].href + '" class="hover:underline"><span class="lb-dot" style="background:' + BOTS[r.p].color + '"></span>' + BOTS[r.p].name + '</a>', '', true],
+                    [money(r.ref ? r.bal : r.st.balance), ''],
                     [pctTxt(r.ret * 100), r.ret >= 0 ? 'up' : 'down'],
                     [r.vs === null ? '-' : pctTxt(r.vs * 100), r.vs === null ? 'muted' : (r.vs >= 0 ? 'up' : 'down')],
                     [(r.dd * 100).toFixed(2) + ' %', 'muted'],
-                    [tradeText(r.st), ''],
+                    [r.ref ? 'ingen handel' : tradeText(r.st), r.ref ? 'muted' : ''],
                     [r.started ? r.started.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' }) : '-', 'muted']
                 ];
                 cells.forEach(function (c) { const td = document.createElement('td'); if (c[2]) td.innerHTML = c[0]; else td.textContent = c[0]; if (c[1]) td.className = c[1]; tr.appendChild(td); });
@@ -1787,9 +1817,7 @@ const overview = (function () {
             lbSeries[p].setData(toPts(st.equity, 1));
             legend.push('<span><i style="background:' + BOTS[p].color + '"></i>' + BOTS[p].name + '</span>');
         });
-        const btcRef = Object.keys(BOTS).map(function (p) { return states[p]; })
-            .filter(function (st) { return st && st.buyHoldLabel === 'Buy & hold BTC' && st.equity && st.equity.length > 1; })
-            .sort(function (a, b) { return a.equity[0][0] - b.equity[0][0]; })[0];
+        const btcRef = refSt;
         if (btcRef) {
             if (!lbSeries.bh) lbSeries.bh = lbChart.addLineSeries({ color: '#94a3b8', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: true });
             lbSeries.bh.setData(toPts(btcRef.equity, 2));
@@ -1801,7 +1829,7 @@ const overview = (function () {
     return { update: update, status: status };
 })();
 
-const serverPanels = [makeServerPanel('srv', 'btceth.json'), makeServerPanel('srv2', 'voltrend.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render), makeServerPanel('srv5', 'multi.json')];
+const serverPanels = [makeServerPanel('srv', 'btceth.json'), makeServerPanel('srv2', 'voltrend.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render), makeServerPanel('srv5', 'multi.json'), makeServerPanel('srv6', 'dca.json')];
 function loadServerBot() { serverPanels.forEach(function (p) { p.load(); }); }
 
 // ---------- Logga ut ----------

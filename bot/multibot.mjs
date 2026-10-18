@@ -7,7 +7,7 @@
 //  Testad 2018–2026 (REPORT-MULTI.md): mediannedgång ca −23 % mot −34 % för S&P 500 och −39 % för lika delar,
 //  men INTE högre tillväxt än köp och behåll på den osedda halvan. Historik garanterar inget.
 //  Priser: Yahoo Finance (inget riktigt bud/utbud för ETF:er, därför antas ett glapp på 0,03 % per sida).
-//  Utdelning från ETF:erna räknas inte med i livebotten. ETF:erna handlas bara på börstid: utanför den
+//  Kontant utdelning från ETF:erna läggs till kontanterna (före skatt). ETF:erna handlas bara på börstid: utanför den
 //  används senaste kända kurs.
 // ============================================================
 import fs from 'node:fs';
@@ -46,7 +46,7 @@ async function getChart(sym) {
     let lastErr = null;
     for (const host of HOSTS) {
         try {
-            const res = await fetch(host + '/v8/finance/chart/' + encodeURIComponent(sym) + '?range=2y&interval=1d', { headers: UA, signal: AbortSignal.timeout(20000) });
+            const res = await fetch(host + '/v8/finance/chart/' + encodeURIComponent(sym) + '?range=2y&interval=1d&events=div', { headers: UA, signal: AbortSignal.timeout(20000) });
             if (!res.ok) throw new Error('Yahoo HTTP ' + res.status + ' för ' + sym);
             const j = await res.json(), r = j.chart && j.chart.result && j.chart.result[0];
             if (!r || !r.timestamp) throw new Error('Yahoo: ingen data för ' + sym);
@@ -55,7 +55,8 @@ async function getChart(sym) {
             r.timestamp.forEach((t, i) => { const v = adj ? adj[i] : q[i]; if (v > 0 && Math.floor(t * 1000 / DAYMS) < today) closes.push(v); });   // bara stängda dagar till och med igår
             const price = r.meta && r.meta.regularMarketPrice;
             if (!(price > 0)) throw new Error('Yahoo: ingen kurs för ' + sym);
-            return { closes, price };
+            const divs = Object.values((r.events && r.events.dividends) || {}).map(d => ({ t: d.date * 1000, amount: d.amount })).filter(d => d.amount > 0);
+            return { closes, price, divs };
         } catch (e) { lastErr = e; }
     }
     throw lastErr || new Error('Yahoo svarade inte');
@@ -90,13 +91,24 @@ export async function main() {
     st.config = Object.assign({}, cfg, { strategy: 'trendkorg SMA ' + cfg.sma + (cfg.rebalDays === 1 ? ', dagligen' : ', var ' + cfg.rebalDays + ':e dag') });
     st.lastRun = new Date().toISOString(); st.enabled = cfg.enabled;
     try {
-        const N = cfg.symbols.length, px = {}, bid = {}, ask = {}, sig = {};
+        const N = cfg.symbols.length, px = {}, bid = {}, ask = {}, sig = {}, divs = {};
         for (const s of cfg.symbols) {
             const c = await getChart(s);
             px[s] = c.price; bid[s] = c.price * (1 - HALF); ask[s] = c.price * (1 + HALF);
             sig[s] = targetFor(c.closes, cfg.sma);
+            divs[s] = c.divs || [];
         }
         if (!st.baseline) st.baseline = px.SPY * (1 + HALF) * (1 + SLIP);
+        // Utdelning: kontant utdelning (ex-datum sedan förra kontrollen) för ETF:er som ägs just nu läggs till kontanterna
+        const nowMs = Date.now(), since = st.divChecked || Date.parse(st.startedAt) || nowMs;
+        for (const s of cfg.symbols) {
+            if (!st.units[s]) continue;
+            for (const d of divs[s] || []) if (d.t > since && d.t <= nowMs) {
+                const amt = st.units[s] * d.amount; st.cash += amt;
+                log('💵 Utdelning från ' + nm(s) + ': $' + amt.toFixed(2) + ' ($' + d.amount.toFixed(3) + ' per andel)', 'info');
+            }
+        }
+        st.divChecked = nowMs;
         const value = () => { let v = st.cash; for (const s in st.units) v += st.units[s] * (bid[s] || 0); return v; };
         const rules = cfg.symbols.join(',') + '|' + cfg.sma + '|' + cfg.rebalDays;
         if (st.rules && st.rules !== rules) { st.lastDecision = 0; log('Reglerna ändrade, fattar nytt beslut direkt.', 'info'); }

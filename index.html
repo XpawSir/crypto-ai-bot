@@ -274,7 +274,7 @@
     <main id="view-home" class="p-4 md:p-6 max-w-[1400px] mx-auto w-full flex-grow space-y-6">
         <div>
             <h2 class="text-2xl font-bold text-white tracking-tight">Botarna</h2>
-            <p class="text-[13px] text-gray-400 mt-1">Fem botar handlar med låtsaspengar dygnet runt på GitHub, var och en med $10,000 från start. Klicka på en bot för detaljer.</p>
+            <p class="text-[13px] text-gray-400 mt-1">Sex botar handlar med låtsaspengar dygnet runt på GitHub, var och en med $10,000 från start. Klicka på en bot för detaljer.</p>
         </div>
 
         <section id="brief" class="glass p-5 min-w-0" aria-live="polite">
@@ -295,6 +295,7 @@
             <a href="#botrot" class="glass ov-card" data-bot="srv3"><div class="ov-head"><span class="h-sec">Rotationsbot</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Topp 3 av 10 valutor, var 3:e dag</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
             <a href="#trend" class="glass ov-card" data-bot="srv4"><div class="ov-head"><span class="h-sec">Trend-ensemble</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Allt eller inget i BTC, långa medelvärden</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
             <a href="#multi" class="glass ov-card" data-bot="srv5"><div class="ov-head"><span class="h-sec">Trendkorg flera tillgångar</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">7 tillgångar över 100-dagars medel, dagligen</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+            <a href="#dca" class="glass ov-card" data-bot="srv6"><div class="ov-head"><span class="h-sec">Veckosparande (DCA)</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">$250 i BTC och ETH varje vecka, säljer aldrig</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
         </div>
 
         <section class="glass p-5 min-w-0">
@@ -307,7 +308,7 @@
                 <thead><tr><th>#</th><th>Bot</th><th>Saldo</th><th>Resultat</th><th>Mot köp och behåll</th><th>Största nedgång</th><th>Affärer</th><th>Startade</th></tr></thead>
                 <tbody id="lb-body"><tr><td colspan="8">Hämtar...</td></tr></tbody>
             </table></div>
-            <p class="mt-2 text-[11px] font-mono text-gray-500">Procent sedan varje bots egen start. Köp och behåll BTC räknas från samma start som den äldsta boten. Botarna startade vid olika tidpunkter, så jämför helst kolumnen "Mot köp och behåll".</p>
+            <p class="mt-2 text-[11px] font-mono text-gray-500">Utvärdera botarna först efter minst 2–3 månader: en vecka eller två säger nästan ingenting. Procent sedan varje bots egen start. Köp och behåll BTC räknas från samma start som den äldsta boten. Botarna startade vid olika tidpunkter, så jämför helst kolumnen "Mot köp och behåll".</p>
         </section>
 
             <div class="text-[11px] font-mono text-gray-500">
@@ -330,7 +331,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv-balance" class="stat-val text-white">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv-pnl" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat sedan start</span><span id="srv-pnl" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv-trades" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Vinstandel</span><span id="srv-winrate" class="stat-val text-white">-</span></div>
                 </div>
@@ -352,7 +353,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv2-balance" class="stat-val text-white">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv2-pnl" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat sedan start</span><span id="srv2-pnl" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv2-trades" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Vinstandel</span><span id="srv2-winrate" class="stat-val text-white">-</span></div>
                 </div>
@@ -374,7 +375,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv3-balance" class="stat-val text-white">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv3-pnl" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat sedan start</span><span id="srv3-pnl" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv3-trades" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Vinstandel</span><span id="srv3-winrate" class="stat-val text-white">-</span></div>
                 </div>
@@ -391,12 +392,12 @@
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Trendkorg flera tillgångar · dagligen</h2><p class="text-[12px] text-gray-500 mt-1">Delar pengarna lika mellan sju tillgångar: aktie-ETF:er (SPY, QQQ), obligationer (TLT), guld (GLD), råvaror (DBC), Bitcoin och Ethereum. Varje tillgång ägs bara när kursen ligger över sitt 100-dagars medelvärde, annars kontanter. Beslut en gång per dygn, allt eller inget (kvarvarande delar justeras inte), ingen stoppnivå. Test 2018–2026: nedgångarna blev ungefär hälften så stora som för S&amp;P 500 och lika delar (median −23 % mot −34 % och −39 %), men tillväxten blev inte högre än köp och behåll på den osedda halvan. ETF-utdelning räknas inte med i livebotten, och priserna är senaste kända (ETF:er handlas bara på börstid).</p></div>
+                    <div><h2 class="h-sec">Trendkorg flera tillgångar · dagligen</h2><p class="text-[12px] text-gray-500 mt-1">Delar pengarna lika mellan sju tillgångar: aktie-ETF:er (SPY, QQQ), obligationer (TLT), guld (GLD), råvaror (DBC), Bitcoin och Ethereum. Varje tillgång ägs bara när kursen ligger över sitt 100-dagars medelvärde, annars kontanter. Beslut en gång per dygn, allt eller inget (kvarvarande delar justeras inte), ingen stoppnivå. Test 2018–2026: nedgångarna blev ungefär hälften så stora som för S&amp;P 500 och lika delar (median −23 % mot −34 % och −39 %), men tillväxten blev inte högre än köp och behåll på den osedda halvan. Kontant ETF-utdelning läggs till kontanterna (före skatt), och priserna är senaste kända (ETF:er handlas bara på börstid).</p></div>
                     <div id="srv5-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv5-balance" class="stat-val text-white">-</span></div>
-                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv5-pnl" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat sedan start</span><span id="srv5-pnl" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv5-trades" class="stat-val text-white">-</span></div>
                     <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Vinstandel</span><span id="srv5-winrate" class="stat-val text-white">-</span></div>
                 </div>
@@ -406,6 +407,28 @@
                 <p id="srv5-pos" class="mt-3 text-[11px] font-mono text-gray-300"></p>
                 <p id="srv5-note" class="mt-1 text-[11px] font-mono text-gray-500"></p>
                 <div id="srv5-log" class="mt-3 tile p-3 text-[11px] font-mono space-y-1 max-h-[130px] overflow-y-auto"></div>
+            </div>
+    </main>
+
+    <main id="view-dca" class="hidden p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow bot-detail">
+        <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
+            <div class="glass p-5">
+                <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                    <div><h2 class="h-sec">Veckosparande (DCA)</h2><p class="text-[12px] text-gray-500 mt-1">Börjar med $10 000 i kontanter och köper för $250 varje vecka, hälften Bitcoin och hälften Ethereum, tills pengarna är slut. Säljer aldrig och tittar inte på trender. Det är det klassiska sparsättet för den som inte vill pricka rätt tidpunkt: du köper dyrt och billigt i en jämn ström. Kontanterna som ännu inte köpts ger ingen ränta, så under de första månaderna följer boten marknaden bara delvis. Det här är en referens mot trendbotarna, inte ett försök att slå marknaden.</p></div>
+                    <div id="srv6-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv6-balance" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat sedan start</span><span id="srv6-pnl" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv6-trades" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Vinstandel</span><span id="srv6-winrate" class="stat-val text-white">-</span></div>
+                </div>
+                <p id="srv6-bh" class="mt-3 text-[11px] font-mono text-gray-400"></p>
+                <div id="srv6-chart" class="mt-2 w-full h-[180px]"></div>
+                <div id="srv6-markets" class="mt-3 grid grid-cols-1 gap-2"></div>
+                <p id="srv6-pos" class="mt-3 text-[11px] font-mono text-gray-300"></p>
+                <p id="srv6-note" class="mt-1 text-[11px] font-mono text-gray-500"></p>
+                <div id="srv6-log" class="mt-3 tile p-3 text-[11px] font-mono space-y-1 max-h-[130px] overflow-y-auto"></div>
             </div>
     </main>
 
@@ -569,7 +592,7 @@
 
         <div class="tr-kpis text-xs font-mono">
             <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv4-balance" class="stat-val text-white">-</span></div>
-            <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat</span><span id="srv4-pnl" class="stat-val text-white">-</span></div>
+            <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat sedan start</span><span id="srv4-pnl" class="stat-val text-white">-</span></div>
             <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Andel i BTC nu</span><span id="tr-weight" class="stat-val text-white">-</span></div>
             <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Avslutade affärer · Vinstandel</span><span class="stat-val text-white"><span id="srv4-trades">-</span> · <span id="srv4-winrate">-</span></span></div>
         </div>
@@ -688,6 +711,13 @@
     <main id="view-updates" class="hidden p-4 md:p-6 max-w-3xl mx-auto w-full flex-grow">
         <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Uppdateringar</h2>
             <p class="text-[13px] text-gray-400 mt-1">Det senaste som byggts och ändrats, nyast först. All handel är simulerad med låtsaspengar.</p></div>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="chip res">Analys</span><span class="text-[11px] text-gray-500">18 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Allt eller inget, tydligare kort och en sjätte bot</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Botarna köper nu hela sin del eller inget, och säljer allt när de säljer, i stället för att justera små delar. Vi testade också kortare medelvärden (10–100 dagar) mot de långa (20–200 dagar) på BTC och ETH 2018–2026: de korta gav större ras och sämre resultat i den osedda halvan, så längderna är kvar. Korten visar nu orealiserat resultat i öppna positioner och en ungefärlig skatt, så att "mot köp och behåll" inte förväxlas med vinst. Topplistan har en referensrad för köp och behåll Bitcoin. Trendkorgen räknar in ETF-utdelning. Ny bot: <strong>Veckosparande (DCA)</strong> köper för $250 varje vecka i BTC och ETH och säljer aldrig, som en lugn jämförelse. Rapport: REPORT-SHORT.md.</span></p>
+                </div>
+            </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
                     <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="chip res">Analys</span><span class="text-[11px] text-gray-500">17 okt 2026</span></div>
@@ -841,7 +871,8 @@
             <p class="text-[13px] text-gray-400 mt-1">Korta förklaringar av det du ser på sidan. Klicka på en fråga för att öppna den.</p></div>
         <div class="glass px-5 py-2">
             <details class="qa"><summary>Vad är det här för sida?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En sida för en <strong>simulerad</strong> kryptoboot. Inga riktiga pengar och inga börsnycklar är inblandade. Botarna handlar med låtsaspengar mot riktiga priser från Binance, så du kan se hur en strategi hade klarat sig utan att riskera något.</span></p></details>
-            <details class="qa"><summary>Vilka botar finns och vad är skillnaden?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)"><strong>Trend BTC + ETH</strong> delar pengarna mellan BTC och ETH och köper eller säljer hela sin del när majoriteten av fem medelvärden (20–200 dagar) byter riktning. <strong>Volatilitetsstyrd trend</strong> äger allt i BTC över 50-dagars medelvärdet och säljer allt under. <strong>Rotationsbot</strong> äger de starkaste valutorna av tio och ser över urvalet var 3:e dag. <strong>Trend-ensemble</strong> (fliken Trend) äger allt eller inget i BTC när kursen ligger över minst 3 av fem medelvärden. Alla botar köper och säljer nu allt eller inget, aldrig delar. <strong>Trendkorg flera tillgångar</strong> sprider pengarna över aktie-ETF:er, obligationer, guld, råvaror, Bitcoin och Ethereum och äger bara dem som ligger i upptrend. De fem kör hela tiden på GitHub, även när sidan är stängd. Fliken Testlabb har en separat testbot i din webbläsare som bara går medan fliken är öppen.</span></p></details>
+                        <details class="qa"><summary>Hur kan man få lite krypto gratis?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Det går, men det blir små belopp: några tior till några hundra kronor. Vanliga vägar är lär-och-tjäna-kurser (Coinbase Earn, Binance Learn), välkomstbonusar och uppdrag hos börser, uppdragssajter som Galxe och Zealy, och cashback eller belöningar i appar och webbläsare som Brave. Gruvdrift på en vanlig dator eller i webbläsaren ger i praktiken ingenting. <strong>Var försiktig:</strong> betala aldrig för att få ut en belöning, dela aldrig din seed phrase och använd en separat plånbok utan värde för airdrops. Krypto du får räknas normalt som skattepliktig inkomst i Sverige, värderad i kronor när du fick den, så spara datum och belopp. Inget av detta är ekonomisk rådgivning.</span></p></details>
+            <details class="qa"><summary>Vilka botar finns och vad är skillnaden?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)"><strong>Trend BTC + ETH</strong> delar pengarna mellan BTC och ETH och köper eller säljer hela sin del när majoriteten av fem medelvärden (20–200 dagar) byter riktning. <strong>Volatilitetsstyrd trend</strong> äger allt i BTC över 50-dagars medelvärdet och säljer allt under. <strong>Rotationsbot</strong> äger de starkaste valutorna av tio och ser över urvalet var 3:e dag. <strong>Trend-ensemble</strong> (fliken Trend) äger allt eller inget i BTC när kursen ligger över minst 3 av fem medelvärden. Alla botar köper och säljer nu allt eller inget, aldrig delar. <strong>Trendkorg flera tillgångar</strong> sprider pengarna över aktie-ETF:er, obligationer, guld, råvaror, Bitcoin och Ethereum och äger bara dem som ligger i upptrend. De sex kör hela tiden på GitHub, även när sidan är stängd. Fliken Testlabb har en separat testbot i din webbläsare som bara går medan fliken är öppen.</span></p></details>
             <details class="qa"><summary>Vad är en ljusstake?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Ett staplat "ljus" som visar ett tidsintervall. Kroppen går från öppningspris till stängningspris, och veken visar högsta och lägsta pris under tiden. Grönt betyder att priset steg, rött att det föll. Intervallet (1 min, 1 tim, 4 tim, dag) bestämmer hur lång tid varje ljus är.</span></p></details>
             <details class="qa"><summary>Vad är stoppnivå och vinstmål?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">En stoppnivå säljer automatiskt om priset faller till en viss nivå, så att en förlust inte växer. En vinstmål säljer när vinsten nått ett mål. Här räknas nivåerna med ATR, ett mått på hur mycket priset brukar röra sig, och riskreglaget gör nivåerna tajtare eller längre ifrån.</span></p></details>
             <details class="qa"><summary>Vad är spread och avgifter?</summary><p class="prose-s"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Spread är skillnaden mellan bästa köppris (ask) och bästa säljpris (bid). Du köper på det högre och säljer på det lägre, så varje affär kostar lite. Dessutom tar börsen cirka 0,1 % avgift per köp och per sälj. Därför lönar sig inte att handla väldigt ofta: avgifterna äter upp vinsten.</span></p></details>
