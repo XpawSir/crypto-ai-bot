@@ -3,11 +3,11 @@
   "enabled": true,
   "symbol": "BTCUSDT",
   "lengths": [
-    10,
     20,
-    30,
     50,
-    100
+    100,
+    150,
+    200
   ],
   "step": 1
 }
