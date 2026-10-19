@@ -11,7 +11,7 @@ const DIR = process.env.BOT_STATE_DIR || 'state';
 const TOPIC = (process.env.NTFY_TOPIC || '').trim();
 const SERVER = (process.env.NTFY_SERVER || 'https://ntfy.sh').replace(/\/$/, '');
 const MARK = path.join(DIR, 'notify.json');
-const NAMES = { 'ensemble.json': 'Trend-ensemble', 'btceth.json': 'Trend BTC + ETH', 'voltrend.json': 'Volatilitetsstyrd trend', 'rotation.json': 'Rotationsbot', 'multi.json': 'Trendkorg flera tillgångar', 'dca.json': 'Veckosparande' };
+const NAMES = { 'ensemble.json': 'Trend-ensemble', 'btceth.json': 'Trend BTC + ETH', 'voltrend.json': 'Volatilitetsstyrd trend', 'rotation.json': 'Rotationsbot', 'multi.json': 'Trendkorg flera tillgångar', 'dca.json': 'Veckosparande', 'stocks.json': 'Aktiemomentum' };
 
 const readJSON = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return d; } };
 const mark = readJSON(MARK, null);

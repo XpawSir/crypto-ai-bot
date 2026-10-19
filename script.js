@@ -1854,7 +1854,29 @@ const overview = (function () {
     return { update: update, status: status };
 })();
 
-const serverPanels = [makeServerPanel('srv', 'btceth.json'), makeServerPanel('srv2', 'voltrend.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render), makeServerPanel('srv5', 'multi.json'), makeServerPanel('srv6', 'dca.json')];
+// Aktiefliken: tabell över alla 30 aktier med riktiga kurser, rangordning och vilka boten äger
+function stocksView(st) {
+    const body = document.getElementById('stk-body'), meta = document.getElementById('stk-meta');
+    if (meta) {
+        const fx = typeof st.usdsek === 'number' ? ' · $10 000 ≈ ' + Math.round(10000 * st.usdsek).toLocaleString('sv-SE') + ' kr (1 USD = ' + st.usdsek.toFixed(2) + ' kr)' : '';
+        meta.textContent = 'Börsen: ' + (st.marketOpen ? 'öppen, boten kan handla' : 'stängd, senaste kända kurser') + ' · priser från Yahoo Finance, fördröjda ca 15 min' + fx;
+    }
+    if (!body) return;
+    body.textContent = '';
+    (st.stocks || []).forEach(function (s) {
+        const tr = document.createElement('tr'); if (s.held) tr.className = 'held';
+        const td = function (html, cls) { const c = document.createElement('td'); if (cls) c.className = cls; c.innerHTML = html; tr.appendChild(c); };
+        const esc = function (t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
+        td(String(s.rank), 'muted');
+        td('<span class="tk">' + esc(s.symbol) + '</span><span class="nm">' + esc(s.name || '') + '</span>');
+        td('$' + Number(s.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        td(typeof s.chg === 'number' ? (s.chg >= 0 ? '+' : '−') + Math.abs(s.chg).toFixed(2) + ' %' : '–', typeof s.chg === 'number' ? (s.chg >= 0 ? 'up' : 'down') : 'muted');
+        td((s.mom >= 0 ? '+' : '−') + Math.abs(s.mom).toFixed(1) + ' %', s.mom >= 0 ? 'up' : 'down');
+        td(s.held ? '<span class="tag own">Boten äger</span>' : s.top ? '<span class="tag">Topp 5, köps vid nästa urval</span>' : '<span class="muted">–</span>');
+        body.appendChild(tr);
+    });
+}
+const serverPanels = [makeServerPanel('srv', 'btceth.json'), makeServerPanel('srv2', 'voltrend.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render), makeServerPanel('srv5', 'multi.json'), makeServerPanel('srv6', 'dca.json'), makeServerPanel('srv7', 'stocks.json', function (st) { stocksView(st); })];
 function loadServerBot() { serverPanels.forEach(function (p) { p.load(); }); }
 
 // ---------- Logga ut ----------

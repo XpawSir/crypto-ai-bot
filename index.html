@@ -275,6 +275,11 @@
         #ov-cards .ov-desc { min-height:0; margin-top:6px; }
         #ov-cards .ov-num { margin-top:10px; font-size:26px; }
         @media (max-width:640px) { .jv { padding:20px; } .jv-num { font-size:38px; } }
+
+        .stk-table td:nth-child(2) { white-space:normal; }
+        .stk-table .tk { font-weight:600; color:var(--accent); } .stk-table .nm { color:var(--muted); font-size:11px; margin-left:6px; }
+        .stk-table tr.held td { background:rgba(52,211,153,.07); } .stk-table .tag { font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--sub); }
+        .stk-table .tag.own { color:#34d399; background:rgba(52,211,153,.12); }
 </style>
 </head>
 <body class="text-gray-200 antialiased min-h-screen flex flex-col justify-between">
@@ -290,6 +295,7 @@
         <nav class="main-nav flex items-center gap-1 order-3 md:order-none w-full md:w-auto" aria-label="Huvudmeny">
             <a href="#home" class="tab" data-tab="home">Översikt</a>
             <a href="#market" class="tab" data-tab="market">Marknad</a>
+            <a href="#stocks" class="tab" data-tab="stocks">Aktier</a>
             <a href="#trend" class="tab" data-tab="trend">Trend</a>
             <a href="#updates" class="tab" data-tab="updates">Uppdateringar</a>
             <a href="#wealth" class="tab" data-tab="wealth">Förmögenhet</a>
@@ -471,6 +477,34 @@
                 <p id="srv6-pos" class="mt-3 text-[11px] font-mono text-gray-300"></p>
                 <p id="srv6-note" class="mt-1 text-[11px] font-mono text-gray-500"></p>
                 <div id="srv6-log" class="mt-3 tile p-3 text-[11px] font-mono space-y-1 max-h-[130px] overflow-y-auto"></div>
+            </div>
+    </main>
+
+    <main id="view-stocks" class="hidden p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow bot-detail">
+        <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
+            <div class="glass p-5">
+                <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                    <div><h2 class="h-sec">Aktier · momentum (experiment)</h2><p class="text-[12px] text-gray-500 mt-1">Pappershandel med riktiga amerikanska aktiekurser från Yahoo Finance (fördröjda ungefär 15 minuter). Boten rankar 30 stora bolag efter kursutveckling de senaste 120 handelsdagarna, förutom den senaste månaden, och äger de fem bästa med lika stora delar. En gång i månaden byts urvalet: en aktie som lämnar topp 5 säljs helt, en ny köps. Boten handlar bara medan börsen är öppen (vardagar ca 15:30–22:00 svensk tid). Test 2010–2026: ca 17 % per år efter avgifter mot 14,6 % för lika delar, men resultatet hängde på just den här inställningen och klarade inte alla kriterier, så det här är ett experiment. Nedgångar på ungefär −30 % förekom i testet. Ingen riktig handel, och historik garanterar inget.</p></div>
+                    <div id="srv7-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv7-balance" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat sedan start</span><span id="srv7-pnl" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv7-trades" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Vinstandel</span><span id="srv7-winrate" class="stat-val text-white">-</span></div>
+                </div>
+                <p id="srv7-bh" class="mt-3 text-[11px] font-mono text-gray-400"></p>
+                <div id="srv7-chart" class="mt-2 w-full h-[180px]"></div>
+                <p id="srv7-pos" class="mt-3 text-[11px] font-mono text-gray-300"></p>
+                <p id="srv7-note" class="mt-1 text-[11px] font-mono text-gray-500"></p>
+                <div id="srv7-log" class="mt-3 tile p-3 text-[11px] font-mono space-y-1 max-h-[130px] overflow-y-auto"></div>
+            <div id="stk-meta" class="text-[11px] font-mono text-gray-500 mt-3"></div>
+            <h3 class="h-sec mt-5 mb-2">Alla 30 aktier, rangordnade efter momentum</h3>
+            <div class="lb-wrap"><table class="lb-table stk-table">
+                <thead><tr><th>#</th><th>Aktie</th><th>Pris</th><th>Idag</th><th>120 dagar</th><th>Status</th></tr></thead>
+                <tbody id="stk-body"><tr><td colspan="6">Hämtar...</td></tr></tbody>
+            </table></div>
+
             </div>
     </main>
 
@@ -753,6 +787,13 @@
     <main id="view-updates" class="hidden p-4 md:p-6 max-w-3xl mx-auto w-full flex-grow">
         <div class="mb-6"><h2 class="text-2xl font-bold text-white tracking-tight">Uppdateringar</h2>
             <p class="text-[13px] text-gray-400 mt-1">Det senaste som byggts och ändrats, nyast först. All handel är simulerad med låtsaspengar.</p></div>
+            <article class="tl mb-4"><span class="tl-dot"></span>
+                <div class="glass p-5">
+                    <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip new">Nytt</span><span class="text-[11px] text-gray-500">19 okt 2026</span></div>
+                    <h3 class="text-[15px] font-semibold text-white">Ny flik: Aktier, med momentumbot (experiment)</h3>
+                    <p class="prose-s mt-1.5"><span style="font-size:13px;line-height:1.7;color:var(--muted)">Fliken Aktier visar riktiga amerikanska aktiekurser (Yahoo Finance, fördröjda ca 15 minuter) för 30 stora bolag, rangordnade efter momentum, och en pappersbot som äger de fem bästa. Boten byter urval en gång i månaden och handlar bara medan börsen är öppen. Det är ett experiment: testet 2010–2026 gav ca 17 % per år efter avgifter mot 14,6 % för lika delar, men resultatet hängde på just den inställningen. Botens resultat räknas inte med i översiktens totalsumma.</span></p>
+                </div>
+            </article>
             <article class="tl mb-4"><span class="tl-dot"></span>
                 <div class="glass p-5">
                     <div class="flex items-center gap-2 flex-wrap mb-2"><span class="chip res">Analys</span><span class="text-[11px] text-gray-500">19 okt 2026</span></div>

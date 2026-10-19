@@ -9,6 +9,7 @@ declare -A BOTS=(
   [rotation]="node bot/rotation.mjs"
   [multi]="node bot/multibot.mjs"
   [dca]="node bot/dcabot.mjs"
+  [stocks]="node bot/stockbot.mjs"
 )
 pids=()
 for name in "${!BOTS[@]}"; do
