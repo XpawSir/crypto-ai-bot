@@ -1643,6 +1643,11 @@ const overview = (function () {
         states[p] = st;
         const meta = BOTS[p], now = lastBot(st);
         const bal = part(p, 'balance'); if (bal) bal.textContent = money(st.balance);
+        const card = bal && bal.closest('.ov-card'), dsc = card && card.querySelector('.ov-desc');
+        if (dsc) {
+            const held = (st.openPositions || []).map(function (q) { return String(q.symbol).replace(/USDT$/, '').replace(/-USD$/, ''); });
+            dsc.textContent = held.length ? 'Äger ' + held.join(', ') : 'Allt i kontanter, väntar på signal';
+        }
         const pnl = part(p, 'pnl');
         if (pnl) { const r = (now / START - 1) * 100; pnl.textContent = pctTxt(r) + ' sedan start'; pnl.className = r >= 0 ? 'up' : 'down'; }
         const vs = part(p, 'vs');
@@ -1704,18 +1709,36 @@ const overview = (function () {
         const best = rows.slice().sort(function (a, b) { return b.d24 - a.d24; });
         const bhRet = bhN === keys.length ? bh / base - 1 : null;
 
-        const tt = document.getElementById('br-title');
-        tt.textContent = (d24 >= 0 ? 'Plus ' : 'Minus ') + Math.abs(d24 * 100).toFixed(2) + ' % senaste dygnet';
-        tt.className = 'br-title ' + (d24 >= 0 ? 'up' : 'down');
-
-        const sum = document.getElementById('br-sum'); sum.textContent = '';
-        const parts = [];
-        parts.push(['Alla ' + keys.length + ' botar tillsammans: ', money(total) + ' (' + pctTxt(ret * 100) + ' sedan start). ']);
-        if (bhRet !== null) { const diff = (ret - bhRet) * 100; parts.push([diff >= 0 ? 'Det är ' : 'Det är ', Math.abs(diff).toFixed(2) + ' procentenheter ' + (diff >= 0 ? 'före' : 'efter') + ' att bara ha hållit Bitcoin. ']); }
+        // ---- Jarvis-läget: ett stort tal, en mening och några enkla punkter
+        const issues = rows.filter(function (r) {
+            const lr = r.st.lastRun ? Date.parse(r.st.lastRun) : 0;
+            return r.st.lastError || (lr && now - lr > 90 * 60000);
+        });
         const moved = rows.reduce(function (a, r) { return a + (r.st.trades || []).filter(function (t) { return Date.parse(t.t) > now - DAY; }).length; }, 0);
-        parts.push([moved ? moved + (moved === 1 ? ' affär' : ' affärer') + ' gjordes senaste dygnet. ' : 'Inga affärer senaste dygnet: botarna väntar på sina signaler. ', '']);
-        parts.push(['Bäst senaste dygnet: ', BOTS[best[0].p].name + ' (' + pctTxt(best[0].d24 * 100) + '), svagast: ' + BOTS[best[best.length - 1].p].name + ' (' + pctTxt(best[best.length - 1].d24 * 100) + ').']);
-        parts.forEach(function (x) { if (x[1]) { const b = document.createElement('b'); b.textContent = x[1]; sum.append(x[0], b); } else sum.append(x[0]); });
+        const invested = rows.filter(function (r) { return r.n > 0; });
+        const byStart = rows.slice().sort(function (a, b) { return b.v - a.v; });
+
+        document.getElementById('br-total').textContent = money(total);
+        const ts = document.getElementById('br-totsub');
+        ts.textContent = (ret >= 0 ? '+' : '−') + Math.abs(ret * 100).toFixed(2) + ' % sedan start';
+        ts.className = 'jv-sub ' + (ret >= 0 ? 'up' : 'down');
+
+        const tt = document.getElementById('br-title');
+        const mood = d24 >= 0.003 ? 'Ett bra dygn' : d24 <= -0.003 ? 'Ett tungt dygn' : 'Ett lugnt dygn';
+        tt.textContent = issues.length ? 'Något behöver kollas' : mood + ' (' + (d24 >= 0 ? '+' : '−') + Math.abs(d24 * 100).toFixed(2) + ' %)';
+        tt.className = 'br-title ' + (issues.length ? '' : d24 >= 0 ? 'up' : 'down');
+        const orb = document.querySelector('#brief .jv-orb'); if (orb) orb.className = 'jv-orb' + (issues.length ? ' bad' : '');
+
+        const sum = document.getElementById('br-sum');
+        sum.textContent = 'Alla ' + keys.length + ' botar tillsammans' + (bhRet !== null ? (ret >= bhRet ? ' ligger bättre än' : ' ligger sämre än') + ' att bara ha hållit Bitcoin (' + pctTxt(bhRet * 100) + ').' : '.') +
+            ' ' + (moved ? moved + (moved === 1 ? ' affär gjordes' : ' affärer gjordes') + ' senaste dygnet.' : 'Inga affärer senaste dygnet, botarna väntar på sina signaler.');
+
+        const todo = document.getElementById('br-todo'); todo.textContent = '';
+        const li = function (html) { const e = document.createElement('li'); e.innerHTML = html; todo.appendChild(e); };
+        li('<b>Behöver du göra något?</b> ' + (issues.length ? 'Ja: ' + issues.map(function (r) { return BOTS[r.p].name; }).join(', ') + ' har fel eller har inte körts på ett tag.' : 'Nej. Allt kör som det ska.'));
+        li('<b>Just nu:</b> ' + invested.length + ' av ' + keys.length + ' botar äger något, ' + (keys.length - invested.length) + (keys.length - invested.length === 1 ? ' ligger' : ' ligger') + ' i kontanter.');
+        li('<b>Bäst sedan start:</b> ' + BOTS[byStart[0].p].name + ' (' + pctTxt((byStart[0].v / START - 1) * 100) + '). <b>Svagast:</b> ' + BOTS[byStart[byStart.length - 1].p].name + ' (' + pctTxt((byStart[byStart.length - 1].v / START - 1) * 100) + ').');
+        li('<span>Det är en låtsashandel. Utvärdera först efter 2–3 månader, en vecka säger nästan ingenting.</span>');
 
         // hälsokontroll: botarna ska köra var 10:e minut
         const fr = document.getElementById('br-fresh');
@@ -1795,6 +1818,8 @@ const overview = (function () {
         // Gemensam graf i procent sedan respektive start, plus buy & hold BTC från den äldsta BTC-boten
         const box = document.getElementById('lb-chart');
         if (!box || typeof LightweightCharts === 'undefined') return;
+        const dets = box.closest('details');
+        if (dets && !dets.dataset.lbBound) { dets.dataset.lbBound = '1'; dets.addEventListener('toggle', function () { if (dets.open && lbChart) setTimeout(function () { lbChart.timeScale().fitContent(); }, 50); }); }
         if (!lbChart) {
             lbChart = LightweightCharts.createChart(box, {
                 autoSize: true,

@@ -242,7 +242,40 @@
         main .uppercase { text-transform:none; letter-spacing:0; }
         /* mindre rörelse om användaren vill det */
         @media (prefers-reduced-motion:reduce) { * { animation:none !important; transition:none !important; } }
-    </style>
+    
+        /* ---- Översikt: Jarvis-läge ---- */
+        .jv { padding:28px; }
+        .jv-id { display:flex; align-items:center; gap:10px; }
+        .jv-orb { width:10px; height:10px; border-radius:50%; background:#34d399; box-shadow:0 0 0 4px rgba(52,211,153,.14), 0 0 18px rgba(52,211,153,.55); animation:jvpulse 3.2s ease-in-out infinite; }
+        .jv-orb.warn { background:#fbbf24; box-shadow:0 0 0 4px rgba(251,191,36,.14), 0 0 18px rgba(251,191,36,.5); }
+        .jv-orb.bad { background:#f87171; box-shadow:0 0 0 4px rgba(248,113,113,.14), 0 0 18px rgba(248,113,113,.5); }
+        @keyframes jvpulse { 0%,100% { opacity:1 } 50% { opacity:.55 } }
+        @media (prefers-reduced-motion: reduce) { .jv-orb { animation:none; } }
+        .jv-num { font-size:46px; font-weight:700; letter-spacing:-.035em; line-height:1.05; color:var(--accent); font-variant-numeric:tabular-nums; margin-top:22px; }
+        .jv-sub { font-size:15px; margin-top:6px; font-weight:600; }
+        .jv .br-title { font-size:17px; margin-top:20px; font-weight:600; }
+        .jv .br-sum { font-size:15px; margin-top:6px; max-width:60ch; }
+        .jv-points { list-style:none; padding:0; margin:18px 0 0; display:grid; gap:10px; font-size:14px; line-height:1.55; color:var(--muted); }
+        .jv-points li { position:relative; padding-left:18px; }
+        .jv-points li::before { content:''; position:absolute; left:0; top:.62em; width:6px; height:6px; border-radius:50%; background:var(--muted); opacity:.6; }
+        .jv-points b { color:var(--accent); font-weight:600; }
+        .jv-more { margin-top:20px; }
+        .jv-more > summary, .jv-cmp > summary { cursor:pointer; font-size:13px; color:var(--muted); list-style:none; }
+        .jv-more > summary::-webkit-details-marker, .jv-cmp > summary::-webkit-details-marker { display:none; }
+        .jv-more > summary::before, .jv-cmp > summary::before { content:'+'; display:inline-block; width:16px; }
+        .jv-more[open] > summary::before, .jv-cmp[open] > summary::before { content:'–'; }
+        .jv-cmp { padding:20px 24px; }
+        .jv-cmp > summary { font-size:14px; font-weight:600; color:var(--accent); }
+        .jv-cmp-body { margin-top:16px; }
+        .jv-hint { font-weight:400; color:var(--muted); text-transform:none; letter-spacing:0; }
+        /* enklare botkort: namn, värde, procent och vad boten äger just nu */
+        #ov-cards .ov-spark, #ov-cards .ov-extra, #ov-cards [data-k="vs"] { display:none; }
+        #ov-cards { grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); }
+        #ov-cards .ov-card { padding:18px 20px; }
+        #ov-cards .ov-desc { min-height:0; margin-top:6px; }
+        #ov-cards .ov-num { margin-top:10px; font-size:26px; }
+        @media (max-width:640px) { .jv { padding:20px; } .jv-num { font-size:38px; } }
+</style>
 </head>
 <body class="text-gray-200 antialiased min-h-screen flex flex-col justify-between">
 
@@ -271,25 +304,28 @@
         </div>
     </header>
 
-    <main id="view-home" class="p-4 md:p-6 max-w-[1400px] mx-auto w-full flex-grow space-y-6">
-        <div>
-            <h2 class="text-2xl font-bold text-white tracking-tight">Botarna</h2>
-            <p class="text-[13px] text-gray-400 mt-1">Sex botar handlar med låtsaspengar dygnet runt på GitHub, var och en med $10,000 från start. Klicka på en bot för detaljer.</p>
-        </div>
-
-        <section id="brief" class="glass p-5 min-w-0" aria-live="polite">
+    <main id="view-home" class="p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow space-y-6">
+        <section id="brief" class="glass jv" aria-live="polite">
             <div class="br-head">
-                <div class="min-w-0"><div class="h-sec" id="br-kicker">Dagens sammanfattning</div><div class="br-title" id="br-title">Hämtar läget…</div></div>
+                <div class="jv-id"><span class="jv-orb" aria-hidden="true"></span><div class="h-sec" id="br-kicker">Hej</div></div>
                 <span id="br-fresh" class="br-fresh">väntar på data</span>
             </div>
+            <div class="jv-total"><div id="br-total" class="jv-num">–</div><div id="br-totsub" class="jv-sub">Hämtar läget…</div></div>
+            <div class="br-title" id="br-title"></div>
             <p id="br-sum" class="br-sum"></p>
-            <div class="br-cols">
-                <div><div class="h-sec">Senaste dygnet</div><ul id="br-events" class="br-list"></ul></div>
-                <div><div class="h-sec">Senaste 7 dagarna, alla botar tillsammans</div><div id="br-days" class="br-days"></div></div>
-            </div>
+            <ul id="br-todo" class="jv-points"></ul>
+            <details class="jv-more">
+                <summary>Visa mer: senaste dygnet och sju dagar</summary>
+                <div class="br-cols">
+                    <div><div class="h-sec">Senaste dygnet</div><ul id="br-events" class="br-list"></ul></div>
+                    <div><div class="h-sec">Senaste 7 dagarna, alla botar tillsammans</div><div id="br-days" class="br-days"></div></div>
+                </div>
+            </details>
         </section>
 
-        <div id="ov-cards" class="ov-cards">
+        <div>
+            <div class="h-sec mb-3">Dina botar <span class="jv-hint">· klicka på en för detaljer</span></div>
+            <div id="ov-cards" class="ov-cards">
             <a href="#btceth" class="glass ov-card" data-bot="srv"><div class="ov-head"><span class="h-sec">Trend BTC + ETH</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Allt eller inget, långa medelvärden, BTC och ETH</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
             <a href="#voltrend" class="glass ov-card" data-bot="srv2"><div class="ov-head"><span class="h-sec">Volatilitetsstyrd trend</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Allt eller inget i BTC över 50-dagars medel</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
             <a href="#botrot" class="glass ov-card" data-bot="srv3"><div class="ov-head"><span class="h-sec">Rotationsbot</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Topp 3 av 10 valutor, var 3:e dag</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
@@ -297,10 +333,13 @@
             <a href="#multi" class="glass ov-card" data-bot="srv5"><div class="ov-head"><span class="h-sec">Trendkorg flera tillgångar</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">7 tillgångar över 100-dagars medel, dagligen</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
             <a href="#dca" class="glass ov-card" data-bot="srv6"><div class="ov-head"><span class="h-sec">Veckosparande (DCA)</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">$250 i BTC och ETH varje vecka, säljer aldrig</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
         </div>
+        </div>
 
-        <section class="glass p-5 min-w-0">
+        <details class="glass jv-cmp">
+            <summary>Jämför botarna: graf och topplista</summary>
+            <div class="jv-cmp-body">
             <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
-                <h3 class="h-sec">Topplista · resultat sedan start</h3>
+                <h3 class="h-sec">Resultat sedan start</h3>
                 <div id="lb-legend" class="tr-legend"></div>
             </div>
             <div id="lb-chart" class="w-full"></div>
@@ -309,7 +348,8 @@
                 <tbody id="lb-body"><tr><td colspan="8">Hämtar...</td></tr></tbody>
             </table></div>
             <p class="mt-2 text-[11px] font-mono text-gray-500">Utvärdera botarna först efter minst 2–3 månader: en vecka eller två säger nästan ingenting. Procent sedan varje bots egen start. Köp och behåll BTC räknas från samma start som den äldsta boten. Botarna startade vid olika tidpunkter, så jämför helst kolumnen "Mot köp och behåll".</p>
-        </section>
+        </div>
+        </details>
 
             <div class="text-[11px] font-mono text-gray-500">
                 Rapporter från historiktesterna (uppdateras varje söndag):
@@ -321,7 +361,6 @@
                 Ingen riktig handel, och historik garanterar inget.
             </div>
     </main>
-
     <main id="view-btceth" class="hidden p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow bot-detail">
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
