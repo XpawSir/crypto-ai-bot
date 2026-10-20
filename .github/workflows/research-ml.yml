@@ -22,7 +22,9 @@ jobs:
       - name: Installera paket
         run: pip install lightgbm pandas numpy
       - name: Kör ML-testet
-        run: python bot/research-ml.py
+        run: |
+          mkdir -p research-out
+          python bot/research-ml.py 2>&1 | tee research-out/ml-log.txt || { echo '# Test: maskininlärning (misslyckades)'; echo; echo '```'; tail -30 research-out/ml-log.txt; echo '```'; } > research-out/REPORT-ML.md
       - name: Lägg rapporten på grenen research-report (övriga rapporter behålls)
         run: |
           rm -rf rep && git clone -q --depth=1 --branch research-report "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" rep

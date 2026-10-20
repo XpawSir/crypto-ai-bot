@@ -10,10 +10,17 @@ COST = 0.0012; RATE = 0.035 / 365
 OUT = os.environ.get('RESEARCH_OUT', 'research-out'); os.makedirs(OUT, exist_ok=True)
 
 def yahoo(sym):
-    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{sym}?period1=1388534400&period2={int(time.time())}&interval=1d'
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (compatible; cryptoai-research)'})
-    j = json.load(urllib.request.urlopen(req, timeout=30))['chart']['result'][0]
-    q = j['indicators']['quote'][0]
+    j = None; last = None
+    for attempt in range(6):
+        host = 'query1' if attempt % 2 == 0 else 'query2'
+        try:
+            url = f'https://{host}.finance.yahoo.com/v8/finance/chart/{sym}?period1=1388534400&period2={int(time.time())}&interval=1d'
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (compatible; cryptoai-research)'})
+            j = json.load(urllib.request.urlopen(req, timeout=30))['chart']['result'][0]; break
+        except Exception as e:
+            last = e; time.sleep(3 * (attempt + 1))
+    if j is None: raise RuntimeError(f'Yahoo misslyckades för {sym}: {last}')
+    q = j['indicators']['quote'][0]; q['volume'] = [v if v is not None else float('nan') for v in q['volume']]
     df = pd.DataFrame({'close': q['close'], 'vol': q['volume']}, index=pd.to_datetime(j['timestamp'], unit='s').normalize())
     return df[~df.index.duplicated()].dropna(subset=['close'])
 
@@ -43,6 +50,10 @@ def run_pos(ret, pos):
         eq.append(eq[-1] * (1 + r - cost)); prev = p
     return np.array(eq), sum(1 for i in range(1, len(pos)) if pos[i] != pos[i - 1])
 
+import traceback
+try:
+  pass
+except Exception: pass
 res = {}; L = ['# Test: maskininlärning (LightGBM) som handelssignal, walk-forward', '']
 THR = [0.50, 0.55, 0.60]
 for sym in ['BTC-USD', 'ETH-USD']:
