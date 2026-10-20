@@ -1750,6 +1750,29 @@ const overview = (function () {
         tt.className = 'br-title ' + (issues.length ? '' : d24 >= 0 ? 'up' : 'down');
         const orb = document.querySelector('#brief .jv-orb'); if (orb) orb.className = 'jv-orb' + (issues.length ? ' bad' : '');
 
+        // ---- HUD: kärna och mätare
+        const okN = keys.length - issues.length, coreArc = document.getElementById('core-arc');
+        if (coreArc) { coreArc.style.strokeDashoffset = String(100 - 100 * okN / keys.length); }
+        const cn = document.getElementById('core-num'); if (cn) cn.textContent = okN + '/' + keys.length;
+        const ct = document.getElementById('core-txt'); if (ct) ct.textContent = issues.length ? 'behöver kollas' : 'botar online';
+        root.setAttribute('data-state', issues.length ? 'bad' : 'ok');
+        const hud = document.getElementById('hud');
+        if (hud) {
+            const plus = rows.filter(function (r) { return r.v >= START; }).length;
+            const tiles = [
+                { v: okN + '/' + keys.length, l: 'Botar online', f: okN / keys.length, t: issues.length ? 'warn' : 'ok' },
+                { v: invested.length + '/' + keys.length, l: 'Äger just nu', f: invested.length / keys.length, t: 'sig' },
+                { v: String(moved), l: 'Affärer senaste dygnet', f: Math.min(1, moved / 8), t: 'sig' },
+                { v: plus + '/' + keys.length, l: 'Botar i plus', f: plus / keys.length, t: plus >= keys.length / 2 ? 'ok' : 'warn' }
+            ];
+            hud.textContent = '';
+            tiles.forEach(function (x) {
+                const d = mk('div', 'hud-tile ' + x.t);
+                d.innerHTML = '<svg viewBox="0 0 36 36" aria-hidden="true"><circle class="h-track" cx="18" cy="18" r="15.5"/><circle class="h-arc" cx="18" cy="18" r="15.5" pathLength="100" transform="rotate(-90 18 18)" style="stroke-dashoffset:' + (100 - 100 * x.f).toFixed(1) + '"/></svg><div><b>' + x.v + '</b><span>' + x.l + '</span></div>';
+                hud.appendChild(d);
+            });
+        }
+
         const sum = document.getElementById('br-sum');
         sum.textContent = 'Alla ' + keys.length + ' botar tillsammans' + (bhRet !== null ? (ret >= bhRet ? ' ligger bättre än' : ' ligger sämre än') + ' att bara ha hållit Bitcoin (' + pctTxt(bhRet * 100) + ').' : '.') +
             ' ' + (moved ? moved + (moved === 1 ? ' affär gjordes' : ' affärer gjordes') + ' senaste dygnet.' : 'Inga affärer senaste dygnet, botarna väntar på sina signaler.');

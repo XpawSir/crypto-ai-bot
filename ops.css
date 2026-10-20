@@ -107,3 +107,47 @@ main[id^=view-] { animation:opsin .3s ease-out both; }
 .brain .h-sec { margin-bottom:8px; }
 .brain-row { font-size:13.5px; line-height:1.6; color:var(--muted); margin-top:6px; } .brain-row b { color:var(--accent); font-weight:600; }
 .brain-hist { margin-top:10px; font-size:12px; color:var(--muted); }
+
+/* ============ Jarvis-kärna och HUD ============ */
+.jv { position:relative; }
+.jv > :not(.jv-core) { position:relative; z-index:1; }
+.jv-core { position:absolute; right:34px; top:50%; transform:translateY(-50%); width:210px; height:210px; z-index:0; pointer-events:none; }
+.jv-core svg { width:100%; height:100%; overflow:visible; }
+.jv-core circle { fill:none; vector-effect:non-scaling-stroke; }
+.c-ring { stroke:var(--sig); stroke-width:1; opacity:.55; transform-origin:100px 100px; }
+.c-ring.r1 { stroke-dasharray:2 7; animation:corespin 60s linear infinite; }
+.c-ring.r2 { stroke-dasharray:46 12 8 12; opacity:.35; animation:corespin 38s linear infinite reverse; }
+.c-ring.r3 { stroke-dasharray:1 5; opacity:.4; animation:corespin 24s linear infinite; }
+.c-track { stroke:var(--line2); stroke-width:6; opacity:.6; }
+.c-arc { stroke:var(--ok); stroke-width:6; stroke-linecap:round; stroke-dasharray:100; stroke-dashoffset:100; transition:stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1); filter:drop-shadow(0 0 6px var(--ok)); }
+.jv[data-state=bad] .c-arc { stroke:var(--warn); filter:drop-shadow(0 0 6px var(--warn)); }
+.c-glow { fill:radial-gradient(circle, rgba(124,196,255,.25), transparent); fill:rgba(124,196,255,.07); stroke:rgba(124,196,255,.25); stroke-width:1; animation:coregl 4s ease-in-out infinite; transform-origin:100px 100px; }
+.core-label { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.core-label b { font-size:26px; font-weight:700; letter-spacing:-.03em; color:var(--accent); line-height:1; }
+.core-label span { font-size:10.5px; color:var(--muted); margin-top:5px; max-width:80px; line-height:1.3; }
+@keyframes corespin { to { transform:rotate(360deg); } }
+@keyframes coregl { 50% { fill:rgba(124,196,255,.14); } }
+.jv .br-sum, .jv .jv-points { max-width:calc(100% - 260px); }
+@media (max-width:900px) { .jv-core { display:none; } .jv .br-sum, .jv .jv-points { max-width:none; } }
+
+.hud { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+@media (max-width:900px) { .hud { grid-template-columns:repeat(2,1fr); } }
+.hud-tile { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:16px; background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01)), var(--card); border:1px solid var(--line); position:relative; overflow:hidden; }
+.hud-tile::before { content:''; position:absolute; left:16px; right:16px; top:0; height:1px; background:linear-gradient(90deg, transparent, var(--sig), transparent); opacity:.6; }
+.hud-tile svg { width:46px; height:46px; flex:0 0 46px; }
+.hud-tile circle { fill:none; stroke-width:3.2; }
+.h-track { stroke:var(--line2); opacity:.7; }
+.h-arc { stroke:var(--sig); stroke-linecap:round; stroke-dasharray:100; transition:stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1); filter:drop-shadow(0 0 4px currentColor); }
+.hud-tile.ok .h-arc { stroke:var(--ok); } .hud-tile.warn .h-arc { stroke:var(--warn); }
+.hud-tile b { display:block; font-size:21px; font-weight:700; letter-spacing:-.02em; color:var(--accent); line-height:1.1; font-variant-numeric:tabular-nums; }
+.hud-tile span { display:block; font-size:12px; color:var(--muted); margin-top:2px; }
+html[data-theme=light] .hud-tile { background:var(--card); }
+
+/* botkort: ljuslinje överst och mjuk glöd */
+.ov-card { position:relative; overflow:hidden; }
+.ov-card::before { content:'' !important; position:absolute; left:20px; right:20px; top:0; height:1px; background:linear-gradient(90deg, transparent, var(--sig), transparent); opacity:.35; transition:opacity .2s; }
+.ov-card:hover::before { opacity:1; }
+.ov-card:hover { box-shadow:0 0 0 1px rgba(124,196,255,.18), 0 18px 44px -20px rgba(124,196,255,.45) !important; }
+.ov-num { text-shadow:0 0 22px rgba(124,196,255,.18); }
+.jv-num { text-shadow:0 0 34px rgba(124,196,255,.28); }
+@media (prefers-reduced-motion:reduce) { .c-ring, .c-glow { animation:none !important; } .c-arc, .h-arc { transition:none; } }
