@@ -1331,7 +1331,7 @@ const priceTxt = function (v) { return v === null || v === undefined ? 'ingen' :
 
 function makeServerPanel(prefix, file, onState) {
     const el = {};
-    ['badge', 'balance', 'pnl', 'trades', 'winrate', 'pos', 'note', 'log', 'chart', 'bh', 'markets'].forEach(function (k) {
+    ['badge', 'balance', 'pnl', 'trades', 'winrate', 'pos', 'note', 'log', 'chart', 'bh', 'markets', 'brain'].forEach(function (k) {
         el[k] = document.getElementById(prefix + '-' + k);
     });
     if (!el.badge) return { load: function () {} };
@@ -1441,6 +1441,26 @@ function makeServerPanel(prefix, file, onState) {
             const c = st.config || {};
             const syms = Array.isArray(c.symbols) ? c.symbols.join(', ') : (Array.isArray(c.universe) ? c.universe.length + ' valutor' : (c.symbol || ''));
             const stratTxt = c.strategy ? c.strategy + (c.noStops ? ' (inget stopp)' : '') : (c.lookback ? 'trendstyrka ' + c.lookback + 'd, topp ' + c.top + ', ombalans var ' + c.rebalDays + ':e dag' : '');
+            if (el.brain) {
+                const ds = Array.isArray(st.decisions) ? st.decisions : [];
+                el.brain.textContent = '';
+                if (!ds.length) { el.brain.classList.add('hidden'); }
+                else {
+                    el.brain.classList.remove('hidden');
+                    const last = {}; ds.forEach(function (d) { last[d.symbol] = d; });
+                    const h = document.createElement('div'); h.className = 'h-sec'; h.textContent = 'Botens resonemang just nu'; el.brain.appendChild(h);
+                    Object.keys(last).forEach(function (sym) {
+                        const d = last[sym], row = document.createElement('div'); row.className = 'brain-row';
+                        const t = (d.target >= 1.4 ? 'Äger med 1,5x hävstång' : d.target >= 0.99 ? 'Äger' : d.target > 0 ? 'Äger ' + Math.round(d.target * 100) + ' %' : 'Står utanför');
+                        const gap = d.gapSma50 === null || d.gapSma50 === undefined ? '' : ' Priset ligger ' + (d.gapSma50 >= 0 ? '+' : '') + d.gapSma50.toFixed(1).replace('.', ',') + ' % mot 50-dagars medel och volatiliteten är ' + Math.round(d.vol30) + ' % per år.';
+                        const b = document.createElement('b'); b.textContent = sym.replace('USDT', '') + ': ' + t + '. ';
+                        const sp = document.createElement('span'); sp.textContent = 'Läge: ' + d.regime + '.' + gap + ' Skäl: ' + d.why + '.';
+                        row.appendChild(b); row.appendChild(sp); el.brain.appendChild(row);
+                    });
+                    const hist = ds.slice(-10).reverse().map(function (d) { return d.t.slice(5, 10) + ' ' + d.symbol.replace('USDT', '') + ' ' + Math.round(d.target * 100) + ' %'; }).join(' · ');
+                    const hh = document.createElement('div'); hh.className = 'brain-hist'; hh.textContent = 'Senaste besluten: ' + hist; el.brain.appendChild(hh);
+                }
+            }
             el.note.textContent = 'Senaste körning ' + ago(st.lastRun) + ' | ' + syms + ' | ' + (c.interval || '') + ' | ' + stratTxt + ' | simulerad handel';
 
             el.log.textContent = '';
