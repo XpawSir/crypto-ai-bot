@@ -1,0 +1,140 @@
+/* ============================================================
+   ALGIZ // OPS — futuristisk kommandocentral-estetik
+   Laddas efter sidans egna stilar och skriver över dem. Tokens först.
+   ============================================================ */
+:root, html[data-theme=dark] {
+  --bg:#04060a; --card:#080c12; --sub:rgba(120,190,230,.045); --line:rgba(120,180,215,.15); --line2:rgba(120,180,215,.30);
+  --muted:#7d8da0; --chart:#05080c; --accent:#e8f1f8; --sig:#52d4ff; --sig2:#2b8fb8; --ok:#3ddc97; --warn:#ffb020; --bad:#ff5d6c;
+  --mono:'IBM Plex Mono','JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --glow:0 0 22px rgba(82,212,255,.35);
+}
+html[data-theme=light] {
+  --bg:#eef2f6; --card:#ffffff; --sub:rgba(20,70,110,.045); --line:rgba(20,60,95,.16); --line2:rgba(20,60,95,.34);
+  --muted:#51627a; --chart:#ffffff; --accent:#0a1626; --sig:#0a6fa3; --sig2:#0a6fa3; --ok:#0a8f5c; --warn:#b36b00; --bad:#c8283a;
+  --mono:'IBM Plex Mono','JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --glow:none;
+}
+
+/* ---------- bakgrund: rutnät, vinjett, svag skanning ---------- */
+body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); position:relative; }
+body::before { content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(1200px 700px at 78% -8%, rgba(82,212,255,.09), transparent 60%),
+    radial-gradient(900px 600px at -5% 105%, rgba(43,143,184,.07), transparent 60%),
+    linear-gradient(rgba(120,180,215,.045) 1px, transparent 1px) 0 0/48px 48px,
+    linear-gradient(90deg, rgba(120,180,215,.045) 1px, transparent 1px) 0 0/48px 48px; }
+html[data-theme=light] body::before { background:
+    linear-gradient(rgba(20,70,110,.05) 1px, transparent 1px) 0 0/48px 48px,
+    linear-gradient(90deg, rgba(20,70,110,.05) 1px, transparent 1px) 0 0/48px 48px; }
+body::after { content:''; position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.5;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0, rgba(0,0,0,.16) 1px, transparent 1px, transparent 3px); mix-blend-mode:multiply; }
+html[data-theme=light] body::after { display:none; }
+header, main, footer, #ops-strip { position:relative; z-index:2; }
+::selection { background:rgba(82,212,255,.28); color:#fff; }
+* { scrollbar-width:thin; scrollbar-color:var(--line2) transparent; }
+
+/* ---------- statusremsa ---------- */
+#ops-strip { display:flex; align-items:center; gap:18px; flex-wrap:wrap; padding:6px 24px; font:500 10.5px/1.4 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+  border-bottom:1px solid var(--line); background:linear-gradient(90deg, rgba(82,212,255,.07), transparent 55%); }
+#ops-strip b { color:var(--accent); font-weight:500; }
+#ops-strip .dot { display:inline-block; width:6px; height:6px; margin-right:8px; background:var(--ok); box-shadow:0 0 10px var(--ok); animation:opsblink 2.4s steps(2,end) infinite; vertical-align:1px; }
+#ops-strip .sp { flex:1; }
+@keyframes opsblink { 50% { opacity:.25; } }
+@media (max-width:640px) { #ops-strip { padding:6px 16px; gap:10px; letter-spacing:.08em; } #ops-strip .hide-s { display:none; } }
+
+/* ---------- ytor: räta hörn, hårfina linjer, hörnmarkeringar ---------- */
+.glass, .tile, .tr-stat, .tr-ma, .br-day, .wl-goal { border-radius:2px !important; }
+.glass { position:relative; background:linear-gradient(180deg, rgba(120,190,230,.035), transparent 40%), var(--card); border:1px solid var(--line); box-shadow:inset 0 1px 0 rgba(255,255,255,.03); }
+html[data-theme=light] .glass { background:var(--card); box-shadow:0 1px 0 rgba(10,30,60,.04); }
+.glass::before, .glass::after { content:''; position:absolute; width:11px; height:11px; pointer-events:none; border:0 solid var(--sig); opacity:.85; }
+.glass::before { top:-1px; left:-1px; border-top-width:1px; border-left-width:1px; }
+.glass::after { bottom:-1px; right:-1px; border-bottom-width:1px; border-right-width:1px; }
+.tile, .tr-stat, .tr-ma, .br-day, .wl-goal { background:var(--sub) !important; border:1px solid var(--line) !important; }
+.ov-card { transition:border-color .15s, box-shadow .15s, background .15s; }
+.ov-card:hover { border-color:var(--sig) !important; box-shadow:0 0 0 1px rgba(82,212,255,.18), 0 0 30px -8px rgba(82,212,255,.35); }
+.ov-card:hover::before, .ov-card:hover::after { width:16px; height:16px; }
+.glass::before, .glass::after { transition:width .15s, height .15s; }
+
+/* ---------- typografi: tekniska etiketter, mono-siffror ---------- */
+.h-sec, .wl-goal-h, .lb-table th, .mo-table th, .wl-form label span, .tr-stat span, .tr-stat i, .br-day .d, .ov-sub, .tile > span.text-gray-400 {
+  font-family:var(--mono) !important; text-transform:uppercase !important; letter-spacing:.13em !important; font-size:10.5px !important; font-weight:500 !important; color:var(--muted) !important; }
+h3.h-sec, .ov-head .h-sec { color:var(--accent) !important; font-size:11.5px !important; letter-spacing:.14em !important; font-weight:600 !important; }
+h3.h-sec::before, .ov-head .h-sec::before { content:'//'; color:var(--sig); margin-right:8px; font-weight:500; }
+main h2.text-2xl { font-family:var(--mono); text-transform:uppercase; letter-spacing:.06em; font-size:1.35rem !important; font-weight:600 !important; color:var(--accent); }
+main h2.text-2xl::before { content:'▌'; color:var(--sig); margin-right:10px; animation:opsblink 1.6s steps(2,end) infinite; }
+.stat-val, .ov-num, .jv-num, .tr-stat b, .wl-goal-big, #mk-price, .lb-table td, .mo-table td, .br-day .v, .font-mono, .stk-table td { font-family:var(--mono) !important; letter-spacing:-.01em; }
+.jv-num { font-weight:500; font-size:clamp(40px,6.2vw,64px); color:var(--accent); text-shadow:var(--glow); letter-spacing:-.04em; }
+.ov-num { font-weight:500 !important; font-size:25px !important; color:var(--accent); }
+.up, .text-emerald-400 { color:var(--ok) !important; } .down, .text-red-400 { color:var(--bad) !important; } .text-yellow-400 { color:var(--warn) !important; } .text-sky-400 { color:var(--sig) !important; }
+main .uppercase { text-transform:uppercase; letter-spacing:.12em; }
+
+/* ---------- huvud och meny ---------- */
+header { border-bottom:1px solid var(--line) !important; }
+html[data-theme=dark] header { background:rgba(4,6,10,.86) !important; }
+.brand-mark { border-radius:2px !important; background:transparent !important; border:1px solid var(--sig) !important; color:var(--sig); box-shadow:inset 0 0 12px rgba(82,212,255,.18), 0 0 14px rgba(82,212,255,.18); }
+.brand-name { font-family:var(--mono); text-transform:uppercase; letter-spacing:.34em; font-size:15px !important; font-weight:600; color:var(--accent); }
+header p.text-gray-400 { font-family:var(--mono); text-transform:uppercase; letter-spacing:.12em; font-size:9.5px !important; color:var(--muted) !important; }
+.tab { font-family:var(--mono) !important; text-transform:uppercase; letter-spacing:.12em; font-size:11px !important; font-weight:500 !important; border-radius:0 !important; border:0 !important; border-bottom:1px solid transparent !important; background:transparent !important; color:var(--muted); padding:10px 14px !important; position:relative; }
+.tab:hover { color:var(--accent); background:var(--sub) !important; }
+.tab[aria-current=page] { color:var(--sig) !important; border-bottom-color:var(--sig) !important; background:linear-gradient(180deg, transparent, rgba(82,212,255,.10)) !important; font-weight:600 !important; text-shadow:0 0 14px rgba(82,212,255,.5); }
+.iconbtn { border-radius:2px !important; background:transparent !important; border:1px solid var(--line) !important; color:var(--muted); }
+.iconbtn:hover { border-color:var(--sig) !important; color:var(--sig); }
+#logout-btn { border-radius:2px !important; font-family:var(--mono); text-transform:uppercase; letter-spacing:.12em; font-size:10.5px !important; }
+
+/* ---------- etiketter, märken, knappar ---------- */
+.chip, .ov-badge, .stk-table .tag, .seg, .mk-row, input, select, textarea, button { border-radius:2px !important; }
+.chip, .ov-badge, .stk-table .tag { font-family:var(--mono) !important; text-transform:uppercase; letter-spacing:.1em; font-size:10px !important; font-weight:500 !important; border:1px solid var(--line) !important; background:transparent !important; }
+.ov-badge.ok, .chip.new, .stk-table .tag.own { color:var(--ok) !important; border-color:rgba(61,220,151,.45) !important; background:rgba(61,220,151,.08) !important; }
+.ov-badge.warn, .chip.fix { color:var(--warn) !important; border-color:rgba(255,176,32,.45) !important; background:rgba(255,176,32,.08) !important; }
+.ov-badge.bad { color:var(--bad) !important; border-color:rgba(255,93,108,.5) !important; background:rgba(255,93,108,.09) !important; }
+.chip.imp { color:var(--sig) !important; border-color:rgba(82,212,255,.4) !important; background:rgba(82,212,255,.07) !important; }
+.chip.res { color:#c4a7ff !important; border-color:rgba(196,167,255,.4) !important; background:rgba(196,167,255,.07) !important; }
+.seg { font-family:var(--mono); text-transform:uppercase; letter-spacing:.1em; font-size:10.5px; background:transparent !important; border:1px solid var(--line) !important; }
+.seg[aria-pressed=true] { background:rgba(82,212,255,.12) !important; color:var(--sig) !important; border-color:var(--sig) !important; }
+button.bg-white, .bg-white { background:transparent !important; color:var(--sig) !important; border:1px solid var(--sig) !important; font-family:var(--mono); text-transform:uppercase; letter-spacing:.12em; font-size:11px; }
+button.bg-white:hover, .bg-white:hover { background:rgba(82,212,255,.14) !important; box-shadow:0 0 20px -4px rgba(82,212,255,.5); }
+input, select, textarea { background:rgba(0,0,0,.35) !important; border:1px solid var(--line) !important; font-family:var(--mono); }
+html[data-theme=light] input, html[data-theme=light] select { background:#fff !important; }
+input:focus, select:focus, textarea:focus { outline:none; border-color:var(--sig) !important; box-shadow:0 0 0 1px rgba(82,212,255,.3); }
+
+/* ---------- startsidans kommandocentral ---------- */
+.jv { padding:30px 32px !important; background:
+    radial-gradient(700px 260px at 100% 0, rgba(82,212,255,.10), transparent 70%),
+    linear-gradient(180deg, rgba(120,190,230,.04), transparent 50%), var(--card) !important; overflow:hidden; }
+.jv::after { width:16px; height:16px; }
+.jv .br-head::before { content:'ALGIZ // LÄGESBILD'; font:500 10px var(--mono); letter-spacing:.2em; color:var(--sig); position:absolute; top:10px; right:34px; opacity:.8; }
+.jv-orb { border-radius:0 !important; width:9px !important; height:9px !important; background:var(--ok) !important; box-shadow:0 0 14px var(--ok) !important; }
+.jv-orb.warn { background:var(--warn) !important; box-shadow:0 0 14px var(--warn) !important; } .jv-orb.bad { background:var(--bad) !important; box-shadow:0 0 14px var(--bad) !important; }
+.jv-sub { font-family:var(--mono); font-size:13px !important; letter-spacing:.04em; }
+.jv .br-title { font-family:var(--mono); text-transform:uppercase; letter-spacing:.1em; font-size:12.5px !important; color:var(--sig) !important; }
+.jv-points li::before { border-radius:0 !important; width:5px !important; height:5px !important; background:var(--sig) !important; opacity:1 !important; box-shadow:0 0 8px var(--sig); }
+.jv-more > summary, .jv-cmp > summary { font-family:var(--mono); text-transform:uppercase; letter-spacing:.12em; font-size:11px !important; color:var(--sig) !important; }
+.br-fresh { font-family:var(--mono) !important; text-transform:uppercase; letter-spacing:.1em; font-size:10px !important; }
+.br-cols { border-top:1px dashed var(--line2) !important; }
+#ov-cards { gap:14px; }
+#ov-cards .ov-card { padding:18px 20px !important; }
+#ov-cards .ov-card::selection { background:transparent; }
+.ov-desc { color:var(--muted); }
+
+/* ---------- tabeller ---------- */
+.lb-table th, .mo-table th { border-bottom:1px solid var(--line2) !important; }
+.lb-table td, .mo-table td, .stk-table td { border-bottom:1px solid var(--line) !important; }
+.lb-table tr:hover td, .stk-table tr:hover td { background:rgba(82,212,255,.05) !important; }
+.stk-table tr.held td { background:rgba(61,220,151,.06) !important; box-shadow:inset 2px 0 0 var(--ok); }
+.stk-table .tk { font-family:var(--mono); color:var(--accent); letter-spacing:.04em; }
+
+/* ---------- diagram, loggar, detaljer ---------- */
+.tile.overflow-y-auto, [id$="-log"] { font-family:var(--mono); }
+details.qa { border-radius:2px !important; }
+details.qa summary { font-size:14px; }
+.tl-dot { border-radius:0 !important; transform:rotate(45deg); }
+footer { border-top:1px solid var(--line) !important; font-family:var(--mono); letter-spacing:.04em; }
+footer a { text-decoration:none; }
+main[id^=view-] { animation:opsin .35s ease-out both; }
+@keyframes opsin { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion:reduce) { main[id^=view-], #ops-strip .dot, main h2.text-2xl::before { animation:none !important; } }
+@media (max-width:640px) { .jv { padding:22px 18px !important; } .jv .br-head::before { display:none; } .tab { padding:9px 10px !important; } }
+
+/* kort: rubrik och märke får plats utan att tryckas ut */
+.ov-head { flex-wrap:wrap; gap:8px; align-items:flex-start; }
+.ov-head .h-sec { flex:1 1 140px; min-width:0; overflow-wrap:anywhere; line-height:1.5; }
+.ov-badge { white-space:nowrap; flex:0 0 auto; }

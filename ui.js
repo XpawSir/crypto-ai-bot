@@ -38,3 +38,5 @@
     });
     setTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 })();
+
+(function () { var el = document.getElementById('ops-clock'); if (!el) return; function t() { el.textContent = new Date().toISOString().slice(11, 19); } t(); setInterval(t, 1000); })();

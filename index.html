@@ -9,7 +9,7 @@
         try { document.documentElement.dataset.theme = localStorage.getItem('cryptoai_theme') === 'light' ? 'light' : 'dark'; } catch (e) { document.documentElement.dataset.theme = 'dark'; }</script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%23000%22/><path d=%22M12 3.8v16.4M12 13L6.4 5.8M12 13l5.6-7.2%22 stroke=%22%23fff%22 stroke-width=%222%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
     <link rel="stylesheet" href="tailwind.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- TradingView Lightweight Charts (ljusstakar) -->
     <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
@@ -281,6 +281,7 @@
         .stk-table tr.held td { background:rgba(52,211,153,.07); } .stk-table .tag { font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--sub); }
         .stk-table .tag.own { color:#34d399; background:rgba(52,211,153,.12); }
 </style>
+    <link rel="stylesheet" href="ops.css?v=1">
 </head>
 <body class="text-gray-200 antialiased min-h-screen flex flex-col justify-between">
 
@@ -310,6 +311,7 @@
         </div>
     </header>
 
+    <div id="ops-strip" role="status" aria-label="Systemstatus"><span><i class="dot"></i><b>System igång</b></span><span class="hide-s">Läge <b>Simulerad handel</b></span><span class="hide-s">Pengar <b>Låtsas</b></span><span class="sp"></span><span>UTC <b id="ops-clock">--:--:--</b></span></div>
     <main id="view-home" class="p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow space-y-6">
         <section id="brief" class="glass jv" aria-live="polite">
             <div class="br-head">
