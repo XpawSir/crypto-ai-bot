@@ -338,6 +338,7 @@
             <a href="#trend" class="glass ov-card" data-bot="srv4"><div class="ov-head"><span class="h-sec">Trend-ensemble</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Allt eller inget i BTC, långa medelvärden</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
             <a href="#multi" class="glass ov-card" data-bot="srv5"><div class="ov-head"><span class="h-sec">Trendkorg flera tillgångar</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">7 tillgångar över 100-dagars medel, dagligen</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
             <a href="#dca" class="glass ov-card" data-bot="srv6"><div class="ov-head"><span class="h-sec">Veckosparande (DCA)</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">$250 i BTC och ETH varje vecka, säljer aldrig</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+            <a href="#lev" class="glass ov-card" data-bot="srv8"><div class="ov-head"><span class="h-sec">Hävstångstrend 1,5x</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">BTC över 50-dagars medel, 1,5x över 200-dagars. HÖG RISK</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
         </div>
         </div>
 
@@ -479,6 +480,28 @@
                 <p id="srv6-pos" class="mt-3 text-[11px] font-mono text-gray-300"></p>
                 <p id="srv6-note" class="mt-1 text-[11px] font-mono text-gray-500"></p>
                 <div id="srv6-log" class="mt-3 tile p-3 text-[11px] font-mono space-y-1 max-h-[130px] overflow-y-auto"></div>
+            </div>
+    </main>
+
+    <main id="view-lev" class="hidden p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow bot-detail">
+        <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
+            <div class="glass p-5">
+                <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                    <div><h2 class="h-sec">Hävstångstrend 1,5x</h2><p class="text-[12px] text-gray-500 mt-1">Samma idé som de andra trendbotarna, men med lånade pengar: allt i BTC när kursen är över 50-dagars medel, och 1,5 gånger kapitalet (50 % lånat, 8 % lånekostnad per år) när den också är över 200-dagars medel. Ränta 3,5 % på kontanter. I historiktestet (8 år) gav detta högre tillväxt, men <b>hävstång förstorar förluster</b>: ett snabbt fall på ungefär 60 % kan ta hela insatsen, och boten likvideras då automatiskt. Pappershandel, ingen rekommendation.</p></div>
+                    <div id="srv8-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Saldo</span><span id="srv8-balance" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Resultat sedan start</span><span id="srv8-pnl" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Affärer</span><span id="srv8-trades" class="stat-val text-white">-</span></div>
+                    <div class="tile p-3"><span class="text-gray-400 text-[10px] block">Vinstandel</span><span id="srv8-winrate" class="stat-val text-white">-</span></div>
+                </div>
+                <p id="srv8-bh" class="mt-3 text-[11px] font-mono text-gray-400"></p>
+                <div id="srv8-chart" class="mt-2 w-full h-[180px]"></div>
+                <div id="srv8-markets" class="mt-3 grid grid-cols-1 gap-2"></div>
+                <p id="srv8-pos" class="mt-3 text-[11px] font-mono text-gray-300"></p>
+                <p id="srv8-note" class="mt-1 text-[11px] font-mono text-gray-500"></p>
+                <div id="srv8-log" class="mt-3 tile p-3 text-[11px] font-mono space-y-1 max-h-[130px] overflow-y-auto"></div>
             </div>
     </main>
 

@@ -1,0 +1,42 @@
+name: Självgranskning (varje vecka)
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '17 6 * * 1'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: crypto-selfcheck
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Kör självgranskningen
+        run: node bot/selfcheck.mjs
+      - name: Lägg rapporten på grenen research-report
+        run: |
+          rm -rf rep && git clone -q --depth=1 --branch research-report "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" rep
+          cp research-out/REPORT-SELFCHECK.md rep/
+          cd rep
+          git add REPORT-SELFCHECK.md
+          git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "selfcheck $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "Ingen ändring"
+          git push -q origin research-report
+      - name: Öppna issue vid larm
+        if: ${{ hashFiles('research-out/ALARM') != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "$(cat research-out/ALARM)" = "1" ]; then
+            gh issue create -R "${{ github.repository }}" --title "Självgranskning: trendregeln ser svag ut" --body-file research-out/REPORT-SELFCHECK.md || true
+          fi

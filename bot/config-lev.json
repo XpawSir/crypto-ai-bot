@@ -1,0 +1,17 @@
+{
+  "label": "Hävstångstrend 1,5x (BTC)",
+  "enabled": true,
+  "mode": "voltrend",
+  "symbols": [
+    "BTCUSDT"
+  ],
+  "lengths": [
+    50
+  ],
+  "volTarget": 0.6,
+  "volDays": 30,
+  "allIn": true,
+  "leverage": true,
+  "cashRate": 0.035,
+  "borrowRate": 0.08
+}

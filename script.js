@@ -1604,7 +1604,8 @@ const overview = (function () {
         srv3: { name: 'Rotationsbot', color: '#c084fc', href: '#botrot' },
         srv4: { name: 'Trend-ensemble', color: '#34d399', href: '#trend' },
         srv5: { name: 'Trendkorg flera tillgångar', color: '#f472b6', href: '#multi' },
-        srv6: { name: 'Veckosparande (DCA)', color: '#38bdf8', href: '#dca' }
+        srv6: { name: 'Veckosparande (DCA)', color: '#38bdf8', href: '#dca' },
+        srv8: { name: 'Hävstångstrend 1,5x', color: '#f87171', href: '#lev' }
     };
     const START = 10000, states = {};
     let lbChart = null, lbSeries = {}, timer = null;
@@ -1876,7 +1877,7 @@ function stocksView(st) {
         body.appendChild(tr);
     });
 }
-const serverPanels = [makeServerPanel('srv', 'btceth.json'), makeServerPanel('srv2', 'voltrend.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render), makeServerPanel('srv5', 'multi.json'), makeServerPanel('srv6', 'dca.json'), makeServerPanel('srv7', 'stocks.json', function (st) { stocksView(st); })];
+const serverPanels = [makeServerPanel('srv', 'btceth.json'), makeServerPanel('srv2', 'voltrend.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render), makeServerPanel('srv5', 'multi.json'), makeServerPanel('srv6', 'dca.json'), makeServerPanel('srv7', 'stocks.json', function (st) { stocksView(st); }), makeServerPanel('srv8', 'lev.json')];
 function loadServerBot() { serverPanels.forEach(function (p) { p.load(); }); }
 
 // ---------- Logga ut ----------

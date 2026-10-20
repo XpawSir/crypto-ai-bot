@@ -42,6 +42,8 @@ function loadConfig() {
         symbols: syms,
         lengths: [...new Set(lengths)].sort((a, b) => a - b),
         step: [0.1, 0.2, 0.25, 0.5, 1].includes(c.step) ? c.step : 0.25,
+        leverage: c.leverage === true,
+        borrowRate: Math.min(0.3, Math.max(0, num(c.borrowRate, 0.08))),
         cashRate: Math.min(0.1, Math.max(0, num(c.cashRate, 0))),
         volTarget: Math.min(2, Math.max(0.1, num(c.volTarget, 0.6))),
         volDays: Math.min(90, Math.max(10, Math.round(num(c.volDays, 30)))),
@@ -98,6 +100,11 @@ export function targetFor(closes, cfg) {
         const r = []; for (let i = n - cfg.volDays + 1; i <= n; i++) r.push(closes[i] / closes[i - 1] - 1);
         const mean = r.reduce((a, b) => a + b, 0) / r.length;
         const vol = Math.sqrt(r.reduce((a, b) => a + (b - mean) ** 2, 0) / (r.length - 1)) * Math.sqrt(365);
+        if (cfg.leverage) {
+            const m200 = closes.length >= 200 ? sma(closes, 200)[n] : null;
+            const hi = m200 !== null && closes[n] > m200;
+            return { target: hi ? 1.5 : 1, why: 'över ' + len + '-dagars medel' + (hi ? ' och 200-dagars medel: hävstång 1,5x' : ', under 200-dagars: 1x') };
+        }
         const t = cfg.allIn ? 1 : Math.round(Math.min(1, cfg.volTarget / vol) / 0.25) * 0.25;
         return { target: t, why: 'över ' + len + '-dagars medel, volatilitet ' + Math.round(vol * 100) + ' %/år' };
     }
@@ -132,21 +139,30 @@ export async function main() {
         if (!st.baseline) st.baseline = btcAsk * (1 + SLIP);
 
         // Ränta på kontanter (modellerad, som på ett räntekonto/penningmarknadsfond). Upplupen tid sedan förra gången, max 2 dygn per körning.
-        if (cfg.cashRate > 0) {
+        if (cfg.cashRate > 0 || cfg.leverage) {
             const dtDays = st.lastAccrual ? Math.min(2, Math.max(0, (now - st.lastAccrual) / 86400e3)) : 0;
-            const gain = st.cash * cfg.cashRate * dtDays / 365;
-            if (gain > 0) { st.cash += gain; st.interest = (st.interest || 0) + gain; }
+            const gain = st.cash * (st.cash >= 0 ? cfg.cashRate : cfg.borrowRate) * dtDays / 365;
+            if (gain !== 0) { st.cash += gain; st.interest = (st.interest || 0) + gain; }
             st.lastAccrual = now;
         }
         const value = () => { let v = st.cash; for (const s in st.units) v += st.units[s] * (bid[s] || 0); return v; };
-        const rules = cfg.mode + '|' + cfg.symbols.join(',') + '|' + cfg.lengths.join(',') + '|' + cfg.step + '|' + cfg.volTarget + '|' + cfg.allIn;
+        const rules = cfg.mode + '|' + cfg.symbols.join(',') + '|' + cfg.lengths.join(',') + '|' + cfg.step + '|' + cfg.volTarget + '|' + cfg.allIn + (cfg.leverage ? '|lev' : '');
         const migrating = !!(st.rules && st.rules !== rules);   // vid regelbyte får delpositioner justeras en sista gång
         if (migrating) { st.lastDecision = 0; log('Reglerna ändrade, fattar nytt beslut direkt.', 'info'); }
         st.rules = rules;
 
+        if (cfg.leverage && st.cash < 0) {
+            const pos = Object.keys(st.units).reduce((a, s) => a + st.units[s] * bid[s], 0), eqv = value();
+            if (pos > 0 && eqv < 0.25 * pos) {      // underhållsmarginal: kapitalet under 25 % av positionen → tvångslikvidering
+                for (const s of Object.keys(st.units)) { const got = st.units[s] * bid[s] * (1 - SLIP) * (1 - FEE); st.cash += got; st.trades.push({ t: new Date().toISOString(), side: 'sell', symbol: s, price: bid[s], amount: r2(got), pnl: r2(got - st.units[s] * (st.avgCost[s] || bid[s])), weight: 0 }); st.totalTrades++; delete st.units[s]; delete st.avgCost[s]; }
+                st.levels = {}; st.liquidations = (st.liquidations || 0) + 1; st.lastDecision = refDay;
+                log('⚠️ Tvångslikvidering (marginalen tog slut). Hävstång kan ge stora förluster.', 'danger');
+            }
+        }
         if (cfg.enabled && refDay > st.lastDecision) {
             const val = value(); let changed = 0;
-            const noTrim = !migrating && (cfg.mode === 'voltrend' ? cfg.allIn : cfg.step === 1);
+            st.levels = st.levels || {};
+            const noTrim = !cfg.leverage && !migrating && (cfg.mode === 'voltrend' ? cfg.allIn : cfg.step === 1);
             // sälj först (frigör kontanter), köp sedan
             const order = [...cfg.symbols].sort((a, b) => {
                 const da = sig[a].target / N * val - (st.units[a] || 0) * bid[a], db = sig[b].target / N * val - (st.units[b] || 0) * bid[b];
@@ -155,11 +171,12 @@ export async function main() {
             for (const s of order) {
                 const cur = (st.units[s] || 0) * bid[s], tgt = sig[s].target / N * val, diff = tgt - cur;
                 if (Math.abs(diff) < val * 0.01) continue;
+                if (cfg.leverage && !migrating && st.levels[s] === sig[s].target) continue;   // handla bara när hävstångsnivån byter
                 // allt eller inget: handla bara när signalen byter (in/ut), aldrig små justeringar av en kvarvarande position
                 if (noTrim && (tgt > 0) === (cur > 1)) continue;
                 changed++;
                 if (diff > 0) {
-                    const price = ask[s] * (1 + SLIP), spend = Math.min(diff, st.cash); if (spend <= 1) continue;
+                    const price = ask[s] * (1 + SLIP), spend = cfg.leverage ? diff : Math.min(diff, st.cash); if (spend <= 1) continue;
                     const addU = spend * (1 - FEE) / price, prevU = st.units[s] || 0;
                     st.avgCost[s] = ((st.avgCost[s] || 0) * prevU + price * addU) / (prevU + addU);
                     st.units[s] = prevU + addU; st.cash -= spend;
@@ -175,6 +192,7 @@ export async function main() {
                     log('🔴 Säljer ' + coin(s) + ' för $' + got.toFixed(2) + ' @ $' + price.toFixed(2) + ' (' + (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2) + ') → ' + Math.round(sig[s].target * 100) + ' % av ' + coin(s) + '-delen (' + sig[s].why + ')', pnl >= 0 ? 'success' : 'danger');
                 }
             }
+            for (const s of cfg.symbols) st.levels[s] = sig[s].target;
             if (!changed) log('Dagens beslut: ' + cfg.symbols.map(s => coin(s) + ' ' + Math.round(sig[s].target * 100) + ' % (' + sig[s].why + ')').join(', ') + '. Ingen ändring.', 'info');
             if (st.trades.length > 200) st.trades.splice(0, st.trades.length - 200);
             st.lastDecision = refDay;
