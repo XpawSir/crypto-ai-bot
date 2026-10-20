@@ -10,5 +10,6 @@
   ],
   "volTarget": 0.6,
   "volDays": 30,
-  "allIn": true
+  "allIn": true,
+  "cashRate": 0.035
 }

@@ -42,6 +42,7 @@ function loadConfig() {
         symbols: syms,
         lengths: [...new Set(lengths)].sort((a, b) => a - b),
         step: [0.1, 0.2, 0.25, 0.5, 1].includes(c.step) ? c.step : 0.25,
+        cashRate: Math.min(0.1, Math.max(0, num(c.cashRate, 0))),
         volTarget: Math.min(2, Math.max(0.1, num(c.volTarget, 0.6))),
         volDays: Math.min(90, Math.max(10, Math.round(num(c.volDays, 30)))),
         allIn: c.allIn === true,           // allt eller inget: ingen del-storlek, ingen volatilitetsstyrning
@@ -130,6 +131,13 @@ export async function main() {
         st.source = source;
         if (!st.baseline) st.baseline = btcAsk * (1 + SLIP);
 
+        // Ränta på kontanter (modellerad, som på ett räntekonto/penningmarknadsfond). Upplupen tid sedan förra gången, max 2 dygn per körning.
+        if (cfg.cashRate > 0) {
+            const dtDays = st.lastAccrual ? Math.min(2, Math.max(0, (now - st.lastAccrual) / 86400e3)) : 0;
+            const gain = st.cash * cfg.cashRate * dtDays / 365;
+            if (gain > 0) { st.cash += gain; st.interest = (st.interest || 0) + gain; }
+            st.lastAccrual = now;
+        }
         const value = () => { let v = st.cash; for (const s in st.units) v += st.units[s] * (bid[s] || 0); return v; };
         const rules = cfg.mode + '|' + cfg.symbols.join(',') + '|' + cfg.lengths.join(',') + '|' + cfg.step + '|' + cfg.volTarget + '|' + cfg.allIn;
         const migrating = !!(st.rules && st.rules !== rules);   // vid regelbyte får delpositioner justeras en sista gång
