@@ -20,22 +20,17 @@ jobs:
         with:
           python-version: '3.12'
       - name: Installera paket
-        run: pip install lightgbm pandas numpy
+        run: pip install lightgbm pandas numpy scikit-learn
       - name: Kör ML-testet
         run: |
+          set -o pipefail
           mkdir -p research-out
           python bot/research-ml.py 2>&1 | tee research-out/ml-log.txt || { echo '# Test: maskininlärning (misslyckades)'; echo; echo '```'; tail -30 research-out/ml-log.txt; echo '```'; } > research-out/REPORT-ML.md
-      - name: A lista filer
+      - name: Lägg rapporten på grenen research-report (övriga rapporter behålls)
         run: |
-          echo "::error::FILES: $(ls research-out | tr '\n' ' ') LOG: $(tail -c 600 research-out/ml-log.txt | tr '\n' ' ')"
-          head -5 research-out/REPORT-ML.md
-      - name: B klona rapportgrenen
-        run: rm -rf rep && git clone -q --depth=1 --branch research-report "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" rep
-      - name: C kopiera och committa
-        run: |
+          rm -rf rep && git clone -q --depth=1 --branch research-report "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" rep
           cp research-out/REPORT-ML.md rep/
           cd rep
           git add REPORT-ML.md
-          git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "research ml" || echo "Ingen ändring"
-      - name: D pusha
-        run: cd rep && git push -q origin research-report
+          git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "research ml $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "Ingen ändring"
+          git push -q origin research-report
