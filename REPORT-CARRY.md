@@ -17,16 +17,16 @@ Jämförelse: bara kontanter med ränta ger 3.5 % per år.
 
 ## ETH
 
-Datakällor som provades: binance: misslyckades (HTTP 451 https://fapi.binance.com/fapi/v1/fundingRate?symbol=ETHUSDT&); bybit: misslyckades (HTTP 403 https://api.bybit.com/v5/market/funding/history?category=lin); okx: 277 punkter, 0.3 år; hyperliquid: misslyckades (HTTP 429 https://api.hyperliquid.xyz/info).
+Datakällor som provades: binance: misslyckades (HTTP 451 https://fapi.binance.com/fapi/v1/fundingRate?symbol=ETHUSDT&); bybit: misslyckades (HTTP 403 https://api.bybit.com/v5/market/funding/history?category=lin); okx: 277 punkter, 0.3 år; hyperliquid: 29617 punkter, 3.4 år.
 
-Vald källa: **okx**, 93 dagar (0.3 år). Genomsnittlig funding: 4.3 % per år på nominellt belopp. Andel dagar med negativ funding: 12.9 %.
+Vald källa: **hyperliquid**, 1258 dagar (3.4 år). Genomsnittlig funding: 14.0 % per år på nominellt belopp. Andel dagar med negativ funding: 12.4 %.
 
 | Regel | Nettoavkastning/år (hela) | Värsta nedgång | Affärer | 1:a halvan/år | 2:a halvan/år |
 |---|---|---|---|---|---|
-| Alltid hedgad | 4.4 % | −0.09 % | 1 | 6.1 % | 3.9 % |
-| Hedgad när funding de senaste 7 dagarna är positiv | 3.2 % | −0.17 % | 3 | 6.1 % | 2.4 % |
-| Hedgad när funding de senaste 7 dagarna är över 10 % per år | 2.4 % | −0.16 % | 2 | -1.0 % | 3.6 % |
-| Hedgad när funding de senaste 30 dagarna är över 5 % per år | 2.8 % | −0.08 % | 2 | 2.0 % | 3.1 % |
+| Alltid hedgad | 9.3 % | −0.43 % | 1 | 13.5 % | 5.5 % |
+| Hedgad när funding de senaste 7 dagarna är positiv | 8.6 % | −0.44 % | 35 | 13.1 % | 4.6 % |
+| Hedgad när funding de senaste 7 dagarna är över 10 % per år | 7.1 % | −0.16 % | 62 | 11.2 % | 3.4 % |
+| Hedgad när funding de senaste 30 dagarna är över 5 % per år | 9.0 % | −0.25 % | 15 | 13.1 % | 5.1 % |
 
 Jämförelse: bara kontanter med ränta ger 3.5 % per år.
 
@@ -35,7 +35,7 @@ Jämförelse: bara kontanter med ränta ger 3.5 % per år.
 | Valuta | Källa | Minst 2 års data | Slår kontantränta +2 pe i båda halvor, nedgång < 3 % | Bästa regel |
 |---|---|---|---|---|
 | BTC | hyperliquid | ja | ja | Alltid hedgad (9.3 %/år) |
-| ETH | okx | nej | nej | – |
+| ETH | hyperliquid | ja | nej | – |
 
 ## Slutsats
 
