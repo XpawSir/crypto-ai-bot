@@ -26,7 +26,9 @@ jobs:
           mkdir -p research-out
           python bot/research-ml.py 2>&1 | tee research-out/ml-log.txt || { echo '# Test: maskininlärning (misslyckades)'; echo; echo '```'; tail -30 research-out/ml-log.txt; echo '```'; } > research-out/REPORT-ML.md
       - name: A lista filer
-        run: ls -la research-out; head -5 research-out/REPORT-ML.md
+        run: |
+          echo "::error::FILES: $(ls research-out | tr '\n' ' ') LOG: $(tail -c 600 research-out/ml-log.txt | tr '\n' ' ')"
+          head -5 research-out/REPORT-ML.md
       - name: B klona rapportgrenen
         run: rm -rf rep && git clone -q --depth=1 --branch research-report "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" rep
       - name: C kopiera och committa
