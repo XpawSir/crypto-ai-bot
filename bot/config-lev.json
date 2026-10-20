@@ -13,5 +13,6 @@
   "allIn": true,
   "leverage": true,
   "cashRate": 0.035,
-  "borrowRate": 0.08
+  "borrowRate": 0.08,
+  "ddBrake": 0.2
 }

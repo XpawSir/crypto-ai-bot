@@ -44,6 +44,7 @@ function loadConfig() {
         step: [0.1, 0.2, 0.25, 0.5, 1].includes(c.step) ? c.step : 0.25,
         leverage: c.leverage === true,
         borrowRate: Math.min(0.3, Math.max(0, num(c.borrowRate, 0.08))),
+        ddBrake: Math.min(0.9, Math.max(0, num(c.ddBrake, 0))),
         cashRate: Math.min(0.1, Math.max(0, num(c.cashRate, 0))),
         volTarget: Math.min(2, Math.max(0.1, num(c.volTarget, 0.6))),
         volDays: Math.min(90, Math.max(10, Math.round(num(c.volDays, 30)))),
@@ -161,6 +162,22 @@ export async function main() {
         }
         if (cfg.enabled && refDay > st.lastDecision) {
             const val = value(); let changed = 0;
+            // Hård riskgräns (modellen kan inte åsidosätta): efter nedgång på ddBrake från topp kapas hävstången till 1x i 30 dygn
+            if (cfg.ddBrake > 0) {
+                st.peakEq = Math.max(st.peakEq || 0, val);
+                if ((st.peakEq - val) / st.peakEq >= cfg.ddBrake && !(st.capUntil > now)) { st.capUntil = now + 30 * 86400e3; log('🛑 Riskgräns: nedgång ' + Math.round((st.peakEq - val) / st.peakEq * 100) + ' % från toppen. Max 1x i 30 dygn.', 'danger'); }
+                if (st.capUntil > now) for (const s of cfg.symbols) if (sig[s].target > 1) { sig[s].target = 1; sig[s].why += ' (riskgräns: max 1x)'; }
+            }
+            // beslutslogg: varför, med mätvärden (de 60 senaste sparas)
+            st.decisions = st.decisions || [];
+            for (const s of cfg.symbols) {
+                const c = closes[s], n = c.length - 1, m50 = c.length > 50 ? sma(c, 50)[n] : null;
+                const rr = []; for (let i = Math.max(1, n - 29); i <= n; i++) rr.push(c[i] / c[i - 1] - 1);
+                const mu = rr.reduce((a, b) => a + b, 0) / rr.length, vol = Math.sqrt(rr.reduce((a, b) => a + (b - mu) ** 2, 0) / Math.max(1, rr.length - 1)) * Math.sqrt(365);
+                const regime = m50 === null ? 'okänd' : c[n] < m50 ? 'nedtrend' : vol > 1.0 ? 'upptrend, hög volatilitet' : 'upptrend';
+                st.decisions.push({ t: new Date().toISOString(), symbol: s, target: sig[s].target, why: sig[s].why, price: c[n], gapSma50: m50 ? r2((c[n] / m50 - 1) * 100) : null, vol30: r2(vol * 100), regime });
+            }
+            if (st.decisions.length > 60) st.decisions.splice(0, st.decisions.length - 60);
             st.levels = st.levels || {};
             const noTrim = !cfg.leverage && !migrating && (cfg.mode === 'voltrend' ? cfg.allIn : cfg.step === 1);
             // sälj först (frigör kontanter), köp sedan
