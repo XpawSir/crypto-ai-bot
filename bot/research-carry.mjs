@@ -28,9 +28,13 @@ const f2 = v => (v === null || !isFinite(v)) ? '–' : v.toFixed(2);
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
 
 async function getJSON(url, opts) {
-    const res = await fetch(url, Object.assign({ headers: UA, signal: AbortSignal.timeout(25000) }, opts || {}));
-    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + url.slice(0, 60));
-    return res.json();
+    for (let a = 0; a < 6; a++) {
+        const res = await fetch(url, Object.assign({ headers: UA, signal: AbortSignal.timeout(25000) }, opts || {}));
+        if (res.status === 429) { await new Promise(r => setTimeout(r, 3000 * (a + 1))); continue; }
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + url.slice(0, 60));
+        return res.json();
+    }
+    throw new Error('HTTP 429 (för många anrop) ' + url.slice(0, 40));
 }
 
 // Returnerar [{t (ms), rate (per intervall), hours (intervallängd)}] äldst först
@@ -72,6 +76,7 @@ const SOURCES = {
             if (!Array.isArray(j) || !j.length) break;
             j.forEach(x => out.push({ t: x.time, rate: +x.fundingRate, hours: 1 }));
             start = j[j.length - 1].time + 1; if (j.length < 400) break;
+            await new Promise(r => setTimeout(r, 400));
         }
         return out;
     }
