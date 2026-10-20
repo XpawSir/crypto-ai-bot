@@ -1,6 +1,6 @@
 # Självgranskning av trendreglerna
 
-Körd 2026-10-20T18:49 UTC. Nuvarande regel: över 50-dagars medel, allt eller inget. Rangordning av 11 enkla längder (1 = bäst på Kalmar = tillväxt delat med värsta ras).
+Körd 2026-10-20T18:50 UTC. Nuvarande regel: över 50-dagars medel, allt eller inget. Rangordning av 11 enkla längder (1 = bäst på Kalmar = tillväxt delat med värsta ras).
 
 ## BTC-USD
 
