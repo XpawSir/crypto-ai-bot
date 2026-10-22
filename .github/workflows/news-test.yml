@@ -1,0 +1,28 @@
+name: Test nyhetshämtning
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Hämta nyheter
+        run: NEWS_OUT=research-out/news-sample.json node bot/news.mjs | tee research-out-log.txt || true
+      - name: Lägg provet på research-report
+        run: |
+          rm -rf rep && git clone -q --depth=1 --branch research-report "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" rep
+          cp research-out/news-sample.json rep/ || true
+          cp research-out-log.txt rep/news-log.txt
+          cd rep
+          git add -A
+          git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "news sample" || echo "Ingen ändring"
+          git push -q origin research-report
