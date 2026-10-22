@@ -1895,7 +1895,7 @@ const overview = (function () {
         const lg = document.getElementById('lb-legend'); if (lg) lg.innerHTML = legend.join('');
         lbChart.timeScale().fitContent();
     }
-    return { update: update, status: status };
+    return { update: update, status: status, state: function (p) { return states[p] || null; } };
 })();
 
 // Aktiefliken: tabell över alla 30 aktier med riktiga kurser, rangordning och vilka boten äger
@@ -1920,6 +1920,85 @@ function stocksView(st) {
         body.appendChild(tr);
     });
 }
+
+// ---------- Nyheter och marknadspuls ----------
+const newsView = (function () {
+    const KW = { BTC: ['bitcoin', 'btc'], ETH: ['ethereum', 'ether', 'eth'], SOL: ['solana'], LINK: ['chainlink'], BNB: ['binance coin', 'bnb'], XRP: ['ripple', 'xrp'], ADA: ['cardano'], DOGE: ['dogecoin', 'doge'], AVAX: ['avalanche'], DOT: ['polkadot'], LTC: ['litecoin'],
+        SPY: ['s&p 500', 'wall street'], QQQ: ['nasdaq'], TLT: ['treasury yields', 'bond yields'], GLD: ['gold prices', 'gold price'], DBC: ['oil prices', 'crude oil'],
+        AAPL: ['apple'], XOM: ['exxon'], MSFT: ['microsoft'], GE: ['general electric', 'ge aerospace'], WMT: ['walmart'], JNJ: ['johnson & johnson'], PG: ['procter'], IBM: ['ibm'], CVX: ['chevron'], JPM: ['jpmorgan', 'jp morgan'], T: ['at&t'], KO: ['coca-cola', 'coca cola'], PFE: ['pfizer'], BAC: ['bank of america'], WFC: ['wells fargo'], C: ['citigroup', 'citi'], CSCO: ['cisco'], INTC: ['intel'], VZ: ['verizon'], MRK: ['merck'], ORCL: ['oracle'], PEP: ['pepsi'], AMGN: ['amgen'], DIS: ['disney'], MCD: ["mcdonald"], HD: ['home depot'], UNH: ['unitedhealth'], ABT: ['abbott'], HPQ: ['hp inc'], AMZN: ['amazon'] };
+    let stocksHeld = [];
+    function words(sym) { return (KW[sym] || []).slice(); }
+    function heldList() {
+        const out = [];
+        ['srv', 'srv2', 'srv3', 'srv4', 'srv5', 'srv6', 'srv8'].forEach(function (p) { const st = overview.state(p); if (st) (st.openPositions || []).forEach(function (q) { const s = String(q.symbol).replace(/USDT$/, '').replace(/-USD$/, ''); if (out.indexOf(s) < 0) out.push(s); }); });
+        stocksHeld.forEach(function (s) { if (out.indexOf(s.symbol) < 0) out.push(s.symbol); });
+        return out.map(function (s) { return { sym: s, w: words(s) }; }).filter(function (x) { return x.w.length; });
+    }
+    function match(title, held) {
+        const t = ' ' + title.toLowerCase().replace(/[^a-z0-9&.\- ]+/g, ' ') + ' ';
+        for (let i = 0; i < held.length; i++) for (let j = 0; j < held[i].w.length; j++) { if (t.indexOf(' ' + held[i].w[j] + ' ') >= 0 || t.indexOf(' ' + held[i].w[j] + 's ') >= 0) return held[i].sym; }
+        return null;
+    }
+    function ago(ts) { if (!ts) return ''; const m = Math.round((Date.now() - ts) / 60000); return m < 2 ? 'nyss' : m < 90 ? m + ' min sedan' : m < 2880 ? Math.round(m / 60) + ' tim sedan' : Math.round(m / 1440) + ' dygn sedan'; }
+    function li(n, hit) {
+        const e = document.createElement('li'), a = document.createElement('a');
+        a.textContent = n.t; if (/^https?:\/\//.test(n.u)) { a.href = n.u; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+        const m = document.createElement('span'); m.className = 'nw-meta'; m.textContent = n.s + (n.ts ? ' · ' + ago(n.ts) : '') + (hit ? ' · ' + hit : '');
+        e.appendChild(a); e.appendChild(m); return e;
+    }
+    function pct(v) { return typeof v === 'number' ? (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2).replace('.', ',') + ' %' : ''; }
+    function tile(label, value, chg, invert) {
+        const d = document.createElement('div'); d.className = 'nw-tile';
+        const l = document.createElement('span'); l.textContent = label; const b = document.createElement('b'); b.textContent = value;
+        d.appendChild(l); d.appendChild(b);
+        if (typeof chg === 'number') { const c = document.createElement('i'); c.textContent = pct(chg); const up = invert ? chg <= 0 : chg >= 0; c.className = up ? 'up' : 'down'; d.appendChild(c); }
+        return d;
+    }
+    const fmt = function (v, d) { return Number(v).toLocaleString('sv-SE', { minimumFractionDigits: d, maximumFractionDigits: d }); };
+    const FNG = { 'Extreme Fear': 'Extrem rädsla', 'Fear': 'Rädsla', 'Neutral': 'Neutralt', 'Greed': 'Girighet', 'Extreme Greed': 'Extrem girighet' };
+    function render(n) {
+        const up = document.getElementById('nw-updated'); if (up && n.updated) up.textContent = 'Senast hämtat ' + ago(Date.parse(n.updated)) + '.';
+        const P = document.getElementById('nw-pulse'); P.textContent = '';
+        const m = n.market || {};
+        if (m.fng) {
+            const d = document.createElement('div'); d.className = 'nw-tile nw-fng';
+            const v = m.fng.value, col = v < 25 ? 'var(--bad)' : v < 45 ? 'var(--warn)' : v < 56 ? 'var(--muted)' : 'var(--ok)';
+            d.innerHTML = '<svg viewBox="0 0 36 36" aria-hidden="true"><circle class="h-track" cx="18" cy="18" r="15.5"/><circle class="h-arc" cx="18" cy="18" r="15.5" pathLength="100" transform="rotate(-90 18 18)" style="stroke:' + col + ';stroke-dashoffset:' + (100 - v) + '"/></svg>';
+            const t = document.createElement('div'); const l = document.createElement('span'); l.textContent = 'Rädsla/girighet, krypto'; const b = document.createElement('b'); b.textContent = v + ' · ' + (FNG[m.fng.label] || m.fng.label);
+            t.appendChild(l); t.appendChild(b); d.appendChild(t); P.appendChild(d);
+        }
+        if (m.btc) P.appendChild(tile('Bitcoin', '$' + fmt(m.btc.price, 0), m.btc.chg));
+        if (m.eth) P.appendChild(tile('Ethereum', '$' + fmt(m.eth.price, 0), m.eth.chg));
+        if (m.gecko) { P.appendChild(tile('Kryptomarknaden totalt', '$' + fmt(m.gecko.cap / 1e12, 2) + ' biljoner', m.gecko.capChg)); P.appendChild(tile('Bitcoins andel', fmt(m.gecko.btcDom, 1) + ' %')); }
+        (m.indices || []).forEach(function (q) { const isVix = q.sym === '^VIX'; P.appendChild(tile(q.name, (q.sym === '^TNX' ? fmt(q.price, 2) + ' %' : fmt(q.price, q.price > 1000 ? 0 : 2)), q.chg, isVix)); });
+        if (!P.children.length) { const e = document.createElement('p'); e.className = 'muted'; e.textContent = 'Ingen marknadsdata just nu.'; P.appendChild(e); }
+
+        const held = heldList(), mine = [], seen = {};
+        (n.stockNews || []).concat(n.cryptoNews || []).forEach(function (x) { const h = match(x.t, held); if (h && !seen[x.u]) { seen[x.u] = 1; mine.push([x, h]); } });
+        mine.sort(function (a, b) { return b[0].ts - a[0].ts; });
+        const ms = document.getElementById('nw-mine-sec'), ml = document.getElementById('nw-mine'); ml.textContent = '';
+        mine.slice(0, 8).forEach(function (p) { ml.appendChild(li(p[0], 'nämner ' + p[1])); });
+        ms.classList.toggle('hidden', !mine.length);
+        const fill = function (id, list) { const ul = document.getElementById(id); ul.textContent = ''; if (!list || !list.length) { const e = document.createElement('li'); e.className = 'muted'; e.textContent = 'Inga rubriker just nu.'; ul.appendChild(e); return; } list.slice(0, 15).forEach(function (x) { ul.appendChild(li(x, null)); }); };
+        fill('nw-stocks', n.stockNews); fill('nw-crypto', n.cryptoNews);
+        const mv = function (id, list) { const ul = document.getElementById(id); ul.textContent = ''; (list || []).forEach(function (c) { const e = document.createElement('li'); const s = document.createElement('span'); s.textContent = c.sym + ' · ' + c.name; const b = document.createElement('b'); b.textContent = pct(c.chg); b.className = c.chg >= 0 ? 'up' : 'down'; e.appendChild(s); e.appendChild(b); ul.appendChild(e); }); };
+        mv('nw-up', n.movers && n.movers.up); mv('nw-down', n.movers && n.movers.down);
+    }
+    async function load() {
+        if (!document.getElementById('nw-pulse')) return;
+        try {
+            const r2 = await fetch(SERVER_BASE + 'stocks.json?t=' + Date.now(), { cache: 'no-store' }).catch(function () { return null; });
+            if (r2 && r2.ok) { const s = await r2.json(); stocksHeld = (s.stocks || []).filter(function (x) { return x.held; }); }
+            const res = await fetch(SERVER_BASE + 'news.json?t=' + Date.now(), { cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            render(await res.json());
+        } catch (e) {
+            const P = document.getElementById('nw-pulse'); if (P) { P.textContent = ''; const p = document.createElement('p'); p.className = 'muted'; p.textContent = 'Nyheterna är inte hämtade än (' + e.message + '). De dyker upp inom ett par minuter efter nästa botkörning.'; P.appendChild(p); }
+        }
+    }
+    window.addEventListener('hashchange', function () { if (location.hash === '#news') load(); });
+    return { load: load };
+})();
 const serverPanels = [makeServerPanel('srv', 'btceth.json'), makeServerPanel('srv2', 'voltrend.json'), makeServerPanel('srv3', 'rotation.json'), makeServerPanel('srv4', 'ensemble.json', trendView.render), makeServerPanel('srv5', 'multi.json'), makeServerPanel('srv6', 'dca.json'), makeServerPanel('srv7', 'stocks.json', function (st) { stocksView(st); }), makeServerPanel('srv8', 'lev.json')];
 function loadServerBot() { serverPanels.forEach(function (p) { p.load(); }); }
 
@@ -1947,5 +2026,7 @@ function initApp() {
     makeTicker(refreshMarket, REFRESH_MS);
     loadServerBot();
     setInterval(loadServerBot, 60000);
+    newsView.load();
+    setInterval(function () { if (location.hash === '#news') newsView.load(); }, 300000);
     if (wasRunning) startBot(true);
 }

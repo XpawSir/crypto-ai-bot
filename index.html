@@ -281,7 +281,7 @@
         .stk-table tr.held td { background:rgba(52,211,153,.07); } .stk-table .tag { font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--sub); }
         .stk-table .tag.own { color:#34d399; background:rgba(52,211,153,.12); }
 </style>
-    <link rel="stylesheet" href="ops.css?v=3">
+    <link rel="stylesheet" href="ops.css?v=4">
 </head>
 <body class="text-gray-200 antialiased min-h-screen flex flex-col justify-between">
 
@@ -296,6 +296,7 @@
         <nav class="main-nav flex items-center gap-1 order-3 md:order-none w-full md:w-auto" aria-label="Huvudmeny">
             <a href="#home" class="tab" data-tab="home">Översikt</a>
             <a href="#market" class="tab" data-tab="market">Marknad</a>
+            <a href="#news" class="tab" data-tab="news">Nyheter</a>
             <a href="#stocks" class="tab" data-tab="stocks">Aktier</a>
             <a href="#trend" class="tab" data-tab="trend">Trend</a>
             <a href="#updates" class="tab" data-tab="updates">Uppdateringar</a>
@@ -551,6 +552,21 @@
             </table></div>
 
             </div>
+    </main>
+
+    <main id="view-news" class="hidden p-4 md:p-6 max-w-[1240px] mx-auto w-full flex-grow news">
+        <div class="news-head">
+            <div><h2 class="text-2xl font-bold text-white">Nyheter och marknad</h2>
+            <p class="text-[13px] text-gray-400 mt-1">Rubriker och marknadsläge från börsen och kryptovärlden. Uppdateras var 10:e minut. <span id="nw-updated"></span></p></div>
+        </div>
+        <section class="glass nw-sec"><h3 class="h-sec">Marknadspuls</h3><div id="nw-pulse" class="nw-pulse"><p class="muted">Hämtar…</p></div></section>
+        <section id="nw-mine-sec" class="glass nw-sec hidden"><h3 class="h-sec">Rör dina innehav</h3><p class="nw-sub">Rubriker som nämner det dina botar äger just nu.</p><ul id="nw-mine" class="nw-list"></ul></section>
+        <div class="nw-cols">
+            <section class="glass nw-sec"><h3 class="h-sec">Börsen</h3><ul id="nw-stocks" class="nw-list"></ul></section>
+            <section class="glass nw-sec"><h3 class="h-sec">Krypto</h3><ul id="nw-crypto" class="nw-list"></ul></section>
+        </div>
+        <section class="glass nw-sec"><h3 class="h-sec">Dagens största rörelser i krypto (topp 50 efter värde)</h3><div class="nw-movers"><div><div class="nw-sub">Störst uppgång, 24 timmar</div><ul id="nw-up" class="nw-mv"></ul></div><div><div class="nw-sub">Störst nedgång, 24 timmar</div><ul id="nw-down" class="nw-mv"></ul></div></div></section>
+        <p class="nw-foot">Rubrikerna kommer från externa nyhetskällor (CNBC, MarketWatch, Yahoo Finance, CoinDesk, Cointelegraph m.fl.) och länkar till originalet. Kurser från Yahoo Finance och CoinGecko, rädsla/girighet från alternative.me. Fördröjda data. Inget är rådgivning.</p>
     </main>
 
     <main id="view-lab" class="hidden p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-[1700px] mx-auto w-full flex-grow">

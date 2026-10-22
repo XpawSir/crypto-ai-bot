@@ -18,8 +18,9 @@ const errors = [];
 const safe = async (name, fn, dflt) => { try { return await fn(); } catch (e) { errors.push(name + ': ' + e.message); return dflt; } };
 
 // ---------- RSS ----------
-const decode = s => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&#8217;/g, '’').replace(/&#8216;/g, '‘').replace(/&#8220;|&#8221;/g, '"').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+const ents = s => s.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(+d))
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&nbsp;/g, ' ').replace(/&[a-z]+;/g, ' ');
+const decode = s => ents(ents(s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')).replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
 const tag = (x, t) => { const m = x.match(new RegExp('<' + t + '[^>]*>([\\s\\S]*?)</' + t + '>', 'i')); return m ? decode(m[1]) : ''; };
 async function rss(source, url, max = 20) {
     const xml = await (await get(url)).text();
@@ -51,9 +52,9 @@ async function quote(sym, name) {
 
 const main = async () => {
     const stockFeeds = await Promise.all([
-        safe('CNBC', () => rss('CNBC', 'https://www.cnbc.com/id/100003114/device/rss/rss.html'), []),
+        safe('CNBC', () => rss('CNBC', 'https://www.cnbc.com/id/10000664/device/rss/rss.html'), []),
         safe('MarketWatch', () => rss('MarketWatch', 'https://feeds.content.dowjones.io/public/rss/mw_topstories'), []),
-        safe('Yahoo Finance', () => rss('Yahoo Finance', 'https://finance.yahoo.com/news/rssindex'), []),
+        safe('Yahoo Finance', () => rss('Yahoo Finance', 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=%5EGSPC&region=US&lang=en-US'), []),
         safe('CNBC marknader', () => rss('CNBC', 'https://www.cnbc.com/id/20910258/device/rss/rss.html'), [])
     ]);
     const cryptoFeeds = await Promise.all([
@@ -80,7 +81,7 @@ const main = async () => {
 
     const stocks = merge(stockFeeds), crypto = merge(cryptoFeeds), quotes = idx.filter(Boolean);
     if (!stocks.length && !crypto.length && !quotes.length && !coins.length && prev) { console.log('Alla källor föll, behåller föregående fil. Fel: ' + errors.join('; ')); process.exit(0); }
-    const sorted = coins.filter(c => c.chg !== null && c.chg !== undefined).sort((a, b) => b.chg - a.chg);
+    const sorted = coins.filter(c => c.chg !== null && c.chg !== undefined && !/[_]|USD|HELOC/i.test(c.sym) && !/stable|usd|heloc|treasury|tokenized|gold|yield|\bdai\b|fund|bond/i.test(c.name)).sort((a, b) => b.chg - a.chg);
     const res = {
         v: 1, updated: new Date().toISOString(), errors,
         market: { indices: quotes, btc, eth, fng, gecko },
