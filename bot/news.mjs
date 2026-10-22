@@ -81,7 +81,7 @@ const main = async () => {
 
     const stocks = merge(stockFeeds), crypto = merge(cryptoFeeds), quotes = idx.filter(Boolean);
     if (!stocks.length && !crypto.length && !quotes.length && !coins.length && prev) { console.log('Alla källor föll, behåller föregående fil. Fel: ' + errors.join('; ')); process.exit(0); }
-    const sorted = coins.filter(c => c.chg !== null && c.chg !== undefined && !/[_]|USD|HELOC/i.test(c.sym) && !/stable|usd|heloc|treasury|tokenized|gold|yield|\bdai\b|fund|bond/i.test(c.name)).sort((a, b) => b.chg - a.chg);
+    const sorted = coins.filter(c => c.chg !== null && c.chg !== undefined && !/[_]|USD|HELOC/i.test(c.sym) && !/stable|usd|heloc|treasury|tokenized|gold|yield|\bdai\b|fund|bond|usyc|circle/i.test(c.name)).sort((a, b) => b.chg - a.chg);
     const res = {
         v: 1, updated: new Date().toISOString(), errors,
         market: { indices: quotes, btc, eth, fng, gecko },
