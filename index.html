@@ -281,7 +281,7 @@
         .stk-table tr.held td { background:rgba(52,211,153,.07); } .stk-table .tag { font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--sub); }
         .stk-table .tag.own { color:#34d399; background:rgba(52,211,153,.12); }
 </style>
-    <link rel="stylesheet" href="ops.css?v=10">
+    <link rel="stylesheet" href="ops.css?v=11">
 </head>
 <body class="text-gray-200 antialiased min-h-screen flex flex-col justify-between">
 
@@ -632,7 +632,7 @@
                 <b>Det vi tror just nu.</b> Ingen enkel strategi har slagit att bara äga tillgången när man mäter avkastning över tid. Trendregler och spridning har däremot minskat de värsta nedgångarna. Och enkla regler har klarat sig bättre än avancerade. Startdatumtestet visar samma sak: i krypto har trenden oftast haft mindre nedgång men inte alltid högre slutvärde, och mot aktieindex (SPY) har den sällan slagit att bara äga. Allt är pappershandel, historik garanterar inget.
             </div>
         </section>
-        <section class="glass nw-sec"><h3 class="h-sec">Så ligger botarna till</h3><p class="nw-sub">Varje bot mot att bara köpa och behålla sin tillgång. Utvärdera först efter månader, inte dagar.</p>
+        <section class="glass nw-sec"><h3 class="h-sec">Så ligger botarna till</h3><p class="nw-sub">Varje bot mot att bara köpa och behålla sin tillgång. Utvärdera först efter månader, inte dagar. Varje söndag skrivs en <a class="text-sky-400" target="_blank" rel="noopener" href="https://github.com/XpawSir/crypto-ai-bot/blob/research-report/REPORT-WEEKLY.md">veckorapport</a> som också pekar ut experiment som är kandidater att ta bort (minst 90 dagar, mer än 5 procentenheter efter köp och behåll, och sämre än varje huvudbot).</p>
             <div class="lb-wrap"><table class="lb-table"><thead><tr><th>Bot</th><th>Roll</th><th>Dagar igång</th><th>Sedan start</th><th>Mot köp och behåll</th><th>Största nedgång</th><th>Affärer</th></tr></thead><tbody id="p-bots"><tr><td colspan="7">Hämtar…</td></tr></tbody></table></div></section>
         <section class="glass nw-sec"><h3 class="h-sec">Hänger resultatet på startdatumet?</h3><p class="nw-sub" id="p-sd-sub">Rullande fönster, ny start var 7:e dag, trendregel mot köp och behåll.</p>
             <div class="lb-wrap"><table class="lb-table"><thead><tr><th>Tillgång</th><th>Fönster</th><th>Trend slår köp och behåll</th><th>Lägre värsta nedgång</th><th>Median trend / köp och behåll</th><th>Sämsta fönstret</th><th>Robust</th></tr></thead><tbody id="p-sd"><tr><td colspan="7">Testet har inte körts klart än.</td></tr></tbody></table></div>
