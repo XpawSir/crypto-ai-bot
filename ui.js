@@ -1,6 +1,6 @@
 // Flikar (Home / Market / Latest Updates / Learn) och tema (mörkt/ljust). Fristående från script.js.
 (function () {
-    var views = { home: 'view-home', market: 'view-market', news: 'view-news', trend: 'view-trend', btceth: 'view-btceth', voltrend: 'view-voltrend', botrot: 'view-botrot', multi: 'view-multi', dca: 'view-dca', lev: 'view-lev', combo: 'view-combo', stocks: 'view-stocks', lab: 'view-lab', wealth: 'view-wealth', updates: 'view-updates', learn: 'view-learn' };
+    var views = { home: 'view-home', market: 'view-market', news: 'view-news', calc: 'view-calc', proof: 'view-proof', trend: 'view-trend', btceth: 'view-btceth', voltrend: 'view-voltrend', botrot: 'view-botrot', multi: 'view-multi', dca: 'view-dca', lev: 'view-lev', combo: 'view-combo', stocks: 'view-stocks', lab: 'view-lab', wealth: 'view-wealth', updates: 'view-updates', learn: 'view-learn' };
     // detaljsidorna hör till Home i menyn
     var tabFor = { btceth: 'home', voltrend: 'home', botrot: 'home', multi: 'home', dca: 'home', lev: 'home', combo: 'home' };
 

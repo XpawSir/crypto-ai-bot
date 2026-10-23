@@ -204,3 +204,19 @@ html[data-theme=light] .hud-tile { background:var(--card); }
 .jv-points { margin-top:8px; }
 .rapporter > summary { cursor:pointer; font-size:13px; color:var(--muted); }
 .rapporter > div { margin-top:10px; line-height:1.9; }
+
+/* ============ Vad blir kvar? och Bevis ============ */
+.calc:not(.hidden), .proof:not(.hidden) { display:flex; flex-direction:column; gap:18px; }
+.calc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px; margin-top:16px; }
+.calc-f { display:flex; flex-direction:column; gap:6px; } .calc-f span { font-size:12.5px; color:var(--muted); }
+.calc-f input, .calc-f select { height:40px; padding:0 12px; color:var(--accent); font-size:14px; width:100%; }
+.calc-wide { grid-column:1 / -1; }
+.calc-sum { margin:12px 0 16px; font-size:15px; line-height:1.55; color:var(--accent); padding:14px 16px; border-radius:14px; background:var(--sub); }
+#c-be { margin:12px 0 0; }
+.proof-thesis { margin-top:16px; padding:16px 18px; border-radius:14px; background:var(--sub); border:1px solid var(--line); font-size:14.5px; line-height:1.65; color:var(--muted); } .proof-thesis b { color:var(--accent); }
+.grave td { vertical-align:top; line-height:1.55; } .g-name { font-weight:600; color:var(--accent); min-width:190px; } .g-bad { color:var(--warn); white-space:nowrap; }
+.lb-wrap { overflow-x:auto; }
+#p-log .p-msg { display:block; font-size:14px; line-height:1.5; color:var(--accent); }
+.exp-box { margin-top:14px; } .exp-box > summary { cursor:pointer; font-size:14px; color:var(--muted); padding:6px 2px; } .exp-box > summary:hover { color:var(--accent); }
+.exp-box .ov-cards { margin-top:12px; }
+#ov-cards2 { gap:14px; } #ov-cards2 .ov-card { padding:18px 20px !important; }

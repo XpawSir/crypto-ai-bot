@@ -269,8 +269,8 @@
         .jv-cmp-body { margin-top:16px; }
         .jv-hint { font-weight:400; color:var(--muted); text-transform:none; letter-spacing:0; }
         /* enklare botkort: namn, värde, procent och vad boten äger just nu */
-        #ov-cards .ov-spark, #ov-cards .ov-extra, #ov-cards [data-k="vs"] { display:none; }
-        #ov-cards { grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); }
+        #ov-cards .ov-spark, #ov-cards .ov-extra, #ov-cards [data-k="vs"], #ov-cards2 .ov-spark, #ov-cards2 .ov-extra, #ov-cards2 [data-k="vs"] { display:none; }
+        #ov-cards, #ov-cards2 { grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); }
         #ov-cards .ov-card { padding:18px 20px; }
         #ov-cards .ov-desc { min-height:0; margin-top:6px; }
         #ov-cards .ov-num { margin-top:10px; font-size:26px; }
@@ -281,7 +281,7 @@
         .stk-table tr.held td { background:rgba(52,211,153,.07); } .stk-table .tag { font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--sub); }
         .stk-table .tag.own { color:#34d399; background:rgba(52,211,153,.12); }
 </style>
-    <link rel="stylesheet" href="ops.css?v=7">
+    <link rel="stylesheet" href="ops.css?v=8">
 </head>
 <body class="text-gray-200 antialiased min-h-screen flex flex-col justify-between">
 
@@ -295,6 +295,8 @@
             <a href="#market" class="tab" data-tab="market"><i class="fa-solid fa-chart-line"></i><span>Marknad</span></a>
             <a href="#news" class="tab" data-tab="news"><i class="fa-regular fa-newspaper"></i><span>Nyheter</span></a>
             <a href="#stocks" class="tab" data-tab="stocks"><i class="fa-solid fa-building-columns"></i><span>Aktier</span></a>
+            <a href="#calc" class="tab" data-tab="calc"><i class="fa-solid fa-calculator"></i><span>Vad blir kvar?</span></a>
+            <a href="#proof" class="tab" data-tab="proof"><i class="fa-solid fa-scale-balanced"></i><span>Bevis</span></a>
             <a href="#trend" class="tab" data-tab="trend"><i class="fa-solid fa-arrow-trend-up"></i><span>Trend</span></a>
             <a href="#wealth" class="tab" data-tab="wealth"><i class="fa-solid fa-wallet"></i><span>Förmögenhet</span></a>
             <a href="#lab" class="tab" data-tab="lab"><i class="fa-solid fa-flask"></i><span>Testlabb</span></a>
@@ -341,17 +343,21 @@
         <section id="hud" class="hud" aria-label="Systemöversikt"></section>
 
         <div>
-            <div class="h-sec mb-3">Dina botar <span class="jv-hint">· klicka på en för detaljer</span></div>
+            <div class="h-sec mb-3">Huvudbotar <span class="jv-hint">· de tre vi tror mest på, klicka för detaljer</span></div>
             <div id="ov-cards" class="ov-cards">
-            <a href="#btceth" class="glass ov-card" data-bot="srv"><div class="ov-head"><span class="h-sec">Trend BTC + ETH</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Allt eller inget, långa medelvärden, BTC och ETH</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
-            <a href="#voltrend" class="glass ov-card" data-bot="srv2"><div class="ov-head"><span class="h-sec">Volatilitetsstyrd trend</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Allt eller inget i BTC över 50-dagars medel</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
-            <a href="#botrot" class="glass ov-card" data-bot="srv3"><div class="ov-head"><span class="h-sec">Rotationsbot</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Topp 3 av 10 valutor, var 3:e dag</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
-            <a href="#trend" class="glass ov-card" data-bot="srv4"><div class="ov-head"><span class="h-sec">Trend-ensemble</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Allt eller inget i BTC, långa medelvärden</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
-            <a href="#multi" class="glass ov-card" data-bot="srv5"><div class="ov-head"><span class="h-sec">Trendkorg flera tillgångar</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">7 tillgångar över 100-dagars medel, dagligen</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
-            <a href="#dca" class="glass ov-card" data-bot="srv6"><div class="ov-head"><span class="h-sec">Veckosparande (DCA)</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">$250 i BTC och ETH varje vecka, säljer aldrig</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
-            <a href="#lev" class="glass ov-card" data-bot="srv8"><div class="ov-head"><span class="h-sec">Hävstångstrend 1,5x</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">BTC över 50-dagars medel, 1,5x över 200-dagars. HÖG RISK</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
-            <a href="#combo" class="glass ov-card" data-bot="srv9"><div class="ov-head"><span class="h-sec">Kombinationsbot</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Krypto-trend, ETF-trend och aktiemomentum, lika delar</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+<a href="#btceth" class="glass ov-card" data-bot="srv"><div class="ov-head"><span class="h-sec">Trend BTC + ETH</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Allt eller inget, långa medelvärden, BTC och ETH</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+<a href="#multi" class="glass ov-card" data-bot="srv5"><div class="ov-head"><span class="h-sec">Trendkorg flera tillgångar</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">7 tillgångar över 100-dagars medel, dagligen</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+<a href="#combo" class="glass ov-card" data-bot="srv9"><div class="ov-head"><span class="h-sec">Kombinationsbot</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Krypto-trend, ETF-trend och aktiemomentum, lika delar</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
         </div>
+        <details class="exp-box"><summary>Experiment och äldre botar (5)</summary>
+            <p class="nw-sub">De här körs fortfarande och loggas, men är inte de vi tror mest på. Ligger de efter huvudbotarna när det gått några månader tas de bort.</p>
+            <div id="ov-cards2" class="ov-cards">
+<a href="#voltrend" class="glass ov-card" data-bot="srv2"><div class="ov-head"><span class="h-sec">Volatilitetsstyrd trend</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Allt eller inget i BTC över 50-dagars medel</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+<a href="#botrot" class="glass ov-card" data-bot="srv3"><div class="ov-head"><span class="h-sec">Rotationsbot</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Topp 3 av 10 valutor, var 3:e dag</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+<a href="#trend" class="glass ov-card" data-bot="srv4"><div class="ov-head"><span class="h-sec">Trend-ensemble</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">Allt eller inget i BTC, långa medelvärden</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+<a href="#dca" class="glass ov-card" data-bot="srv6"><div class="ov-head"><span class="h-sec">Veckosparande (DCA)</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">$250 i BTC och ETH varje vecka, säljer aldrig</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+<a href="#lev" class="glass ov-card" data-bot="srv8"><div class="ov-head"><span class="h-sec">Hävstångstrend 1,5x</span><span class="ov-badge" data-k="badge">…</span></div><p class="ov-desc">BTC över 50-dagars medel, 1,5x över 200-dagars. HÖG RISK</p><div class="ov-num" data-k="balance">-</div><div class="ov-sub"><span data-k="pnl">-</span><span data-k="vs"></span></div><div class="ov-spark" data-k="spark"></div></a>
+        </div></details>
         </div>
 
         <details class="glass jv-cmp">
@@ -586,6 +592,54 @@
         </div>
         <section class="glass nw-sec"><h3 class="h-sec">Dagens största rörelser i krypto (topp 50 efter värde)</h3><div class="nw-movers"><div><div class="nw-sub">Störst uppgång, 24 timmar</div><ul id="nw-up" class="nw-mv"></ul></div><div><div class="nw-sub">Störst nedgång, 24 timmar</div><ul id="nw-down" class="nw-mv"></ul></div></div></section>
         <p class="nw-foot">Rubrikerna kommer från externa nyhetskällor (CNBC, MarketWatch, Yahoo Finance, CoinDesk, Cointelegraph m.fl.) och länkar till originalet. Kurser från Yahoo Finance och CoinGecko, rädsla/girighet från alternative.me. Fördröjda data. Inget är rådgivning.</p>
+    </main>
+
+    <main id="view-calc" class="hidden p-4 md:p-6 max-w-[1000px] mx-auto w-full flex-grow calc">
+        <section class="glass nw-sec">
+            <h2 class="text-2xl font-bold text-white">Vad blir kvar?</h2>
+            <p class="nw-sub">Vinsten på en aktie är inte det du får behålla. Här räknar du ut vad som blir kvar i kronor efter courtage, valutaväxling och skatt. Siffrorna du fyller i sparas bara i din webbläsare. Courtage och avgifter nedan är exempelvärden, byt till din mäklares. Det är en uppskattning, inte skatterådgivning.</p>
+            <div class="calc-grid">
+                <label class="calc-f"><span>Ticker (valfri)</span><input id="c-tick" type="text" placeholder="t.ex. MSFT" autocomplete="off"></label>
+                <label class="calc-f"><span>Valuta</span><select id="c-cur"><option value="USD">USD (dollar)</option><option value="SEK">SEK (kronor)</option></select></label>
+                <label class="calc-f"><span>Antal aktier</span><input id="c-qty" type="number" step="any" min="0" inputmode="decimal"></label>
+                <label class="calc-f"><span>Köpkurs per aktie</span><input id="c-buy" type="number" step="any" min="0" inputmode="decimal"></label>
+                <label class="calc-f"><span>Nuvarande kurs</span><input id="c-now" type="number" step="any" min="0" inputmode="decimal"></label>
+                <label class="calc-f"><span>Kronor per dollar vid köp</span><input id="c-fxb" type="number" step="any" min="0" inputmode="decimal"></label>
+                <label class="calc-f"><span>Kronor per dollar nu</span><input id="c-fxn" type="number" step="any" min="0" inputmode="decimal"></label>
+                <label class="calc-f"><span>Courtage per affär, %</span><input id="c-fee" type="number" step="any" min="0" value="0.25" inputmode="decimal"></label>
+                <label class="calc-f"><span>Valutaavgift per växling, %</span><input id="c-fxfee" type="number" step="any" min="0" value="0.25" inputmode="decimal"></label>
+                <label class="calc-f"><span>Konto</span><select id="c-acc"><option value="af">Aktie- och fondkonto (30 % på vinst)</option><option value="isk">ISK (schablonskatt)</option><option value="none">Ingen skatt (visa före skatt)</option></select></label>
+                <label class="calc-f" id="c-isk-w"><span>ISK: skatt på kapitalet per år, %</span><input id="c-isk" type="number" step="any" min="0" value="1.065" inputmode="decimal"></label>
+                <label class="calc-f" id="c-yrs-w"><span>ISK: år du håller aktien</span><input id="c-yrs" type="number" step="any" min="0" value="1" inputmode="decimal"></label>
+                <label class="calc-f calc-wide"><span>Säljkurser att jämföra (komma emellan)</span><input id="c-sell" type="text" placeholder="t.ex. 213, 250, 300"></label>
+            </div>
+            <p id="c-hint" class="nw-sub"></p>
+        </section>
+        <section class="glass nw-sec" id="c-out-sec">
+            <h3 class="h-sec">Resultat</h3>
+            <div id="c-sum" class="calc-sum"></div>
+            <div class="lb-wrap"><table class="lb-table"><thead><tr><th>Säljkurs</th><th>Vinst före kostnader</th><th>Courtage och valuta</th><th>Skatt</th><th>Kvar i kronor</th><th>På din insats</th></tr></thead><tbody id="c-body"><tr><td colspan="6">Fyll i antal, köpkurs och säljkurs.</td></tr></tbody></table></div>
+            <p id="c-be" class="nw-sub"></p>
+            <p class="nw-foot">ISK: skatten räknas här på just det här innehavets värde. I verkligheten beskattas hela kontots kapitalunderlag, och 2026 är schablonintäkten 3,55 % (30 % skatt på den ≈ 1,065 % av kapitalet; <a class="text-sky-400" target="_blank" rel="noopener" href="https://placera.se/nyheter/sa-mycket-hojs-skatten-pa-isk-nasta-ar-2025-11-27">källa</a>). Aktie- och fondkonto: 30 % på vinsten efter avdrag för courtage, valutakursvinst ingår. Vid förlust visas ingen skatt; förlustavdraget räknas inte här. Utdelning och eventuell källskatt ingår inte.</p>
+        </section>
+    </main>
+
+    <main id="view-proof" class="hidden p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow proof">
+        <section class="glass nw-sec">
+            <h2 class="text-2xl font-bold text-white">Bevis</h2>
+            <p class="nw-sub">Allt här går att kontrollera: vad botarna faktiskt har gjort, och vilka idéer som inte höll i testerna. Inget döljs, inte heller det som misslyckades.</p>
+            <div class="proof-thesis">
+                <b>Det vi tror just nu.</b> Ingen enkel strategi har slagit att bara äga tillgången när man mäter avkastning över tid. Trendregler och spridning har däremot minskat de värsta nedgångarna. Och enkla regler har klarat sig bättre än avancerade. Allt är pappershandel, historik garanterar inget.
+            </div>
+        </section>
+        <section class="glass nw-sec"><h3 class="h-sec">Så ligger botarna till</h3><p class="nw-sub">Varje bot mot att bara köpa och behålla sin tillgång. Utvärdera först efter månader, inte dagar.</p>
+            <div class="lb-wrap"><table class="lb-table"><thead><tr><th>Bot</th><th>Roll</th><th>Dagar igång</th><th>Sedan start</th><th>Mot köp och behåll</th><th>Största nedgång</th><th>Affärer</th></tr></thead><tbody id="p-bots"><tr><td colspan="7">Hämtar…</td></tr></tbody></table></div></section>
+        <section class="glass nw-sec"><h3 class="h-sec">Hänger resultatet på startdatumet?</h3><p class="nw-sub" id="p-sd-sub">Rullande fönster, ny start var 7:e dag, trendregel mot köp och behåll.</p>
+            <div class="lb-wrap"><table class="lb-table"><thead><tr><th>Tillgång</th><th>Fönster</th><th>Trend slår köp och behåll</th><th>Lägre värsta nedgång</th><th>Median trend / köp och behåll</th><th>Sämsta fönstret</th><th>Robust</th></tr></thead><tbody id="p-sd"><tr><td colspan="7">Testet har inte körts klart än.</td></tr></tbody></table></div>
+            <p class="nw-foot">Kriterier satta före testet: lägre värsta nedgång i minst 80 % av fönstren och bättre slutvärde i minst 50 %. Fönstren överlappar, så de är inte oberoende prov. <a class="text-sky-400" target="_blank" rel="noopener" href="https://github.com/XpawSir/crypto-ai-bot/blob/research-report/REPORT-STARTDATES.md">Hela rapporten</a>.</p></section>
+        <section class="glass nw-sec"><h3 class="h-sec">Gravstenen: idéer som testats</h3><p class="nw-sub">Varje test hade kriterier satta före körningen och delades i två halvor så att en tur i en period inte räckte.</p>
+            <div class="lb-wrap"><table class="lb-table grave"><thead><tr><th>Idé</th><th>Utfall</th><th>Vad som hände</th></tr></thead><tbody id="p-grave"></tbody></table></div></section>
+        <section class="glass nw-sec"><h3 class="h-sec">Beslutslogg, alla botar</h3><p class="nw-sub">De senaste besluten, nyast först. Varje rad är tidsstämplad av boten själv.</p><ul id="p-log" class="nw-list"></ul></section>
     </main>
 
     <main id="view-lab" class="hidden p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 max-w-[1700px] mx-auto w-full flex-grow">
@@ -1059,6 +1113,8 @@
     <script type="module" src="script.js"></script>
     <script src="market.js" defer></script>
     <script src="ui.js" defer></script>
+    <script src="calc.js" defer></script>
+    <script src="proof.js" defer></script>
     <script src="wealth.js" defer></script>
 </body>
 </html>

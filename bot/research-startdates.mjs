@@ -40,7 +40,7 @@ for (const [sym, L] of ASSETS) {
     const d = daily(await fetchYahoo(sym, Date.UTC(2014, 8, 20)));
     const a = d.a, n = a.length;
     for (const W of [365, 730]) {
-        let wins = 0, ddWins = 0, N = 0; const diffs = [], trRet = [], bhRet = [], trDD = [], bhDD = [], worst = { diff: 1e9 };
+        let wins = 0, ddWins = 0, N = 0; const diffs = [], trRet = [], bhRet = [], trDD = [], bhDD = []; let worst = { diff: 1e9 };
         for (let s = L + 2; s + W < n; s += 7) {
             const te = trendEq(a, L, s, s + W), be = a.slice(s, s + W).map(x => x / a[s]);
             const tr = te[te.length - 1] - 1, bh = be[be.length - 1] - 1;
