@@ -18,25 +18,29 @@ async function jget(url) {
 const parse = s => { try { return typeof s === 'string' ? JSON.parse(s) : s; } catch { return null; } };
 const notes = [];
 let markets = []; const rej = { total: 0, ids: 0, end: 0, px: 0 };
-for (let off = 0; off < 2000 && markets.length < 700; off += 100) {
-    let page;
-    try { page = await jget('https://gamma-api.polymarket.com/markets?closed=true&limit=100&offset=' + off + '&order=endDate&ascending=false&volume_num_min=20000&end_date_max=' + encodeURIComponent(new Date(Date.now() - 2 * 86400000).toISOString()) + '&end_date_min=' + encodeURIComponent(new Date(Date.now() - 540 * 86400000).toISOString())); } catch (e) { notes.push('Marknadslista: ' + e.message); break; }
-    if (!Array.isArray(page) || !page.length) break;
-    if (off === 0) notes.push('Exempel: ' + JSON.stringify(page[0]).slice(0, 700));
-    for (const m of page) {
-        rej.total++;
-        const ids = parse(m.clobTokenIds), px = parse(m.outcomePrices), end = Date.parse(m.endDate);
-        if (!ids || !px || ids.length !== 2 || px.length !== 2) { rej.ids++; continue; }
-        if (!isFinite(end) || end > Date.now() - 86400000) { rej.end++; continue; }
-        const p0 = +px[0], p1 = +px[1]; if (!((p0 > 0.99 && p1 < 0.01) || (p1 > 0.99 && p0 < 0.01))) continue;   // tydligt avgjord
-        markets.push({ q: m.question, end: end / 1000, ids, win: p0 > 0.5 ? 0 : 1, vol: +m.volumeNum || 0 });
+for (let w = 0; w < 18; w++) {                       // en månad i taget, så urvalet sprids över tid
+    const hi = Date.now() - (2 + 30 * w) * 86400000, lo = hi - 30 * 86400000;
+    for (let off = 0; off < 300; off += 100) {
+        let page;
+        try { page = await jget('https://gamma-api.polymarket.com/markets?closed=true&limit=100&offset=' + off + '&order=volumeNum&ascending=false&volume_num_min=20000&end_date_max=' + encodeURIComponent(new Date(hi).toISOString()) + '&end_date_min=' + encodeURIComponent(new Date(lo).toISOString())); } catch (e) { notes.push('Marknadslista: ' + e.message); break; }
+        if (!Array.isArray(page) || !page.length) break;
+        if (w === 0 && off === 0) notes.push('Exempel: ' + JSON.stringify(page[0]).slice(0, 300));
+        for (const m of page) {
+            rej.total++;
+            const ids = parse(m.clobTokenIds), px = parse(m.outcomePrices), end = Date.parse(m.endDate), st0 = Date.parse(m.startDate);
+            if (!ids || !px || ids.length !== 2 || px.length !== 2) { rej.ids++; continue; }
+            if (!isFinite(end) || end > Date.now() - 86400000 || !isFinite(st0) || end - st0 < 14 * 86400000) { rej.end++; continue; }   // bara marknader som levt minst 14 dagar
+            const p0 = +px[0], p1 = +px[1]; if (!((p0 > 0.99 && p1 < 0.01) || (p1 > 0.99 && p0 < 0.01))) { rej.px++; continue; }
+            markets.push({ q: m.question, end: end / 1000, ids, win: p0 > 0.5 ? 0 : 1, vol: +m.volumeNum || 0 });
+        }
+        await sleep(150);
+        if (page.length < 100) break;
     }
-    await sleep(150);
 }
-notes.push('Avgjorda marknader hittade: ' + markets.length + ' av ' + rej.total + ' (avvisade: id/pris ' + rej.ids + ', slutdatum ' + rej.end + ', ej tydligt avgjord ' + rej.px + ')');
+notes.push('Avgjorda marknader hittade: ' + markets.length + ' av ' + rej.total + ' (avvisade: id/pris ' + rej.ids + ', kort liv/slutdatum ' + rej.end + ', ej tydligt avgjord ' + rej.px + ')');
 const obs = [];                      // en observation per utfall: pris vid T-7d, vann?
 let noHist = 0, errs = 0;
-for (const m of markets.slice(0, 600)) {
+for (const m of markets.slice(0, 900)) {
     const t = m.end - LEAD;
     try {
         const h = await jget('https://clob.polymarket.com/prices-history?market=' + m.ids[0] + '&startTs=' + Math.floor(t - 2 * 86400) + '&endTs=' + Math.floor(t + 86400) + '&fidelity=60');
@@ -70,7 +74,7 @@ const rows = [['Hela urvalet', lo0, hi0], ['Första halvan (tid)', lo0, mid], ['
 for (const [nm, f, t] of rows) { const s = strat(0.9, 0.98, f, t); res.push(s); L.push(s ? `| ${nm} | ${s.n} | ${(s.wr * 100).toFixed(1)} % | ${(s.mean * 100).toFixed(2)} % | ${(s.worst * 100).toFixed(0)} % |` : `| ${nm} | 0 | – | – | – |`); }
 const ok = res[0] && res[0].n >= 100 && res.every(s => s && s.mean > 0);
 L.push('', 'Kriterier (satta före): minst 100 affärer, positiv avkastning efter 1 % kostnad i hela urvalet och i båda halvorna.', '', ok ? '**Strategin klarar kriterierna.** Ändå: en förlust tar ut ungefär tio vinster, urvalet är litet och marknader med låg omsättning är uteslutna.' : '**Strategin klarar inte kriterierna** (eller för få affärer). Då är den bara ett pappersexperiment utan belägg.', '');
-L.push('## Anmärkningar', ...notes.map(n => '- ' + n), '- Urval: avgjorda marknader med omsättning över 20 000 USD och tydligt resultat. Marknader som annullerats eller blev oklara saknas, vilket kan göra resultatet snällare än verkligheten.', '- Historik garanterar inget. Ingen riktig handel.');
+L.push('## Anmärkningar', ...notes.map(n => '- ' + n), '- Urval: avgjorda marknader med omsättning över 20 000 USD, som levt minst 14 dagar, högst 300 per månad (störst omsättning först), och tydligt resultat. Marknader som annullerats eller blev oklara saknas, vilket kan göra resultatet snällare än verkligheten.', '- Historik garanterar inget. Ingen riktig handel.');
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(OUT + '/REPORT-PREDICT.md', L.join('\n') + '\n');
 fs.writeFileSync(OUT + '/predict.json', JSON.stringify({ updated: new Date().toISOString(), ok, rows: rows.map((r, i) => ({ period: r[0], ...(res[i] || {}) })) }));
