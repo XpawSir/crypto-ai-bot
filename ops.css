@@ -200,9 +200,7 @@ html[data-theme=light] .hud-tile { background:var(--card); }
 .back-link { font-size:13px; color:var(--muted); text-decoration:none; display:inline-block; margin-bottom:12px; }
 .back-link:hover { color:var(--accent); }
 /* startsidan: bort med kärna och mätare, tätare hero */
-.jv-core, #hud { display:none !important; }
 .jv { padding:22px 24px !important; }
-.jv .br-sum, .jv .jv-points { max-width:none; }
 .jv-points { margin-top:8px; }
 .rapporter > summary { cursor:pointer; font-size:13px; color:var(--muted); }
 .rapporter > div { margin-top:10px; line-height:1.9; }
