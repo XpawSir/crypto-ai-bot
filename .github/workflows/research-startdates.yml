@@ -1,0 +1,31 @@
+name: Research startdatum
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crypto-research-startdates
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Kör startdatumtestet
+        run: node bot/research-startdates.mjs
+      - name: Lägg rapporten på grenen research-report (övriga rapporter behålls)
+        run: |
+          rm -rf rep && git clone -q --depth=1 --branch research-report "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" rep
+          cp research-out/REPORT-STARTDATES.md research-out/startdates.json rep/
+          cd rep
+          git add REPORT-STARTDATES.md startdates.json
+          git -c user.name="crypto-bot" -c user.email="crypto-bot@users.noreply.github.com" commit -q -m "research startdates $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "Ingen ändring"
+          git push -q origin research-report
