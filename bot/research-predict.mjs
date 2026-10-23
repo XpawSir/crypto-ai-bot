@@ -17,20 +17,23 @@ async function jget(url) {
 }
 const parse = s => { try { return typeof s === 'string' ? JSON.parse(s) : s; } catch { return null; } };
 const notes = [];
-let markets = [];
-for (let off = 0; off < 3000 && markets.length < 700; off += 100) {
+let markets = []; const rej = { total: 0, ids: 0, end: 0, px: 0 };
+for (let off = 0; off < 2000 && markets.length < 700; off += 100) {
     let page;
     try { page = await jget('https://gamma-api.polymarket.com/markets?closed=true&limit=100&offset=' + off + '&order=endDate&ascending=false&volume_num_min=20000'); } catch (e) { notes.push('Marknadslista: ' + e.message); break; }
     if (!Array.isArray(page) || !page.length) break;
+    if (off === 0) notes.push('Exempel: ' + JSON.stringify(page[0]).slice(0, 700));
     for (const m of page) {
+        rej.total++;
         const ids = parse(m.clobTokenIds), px = parse(m.outcomePrices), end = Date.parse(m.endDate);
-        if (!ids || !px || ids.length !== 2 || px.length !== 2 || !isFinite(end) || end > Date.now() - 86400000) continue;
+        if (!ids || !px || ids.length !== 2 || px.length !== 2) { rej.ids++; continue; }
+        if (!isFinite(end) || end > Date.now() - 86400000) { rej.end++; continue; }
         const p0 = +px[0], p1 = +px[1]; if (!((p0 > 0.99 && p1 < 0.01) || (p1 > 0.99 && p0 < 0.01))) continue;   // tydligt avgjord
         markets.push({ q: m.question, end: end / 1000, ids, win: p0 > 0.5 ? 0 : 1, vol: +m.volumeNum || 0 });
     }
     await sleep(150);
 }
-notes.push('Avgjorda marknader hittade: ' + markets.length);
+notes.push('Avgjorda marknader hittade: ' + markets.length + ' av ' + rej.total + ' (avvisade: id/pris ' + rej.ids + ', slutdatum ' + rej.end + ', ej tydligt avgjord ' + rej.px + ')');
 const obs = [];                      // en observation per utfall: pris vid T-7d, vann?
 let noHist = 0, errs = 0;
 for (const m of markets.slice(0, 600)) {
