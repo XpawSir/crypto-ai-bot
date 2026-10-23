@@ -13,6 +13,7 @@
         ['Större kryptokorg (4, 6 eller 8 mynt)', 'Förkastad', 'Bättre i första halvan men inte i andra (Kalmar 0,64, 0,40 och 0,28 mot 0,80 för BTC+ETH). Dessutom saknas mynt som försvann efter 2018.'],
         ['Maskininlärning (LightGBM, walk-forward)', 'Förkastad', 'Ensam: BTC 36 % per år mot 61 % för trendregeln, ETH 13 % mot 57 %. Med trendfilter: BTC lägre tillväxt (50 % mot 61 %) men mindre nedgång, ETH betydligt sämre (7 % mot 57 %). Ingen version klarade kriterierna.'],
         ['Hävstång 1,5x på trenden', 'Bara som experiment', 'Klarade kriterierna (BTC 68 % per år) men kan ge totalförlust vid snabba fall. Därför bara som en liten testbot med riskgräns.'],
+        ['Prediktionsmarknader (Polymarket): köp utfall på 0,90–0,98 en vecka före slut', 'Förkastad', 'Test på 100 avgjorda marknader: 92 % vann men snittet blev −3,9 % per affär efter 1 % kostnad, eftersom en enda förlust (−100 %) tar ut ca tio vinster. Klarade inte kriterierna i första halvan. Ingen bot byggdes. (Urvalet är litet, så det är inget bevis för att det aldrig fungerar.)'],
         ['Ränta på kontanter', 'Behölls', 'Små men stabila plus i båda halvorna (BTC 53,5 % → 56,0 % per år). Kräver att pengarna står på ett räntekonto.'],
         ['Kombinera krypto-trend, ETF-trend och aktiemomentum', 'Behölls som riskminskare', 'Värsta nedgången −26 % mot −54 % för krypto-trend ensam, men inte bättre avkastning per risk (Kalmar 1,02 mot 1,12). Aktiedelen är uppblåst av överlevnadsbias.']
     ];
