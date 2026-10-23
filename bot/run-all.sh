@@ -11,6 +11,7 @@ declare -A BOTS=(
   [lev]="env BOT_CONFIG=bot/config-lev.json BOT_STATE=state/lev.json node bot/trendbot.mjs"
   [dca]="node bot/dcabot.mjs"
   [stocks]="node bot/stockbot.mjs"
+  [combo]="node bot/combobot.mjs"
   [news]="node bot/news.mjs"
 )
 pids=()
