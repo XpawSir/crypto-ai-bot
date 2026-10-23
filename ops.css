@@ -220,3 +220,7 @@ html[data-theme=light] .hud-tile { background:var(--card); }
 .exp-box { margin-top:14px; } .exp-box > summary { cursor:pointer; font-size:14px; color:var(--muted); padding:6px 2px; } .exp-box > summary:hover { color:var(--accent); }
 .exp-box .ov-cards { margin-top:12px; }
 #ov-cards2 { gap:14px; } #ov-cards2 .ov-card { padding:18px 20px !important; }
+.proof .lb-table { width:100%; }
+.proof .lb-table th, .proof .lb-table td { white-space:normal; }
+.proof .lb-table td:first-child { min-width:120px; }
+.grave td:last-child { min-width:260px; }

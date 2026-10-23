@@ -11,7 +11,7 @@
         ['Fler och snabbare filter på trendregeln', 'Förkastad', 'Att kräva både 50 och 200 dagar, eller något av dem, eller extra momentumfilter gav sämre resultat än den enkla 50-dagarsregeln för både BTC och ETH.'],
         ['Volatilitetsmål, nedgångsbroms, regimfilter', 'Förkastad', 'Ingen av sex varianter klarade kriterierna. Nedgångsbromsen halverade nedgången men sänkte tillväxten för BTC från 56 % till ca 41 % per år.'],
         ['Större kryptokorg (4, 6 eller 8 mynt)', 'Förkastad', 'Bättre i första halvan men inte i andra (Kalmar 0,64, 0,40 och 0,28 mot 0,80 för BTC+ETH). Dessutom saknas mynt som försvann efter 2018.'],
-        ['Maskininlärning (LightGBM, walk-forward)', 'Förkastad', 'Ensam: BTC 36 % per år mot 61 % för trendregeln, ETH 13 % mot 57 %. Med trendfilter: BTC ungefär lika, ETH betydligt sämre. Ingen version klarade kriterierna.'],
+        ['Maskininlärning (LightGBM, walk-forward)', 'Förkastad', 'Ensam: BTC 36 % per år mot 61 % för trendregeln, ETH 13 % mot 57 %. Med trendfilter: BTC lägre tillväxt (50 % mot 61 %) men mindre nedgång, ETH betydligt sämre (7 % mot 57 %). Ingen version klarade kriterierna.'],
         ['Hävstång 1,5x på trenden', 'Bara som experiment', 'Klarade kriterierna (BTC 68 % per år) men kan ge totalförlust vid snabba fall. Därför bara som en liten testbot med riskgräns.'],
         ['Ränta på kontanter', 'Behölls', 'Små men stabila plus i båda halvorna (BTC 53,5 % → 56,0 % per år). Kräver att pengarna står på ett räntekonto.'],
         ['Kombinera krypto-trend, ETF-trend och aktiemomentum', 'Behölls som riskminskare', 'Värsta nedgången −26 % mot −54 % för krypto-trend ensam, men inte bättre avkastning per risk (Kalmar 1,02 mot 1,12). Aktiedelen är uppblåst av överlevnadsbias.']
