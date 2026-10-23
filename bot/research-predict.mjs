@@ -20,7 +20,7 @@ const notes = [];
 let markets = []; const rej = { total: 0, ids: 0, end: 0, px: 0 };
 for (let off = 0; off < 2000 && markets.length < 700; off += 100) {
     let page;
-    try { page = await jget('https://gamma-api.polymarket.com/markets?closed=true&limit=100&offset=' + off + '&order=endDate&ascending=false&volume_num_min=20000'); } catch (e) { notes.push('Marknadslista: ' + e.message); break; }
+    try { page = await jget('https://gamma-api.polymarket.com/markets?closed=true&limit=100&offset=' + off + '&order=endDate&ascending=false&volume_num_min=20000&end_date_max=' + encodeURIComponent(new Date(Date.now() - 2 * 86400000).toISOString()) + '&end_date_min=' + encodeURIComponent(new Date(Date.now() - 540 * 86400000).toISOString())); } catch (e) { notes.push('Marknadslista: ' + e.message); break; }
     if (!Array.isArray(page) || !page.length) break;
     if (off === 0) notes.push('Exempel: ' + JSON.stringify(page[0]).slice(0, 700));
     for (const m of page) {
