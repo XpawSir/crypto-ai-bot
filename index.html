@@ -281,34 +281,29 @@
         .stk-table tr.held td { background:rgba(52,211,153,.07); } .stk-table .tag { font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--sub); }
         .stk-table .tag.own { color:#34d399; background:rgba(52,211,153,.12); }
 </style>
-    <link rel="stylesheet" href="ops.css?v=5">
+    <link rel="stylesheet" href="ops.css?v=6">
 </head>
 <body class="text-gray-200 antialiased min-h-screen flex flex-col justify-between">
 
-    <header class="border-b px-4 md:px-6 py-3 flex items-center justify-between gap-3 flex-wrap sticky top-0 z-50 backdrop-blur-xl bg-black/70" style="border-color:var(--line)">
-        <div class="flex items-center gap-3">
-            <a href="#home" class="brand-mark" aria-label="Algiz, till startsidan"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2v17.6M12 13.2L5.8 5.4M12 13.2l6.2-7.8"/></svg></a>
-            <div>
-                <h1 class="brand-name">Algiz</h1>
-                <p class="text-[11px] text-gray-400 font-mono">Simulerad handel med låtsaspengar</p>
-            </div>
-        </div>
-        <nav class="main-nav flex items-center gap-1 order-3 md:order-none w-full md:w-auto" aria-label="Huvudmeny">
-            <a href="#home" class="tab" data-tab="home">Översikt</a>
-            <a href="#market" class="tab" data-tab="market">Marknad</a>
-            <a href="#news" class="tab" data-tab="news">Nyheter</a>
-            <a href="#stocks" class="tab" data-tab="stocks">Aktier</a>
-            <a href="#trend" class="tab" data-tab="trend">Trend</a>
-            <a href="#updates" class="tab" data-tab="updates">Uppdateringar</a>
-            <a href="#wealth" class="tab" data-tab="wealth">Förmögenhet</a>
-            <a href="#lab" class="tab" data-tab="lab">Testlabb</a>
-            <a href="#learn" class="tab" data-tab="learn">Lär dig</a>
+    <header class="side" aria-label="Sidopanel">
+        <a href="#home" class="side-brand" aria-label="Algiz, till startsidan">
+            <span class="brand-mark"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2v17.6M12 13.2L5.8 5.4M12 13.2l6.2-7.8"/></svg></span>
+            <span class="side-name"><b class="brand-name">Algiz</b><small>Låtsaspengar</small></span>
+        </a>
+        <nav class="main-nav side-nav" aria-label="Huvudmeny">
+            <a href="#home" class="tab" data-tab="home"><i class="fa-solid fa-house"></i><span>Översikt</span></a>
+            <a href="#market" class="tab" data-tab="market"><i class="fa-solid fa-chart-line"></i><span>Marknad</span></a>
+            <a href="#news" class="tab" data-tab="news"><i class="fa-regular fa-newspaper"></i><span>Nyheter</span></a>
+            <a href="#stocks" class="tab" data-tab="stocks"><i class="fa-solid fa-building-columns"></i><span>Aktier</span></a>
+            <a href="#trend" class="tab" data-tab="trend"><i class="fa-solid fa-arrow-trend-up"></i><span>Trend</span></a>
+            <a href="#wealth" class="tab" data-tab="wealth"><i class="fa-solid fa-wallet"></i><span>Förmögenhet</span></a>
+            <a href="#lab" class="tab" data-tab="lab"><i class="fa-solid fa-flask"></i><span>Testlabb</span></a>
+            <a href="#updates" class="tab" data-tab="updates"><i class="fa-regular fa-clock"></i><span>Uppdateringar</span></a>
+            <a href="#learn" class="tab" data-tab="learn"><i class="fa-solid fa-book-open"></i><span>Lär dig</span></a>
         </nav>
-        <div class="flex items-center gap-3">
+        <div class="side-foot">
             <button id="theme-btn" class="iconbtn" title="Växla mellan mörkt och ljust läge" aria-label="Växla tema"><i class="fa-solid fa-moon"></i></button>
-            <button id="logout-btn" class="px-3 py-1.5 rounded-md text-xs font-semibold bg-red-900/30 text-red-400 border border-red-800/50 hover:bg-red-900/50 transition flex items-center gap-1.5">
-                <i class="fa-solid fa-right-from-bracket"></i> Logga ut
-            </button>
+            <button id="logout-btn" title="Logga ut"><i class="fa-solid fa-right-from-bracket"></i><span>Logga ut</span></button>
         </div>
     </header>
 
@@ -375,8 +370,8 @@
         </div>
         </details>
 
-            <div class="text-[11px] font-mono text-gray-500">
-                Rapporter från historiktesterna (uppdateras varje söndag):
+            <details class="rapporter"><summary>Rapporter från historiktesterna</summary><div class="text-[11px] font-mono text-gray-500">
+                Uppdateras varje söndag: (uppdateras varje söndag):
                 <a class="text-sky-400 hover:underline" target="_blank" rel="noopener" href="https://github.com/XpawSir/crypto-ai-bot/blob/research-report/REPORT.md">Huvudrapport</a> ·
                 <a class="text-sky-400 hover:underline" target="_blank" rel="noopener" href="https://github.com/XpawSir/crypto-ai-bot/blob/research-report/REPORT-AUTO.md">AUTO-varianter</a> ·
                 <a class="text-sky-400 hover:underline" target="_blank" rel="noopener" href="https://github.com/XpawSir/crypto-ai-bot/blob/research-report/REPORT-SLOW.md">Dag/vecka</a> ·
@@ -391,13 +386,13 @@
                 <a class="text-sky-400 hover:underline" target="_blank" rel="noopener" href="https://github.com/XpawSir/crypto-ai-bot/blob/research-report/REPORT-MULTI.md">Flera tillgångsslag</a> ·
                 <a class="text-sky-400 hover:underline" target="_blank" rel="noopener" href="https://github.com/XpawSir/crypto-ai-bot/blob/research-report/REPORT-SHORT.md">Korta regler</a>.
                 Ingen riktig handel, och historik garanterar inget.
-            </div>
+            </div></details>
     </main>
     <main id="view-btceth" class="hidden p-4 md:p-6 max-w-[1100px] mx-auto w-full flex-grow bot-detail">
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Trend BTC + ETH · dagligen</h2><p class="text-[12px] text-gray-500 mt-1">Pengarna delas lika mellan BTC och ETH. För varje valuta: om kursen ligger över minst 3 av 5 medelvärden (20, 50, 100, 150, 200 dagar) köps hela dess halva, annars säljs allt. Aldrig delar. Beslut en gång per dygn. Ett test av ännu kortare regler (10–100 dagar) gav sämre resultat och större ras, så längderna är kvar.</p></div>
+                    <div><h2 class="h-sec">Trend BTC + ETH · dagligen</h2><details class="about"><summary>Om boten</summary><p>Pengarna delas lika mellan BTC och ETH. För varje valuta: om kursen ligger över minst 3 av 5 medelvärden (20, 50, 100, 150, 200 dagar) köps hela dess halva, annars säljs allt. Aldrig delar. Beslut en gång per dygn. Ett test av ännu kortare regler (10–100 dagar) gav sämre resultat och större ras, så längderna är kvar.</p></details></div>
                     <div id="srv-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
@@ -420,7 +415,7 @@
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Volatilitetsstyrd trend · BTC dagligen</h2><p class="text-[12px] text-gray-500 mt-1">Äger hela portföljen i BTC när kursen ligger över sitt 50-dagars medelvärde, annars säljs allt. Ingen volatilitetsstyrning och inga delar längre. Beslut en gång per dygn. Reglerna är kortare än de som testades och har ännu inte historiktestats.</p></div>
+                    <div><h2 class="h-sec">Volatilitetsstyrd trend · BTC dagligen</h2><details class="about"><summary>Om boten</summary><p>Äger hela portföljen i BTC när kursen ligger över sitt 50-dagars medelvärde, annars säljs allt. Ingen volatilitetsstyrning och inga delar längre. Beslut en gång per dygn. Reglerna är kortare än de som testades och har ännu inte historiktestats.</p></details></div>
                     <div id="srv2-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
@@ -443,7 +438,7 @@
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Rotationsbot · veckovis trendstyrka</h2><p class="text-[12px] text-gray-500 mt-1">Äger de 3 valutor (av 10) som stigit mest på 60 dagar och ligger över sitt medelvärde, resten kontanter. Ser över urvalet var 3:e dag. En valuta som ligger kvar justeras inte, en som lämnar säljs helt.</p></div>
+                    <div><h2 class="h-sec">Rotationsbot · veckovis trendstyrka</h2><details class="about"><summary>Om boten</summary><p>Äger de 3 valutor (av 10) som stigit mest på 60 dagar och ligger över sitt medelvärde, resten kontanter. Ser över urvalet var 3:e dag. En valuta som ligger kvar justeras inte, en som lämnar säljs helt.</p></details></div>
                     <div id="srv3-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
@@ -465,7 +460,7 @@
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Trendkorg flera tillgångar · dagligen</h2><p class="text-[12px] text-gray-500 mt-1">Delar pengarna lika mellan sju tillgångar: aktie-ETF:er (SPY, QQQ), obligationer (TLT), guld (GLD), råvaror (DBC), Bitcoin och Ethereum. Varje tillgång ägs bara när kursen ligger över sitt 100-dagars medelvärde, annars kontanter. Beslut en gång per dygn, allt eller inget (kvarvarande delar justeras inte), ingen stoppnivå. Test 2018–2026: nedgångarna blev ungefär hälften så stora som för S&amp;P 500 och lika delar (median −23 % mot −34 % och −39 %), men tillväxten blev inte högre än köp och behåll på den osedda halvan. Kontant ETF-utdelning läggs till kontanterna (före skatt), och priserna är senaste kända (ETF:er handlas bara på börstid).</p></div>
+                    <div><h2 class="h-sec">Trendkorg flera tillgångar · dagligen</h2><details class="about"><summary>Om boten</summary><p>Delar pengarna lika mellan sju tillgångar: aktie-ETF:er (SPY, QQQ), obligationer (TLT), guld (GLD), råvaror (DBC), Bitcoin och Ethereum. Varje tillgång ägs bara när kursen ligger över sitt 100-dagars medelvärde, annars kontanter. Beslut en gång per dygn, allt eller inget (kvarvarande delar justeras inte), ingen stoppnivå. Test 2018–2026: nedgångarna blev ungefär hälften så stora som för S&amp;P 500 och lika delar (median −23 % mot −34 % och −39 %), men tillväxten blev inte högre än köp och behåll på den osedda halvan. Kontant ETF-utdelning läggs till kontanterna (före skatt), och priserna är senaste kända (ETF:er handlas bara på börstid).</p></details></div>
                     <div id="srv5-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
@@ -487,7 +482,7 @@
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Veckosparande (DCA)</h2><p class="text-[12px] text-gray-500 mt-1">Börjar med $10 000 i kontanter och köper för $250 varje vecka, hälften Bitcoin och hälften Ethereum, tills pengarna är slut. Säljer aldrig och tittar inte på trender. Det är det klassiska sparsättet för den som inte vill pricka rätt tidpunkt: du köper dyrt och billigt i en jämn ström. Kontanterna som ännu inte köpts ger ingen ränta, så under de första månaderna följer boten marknaden bara delvis. Det här är en referens mot trendbotarna, inte ett försök att slå marknaden.</p></div>
+                    <div><h2 class="h-sec">Veckosparande (DCA)</h2><details class="about"><summary>Om boten</summary><p>Börjar med $10 000 i kontanter och köper för $250 varje vecka, hälften Bitcoin och hälften Ethereum, tills pengarna är slut. Säljer aldrig och tittar inte på trender. Det är det klassiska sparsättet för den som inte vill pricka rätt tidpunkt: du köper dyrt och billigt i en jämn ström. Kontanterna som ännu inte köpts ger ingen ränta, så under de första månaderna följer boten marknaden bara delvis. Det här är en referens mot trendbotarna, inte ett försök att slå marknaden.</p></details></div>
                     <div id="srv6-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
@@ -509,7 +504,7 @@
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Hävstångstrend 1,5x</h2><p class="text-[12px] text-gray-500 mt-1">Samma idé som de andra trendbotarna, men med lånade pengar: allt i BTC när kursen är över 50-dagars medel, och 1,5 gånger kapitalet (50 % lånat, 8 % lånekostnad per år) när den också är över 200-dagars medel. Ränta 3,5 % på kontanter. I historiktestet (8 år) gav detta högre tillväxt, men <b>hävstång förstorar förluster</b>: ett snabbt fall på ungefär 60 % kan ta hela insatsen, och boten likvideras då automatiskt. Pappershandel, ingen rekommendation.</p></div>
+                    <div><h2 class="h-sec">Hävstångstrend 1,5x</h2><details class="about"><summary>Om boten</summary><p>Samma idé som de andra trendbotarna, men med lånade pengar: allt i BTC när kursen är över 50-dagars medel, och 1,5 gånger kapitalet (50 % lånat, 8 % lånekostnad per år) när den också är över 200-dagars medel. Ränta 3,5 % på kontanter. I historiktestet (8 år) gav detta högre tillväxt, men <b>hävstång förstorar förluster</b>: ett snabbt fall på ungefär 60 % kan ta hela insatsen, och boten likvideras då automatiskt. Pappershandel, ingen rekommendation.</p></details></div>
                     <div id="srv8-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
@@ -532,7 +527,7 @@
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="text-2xl font-bold text-white">Kombinationsbot</h2><p class="text-[12px] text-gray-500 mt-1">Delar pengarna i tre lika stora ben med olika drivkrafter: <b>krypto-trend</b> (BTC och ETH, äger över 50-dagars medel), <b>ETF-trend</b> (SPY, QQQ, obligationer, guld, råvaror, äger över 100-dagars medel) och <b>aktiemomentum</b> (de 5 starkaste av 30 stora USA-aktier). Allt eller inget per tillgång, ombalansering mellan benen var 30:e dag, 3,5 % ränta på kontanter. Test 2018–2026: ca 26 % per år med värsta nedgång −26 % (krypto-trend ensam: 60 % per år men −54 %). Aktiebenet är uppblåst av överlevnadsbias. Pappershandel, ingen rekommendation. Rapport: REPORT-COMBO.md.</p></div>
+                    <div><h2 class="text-2xl font-bold text-white">Kombinationsbot</h2><details class="about"><summary>Om boten</summary><p>Delar pengarna i tre lika stora ben med olika drivkrafter: <b>krypto-trend</b> (BTC och ETH, äger över 50-dagars medel), <b>ETF-trend</b> (SPY, QQQ, obligationer, guld, råvaror, äger över 100-dagars medel) och <b>aktiemomentum</b> (de 5 starkaste av 30 stora USA-aktier). Allt eller inget per tillgång, ombalansering mellan benen var 30:e dag, 3,5 % ränta på kontanter. Test 2018–2026: ca 26 % per år med värsta nedgång −26 % (krypto-trend ensam: 60 % per år men −54 %). Aktiebenet är uppblåst av överlevnadsbias. Pappershandel, ingen rekommendation. Rapport: REPORT-COMBO.md.</p></details></div>
                     <div id="srv9-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">
@@ -554,7 +549,7 @@
         <a href="#home" class="back-link"><i class="fa-solid fa-arrow-left mr-1.5"></i>Alla botar</a>
             <div class="glass p-5">
                 <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
-                    <div><h2 class="h-sec">Aktier · momentum (experiment)</h2><p class="text-[12px] text-gray-500 mt-1">Pappershandel med riktiga amerikanska aktiekurser från Yahoo Finance (fördröjda ungefär 15 minuter). Boten rankar 30 stora bolag efter kursutveckling de senaste 120 handelsdagarna, förutom den senaste månaden, och äger de fem bästa med lika stora delar. En gång i månaden byts urvalet: en aktie som lämnar topp 5 säljs helt, en ny köps. Boten handlar bara medan börsen är öppen (vardagar ca 15:30–22:00 svensk tid). Test 2010–2026: ca 17 % per år efter avgifter mot 14,6 % för lika delar, men resultatet hängde på just den här inställningen och klarade inte alla kriterier, så det här är ett experiment. Nedgångar på ungefär −30 % förekom i testet. Ingen riktig handel, och historik garanterar inget.</p></div>
+                    <div><h2 class="h-sec">Aktier · momentum (experiment)</h2><details class="about"><summary>Om boten</summary><p>Pappershandel med riktiga amerikanska aktiekurser från Yahoo Finance (fördröjda ungefär 15 minuter). Boten rankar 30 stora bolag efter kursutveckling de senaste 120 handelsdagarna, förutom den senaste månaden, och äger de fem bästa med lika stora delar. En gång i månaden byts urvalet: en aktie som lämnar topp 5 säljs helt, en ny köps. Boten handlar bara medan börsen är öppen (vardagar ca 15:30–22:00 svensk tid). Test 2010–2026: ca 17 % per år efter avgifter mot 14,6 % för lika delar, men resultatet hängde på just den här inställningen och klarade inte alla kriterier, så det här är ett experiment. Nedgångar på ungefär −30 % förekom i testet. Ingen riktig handel, och historik garanterar inget.</p></details></div>
                     <div id="srv7-badge" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-900 text-gray-400 border border-gray-800">Hämtar...</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs font-mono">

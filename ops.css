@@ -40,18 +40,38 @@ main h2.text-2xl::before { content:none !important; }
 .up, .text-emerald-400 { color:var(--ok) !important; } .down, .text-red-400 { color:var(--bad) !important; } .text-yellow-400 { color:var(--warn) !important; } .text-sky-400 { color:var(--sig) !important; }
 main .uppercase { text-transform:none; letter-spacing:0; }
 
-/* ---------- huvud och meny ---------- */
-header { border-bottom:1px solid var(--line) !important; }
-html[data-theme=dark] header { background:rgba(7,9,13,.78) !important; }
-.brand-mark { border-radius:12px !important; background:var(--sub) !important; border:1px solid var(--line) !important; color:var(--accent); box-shadow:none; }
-.brand-name { font-family:'Inter',system-ui,sans-serif; text-transform:none; letter-spacing:-.01em; font-size:17px !important; font-weight:700; color:var(--accent); }
-header p.text-gray-400 { font-family:'Inter',system-ui,sans-serif; text-transform:none; letter-spacing:0; font-size:11.5px !important; color:var(--muted) !important; }
-.tab { font-family:'Inter',system-ui,sans-serif !important; text-transform:none; letter-spacing:0; font-size:13px !important; font-weight:500 !important; border-radius:999px !important; border:1px solid transparent !important; background:transparent !important; color:var(--muted); padding:8px 14px !important; }
+/* ---------- sidopanel (ersätter toppmenyn) ---------- */
+body { padding-left:220px; }
+header.side { position:fixed !important; left:0; top:0; bottom:0; width:220px; z-index:60; display:flex; flex-direction:column; gap:18px; padding:18px 12px; border-right:1px solid var(--line); border-bottom:0 !important; overflow-y:auto; background:var(--card) !important; backdrop-filter:none; }
+html[data-theme=dark] header.side { background:#0a0d12 !important; }
+.side-brand { display:flex; align-items:center; gap:11px; padding:2px 6px 6px; text-decoration:none; }
+.brand-mark { display:grid; place-items:center; width:38px; height:38px; border-radius:12px !important; background:var(--sub) !important; border:1px solid var(--line) !important; color:var(--accent); }
+.side-name { display:flex; flex-direction:column; line-height:1.2; }
+.side-name small { font-size:11.5px; color:var(--muted); }
+.brand-name { font-family:'Inter',system-ui,sans-serif; letter-spacing:-.01em; font-size:17px !important; font-weight:700; color:var(--accent); margin:0; }
+.side-nav { display:flex; flex-direction:column; gap:2px; flex:1 1 auto; }
+.tab { display:flex; align-items:center; gap:11px; font-family:'Inter',system-ui,sans-serif !important; text-transform:none; letter-spacing:0; font-size:13.5px !important; font-weight:500 !important; border-radius:12px !important; border:1px solid transparent !important; background:transparent !important; color:var(--muted); padding:9px 12px !important; text-decoration:none; white-space:nowrap; }
+.tab i { width:18px; text-align:center; font-size:14px; opacity:.85; }
 .tab:hover { color:var(--accent); background:var(--sub) !important; }
-.tab[aria-current=page] { color:var(--accent) !important; background:var(--sub) !important; border-color:var(--line) !important; font-weight:600 !important; text-shadow:none; }
-.iconbtn { border-radius:999px !important; background:var(--sub) !important; border:1px solid transparent !important; color:var(--muted); }
+.tab[aria-current=page] { color:var(--accent) !important; background:var(--sub) !important; border-color:var(--line) !important; font-weight:600 !important; }
+.tab[aria-current=page] i { color:var(--sig); opacity:1; }
+.side-foot { display:flex; align-items:center; gap:8px; padding-top:12px; border-top:1px solid var(--line); }
+.iconbtn { width:36px; height:36px; display:grid; place-items:center; border-radius:999px !important; background:var(--sub) !important; border:1px solid transparent !important; color:var(--muted); cursor:pointer; }
 .iconbtn:hover { color:var(--accent); border-color:var(--line) !important; }
-#logout-btn { border-radius:999px !important; font-family:'Inter',system-ui,sans-serif; text-transform:none; letter-spacing:0; font-size:12px !important; }
+#logout-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:8px; height:36px; border-radius:999px !important; background:var(--sub); border:1px solid transparent; color:var(--muted); font-family:'Inter',system-ui,sans-serif; font-size:12.5px; cursor:pointer; }
+#logout-btn:hover { color:var(--bad); border-color:var(--line); }
+@media (max-width:900px) {
+  body { padding-left:0; padding-top:54px; }
+  header.side { right:0; bottom:auto; width:auto; height:54px; flex-direction:row; align-items:center; gap:8px; padding:0 10px; border-right:0; border-bottom:1px solid var(--line) !important; overflow:visible; }
+  .side-name small, .side-brand .side-name { display:none; }
+  .side-brand { padding:0; }
+  .side-nav { flex-direction:row; overflow-x:auto; gap:2px; scrollbar-width:none; min-width:0; }
+  .side-nav::-webkit-scrollbar { display:none; }
+  .tab { padding:8px 11px !important; font-size:13px !important; }
+  .tab i { display:none; }
+  .side-foot { border:0; padding:0; flex:0 0 auto; }
+  #logout-btn span { display:none; } #logout-btn { flex:0 0 36px; width:36px; }
+}
 
 /* ---------- märken, knappar, fält ---------- */
 .chip, .ov-badge, .stk-table .tag, .seg { border-radius:999px !important; }
@@ -168,3 +188,21 @@ html[data-theme=light] .hud-tile { background:var(--card); }
 .nw-movers { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:6px; } @media (max-width:700px) { .nw-movers { grid-template-columns:1fr; gap:14px; } }
 .nw-mv { list-style:none; margin:8px 0 0; padding:0; } .nw-mv li { display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-top:1px solid var(--line); font-size:13.5px; } .nw-mv li:first-child { border-top:0; } .nw-mv b { font-variant-numeric:tabular-nums; }
 .nw-foot { font-size:11.5px; color:var(--muted); line-height:1.6; padding:0 4px 24px; }
+
+/* ============ Enklare topp på sidorna ============ */
+.about { margin-top:6px; }
+.about > summary { cursor:pointer; list-style:none; font-size:13px; color:var(--muted); display:inline-flex; align-items:center; gap:6px; }
+.about > summary::-webkit-details-marker { display:none; }
+.about > summary::before { content:'+'; display:inline-grid; place-items:center; width:18px; height:18px; border-radius:50%; background:var(--sub); font-size:13px; line-height:1; }
+.about[open] > summary::before { content:'–'; }
+.about > p { margin-top:10px; font-size:13.5px; line-height:1.65; color:var(--muted); max-width:70ch; }
+.bot-detail h2.h-sec { font-size:22px !important; font-weight:700 !important; letter-spacing:-.02em !important; color:var(--accent) !important; }
+.back-link { font-size:13px; color:var(--muted); text-decoration:none; display:inline-block; margin-bottom:12px; }
+.back-link:hover { color:var(--accent); }
+/* startsidan: bort med kärna och mätare, tätare hero */
+.jv-core, #hud { display:none !important; }
+.jv { padding:22px 24px !important; }
+.jv .br-sum, .jv .jv-points { max-width:none; }
+.jv-points { margin-top:8px; }
+.rapporter > summary { cursor:pointer; font-size:13px; color:var(--muted); }
+.rapporter > div { margin-top:10px; line-height:1.9; }
