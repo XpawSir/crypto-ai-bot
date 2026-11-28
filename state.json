@@ -1,0 +1,370 @@
+{
+ "v": 2,
+ "balance": 10000,
+ "peakBalance": 10000,
+ "pnl": 0,
+ "totalTrades": 0,
+ "winningTrades": 0,
+ "totalWinsAmount": 0,
+ "totalLossesAmount": 0,
+ "returnsHistory": [],
+ "maxDrawdownVal": 0,
+ "trades": [],
+ "log": [
+  {
+   "t": "2026-10-12T17:02:44.111Z",
+   "m": "Serverboten startad på BTCUSDT (1h, strategi AUTO). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T17:17:00.972Z",
+   "m": "Serverboten bevakar ETHUSDT (1h, strategi AUTO). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T17:17:01.236Z",
+   "m": "Serverboten bevakar SOLUSDT (1h, strategi AUTO). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T17:17:01.500Z",
+   "m": "Serverboten bevakar XRPUSDT (1h, strategi AUTO). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T17:18:44.783Z",
+   "m": "BTCUSDT: tidsintervallet ändrades till 4h. Analysen börjar om.",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-12T17:18:45.968Z",
+   "m": "Serverboten bevakar BTCUSDT (4h, strategi AUTO). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T17:18:45.968Z",
+   "m": "ETHUSDT: tidsintervallet ändrades till 4h. Analysen börjar om.",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-12T17:18:47.060Z",
+   "m": "Serverboten bevakar ETHUSDT (4h, strategi AUTO). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T17:18:47.060Z",
+   "m": "SOLUSDT: tidsintervallet ändrades till 4h. Analysen börjar om.",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-12T17:18:47.324Z",
+   "m": "Serverboten bevakar SOLUSDT (4h, strategi AUTO). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T17:18:47.324Z",
+   "m": "XRPUSDT: tidsintervallet ändrades till 4h. Analysen börjar om.",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-12T17:18:47.591Z",
+   "m": "Serverboten bevakar XRPUSDT (4h, strategi AUTO). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T23:35:19.776Z",
+   "m": "AUTO BTCUSDT väljer Stochastic 14/3/3 (sidledes marknad, poäng 5.2)",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T23:35:19.802Z",
+   "m": "Analyserar BTCUSDT (4h, Stochastic 14/3/3): %K 29.7 / %D 47.3",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-12T23:35:20.950Z",
+   "m": "AUTO ETHUSDT väljer Keltner breakout (EMA 20 + 2 ATR) (trendande marknad, poäng 4.4)",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T23:35:21.189Z",
+   "m": "Analyserar ETHUSDT (4h, Keltner breakout (EMA 20 + 2 ATR)): Pris 2,521.59 / övre 2,583.31 / mitt 2,529.98",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-12T23:35:21.550Z",
+   "m": "AUTO SOLUSDT väljer Donchian 55/20 (Turtle) (trendande marknad, poäng 5.4)",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T23:35:21.551Z",
+   "m": "Analyserar SOLUSDT (4h, Donchian 55/20 (Turtle)): Pris 108.33 / högsta55 122.29 / lägsta20 108.32",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-12T23:35:21.899Z",
+   "m": "AUTO XRPUSDT väljer Donchian 55/20 (Turtle) (trendande marknad, poäng 13.6)",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T23:35:21.900Z",
+   "m": "Analyserar XRPUSDT (4h, Donchian 55/20 (Turtle)): Pris 1.3653 / högsta55 1.5310 / lägsta20 1.3701",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T03:47:57.073Z",
+   "m": "Analyserar BTCUSDT (4h, Stochastic 14/3/3): %K 15.8 / %D 30.9",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T03:47:58.228Z",
+   "m": "Analyserar ETHUSDT (4h, Keltner breakout (EMA 20 + 2 ATR)): Pris 2,447.17 / övre 2,590.06 / mitt 2,522.10",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T03:47:58.576Z",
+   "m": "Analyserar SOLUSDT (4h, Donchian 55/20 (Turtle)): Pris 105.76 / högsta55 122.29 / lägsta20 107.16",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T03:47:58.915Z",
+   "m": "Analyserar XRPUSDT (4h, Donchian 55/20 (Turtle)): Pris 1.3422 / högsta55 1.5310 / lägsta20 1.3546",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T10:20:12.710Z",
+   "m": "Analyserar BTCUSDT (4h, Stochastic 14/3/3): %K 52.9 / %D 34.0",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T10:20:14.308Z",
+   "m": "Analyserar ETHUSDT (4h, Keltner breakout (EMA 20 + 2 ATR)): Pris 2,529.10 / övre 2,607.03 / mitt 2,521.61",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T10:20:14.651Z",
+   "m": "Analyserar SOLUSDT (4h, Donchian 55/20 (Turtle)): Pris 108.58 / högsta55 122.29 / lägsta20 101.69",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T10:20:14.988Z",
+   "m": "Analyserar XRPUSDT (4h, Donchian 55/20 (Turtle)): Pris 1.3779 / högsta55 1.5310 / lägsta20 1.3112",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T13:16:12.300Z",
+   "m": "Analyserar BTCUSDT (4h, Stochastic 14/3/3): %K 74.9 / %D 53.7",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T13:16:13.716Z",
+   "m": "Analyserar ETHUSDT (4h, Keltner breakout (EMA 20 + 2 ATR)): Pris 2,500.86 / övre 2,609.59 / mitt 2,519.64",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T13:16:14.056Z",
+   "m": "Analyserar SOLUSDT (4h, Donchian 55/20 (Turtle)): Pris 106.18 / högsta55 122.29 / lägsta20 101.69",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T13:16:14.391Z",
+   "m": "Analyserar XRPUSDT (4h, Donchian 55/20 (Turtle)): Pris 1.3580 / högsta55 1.5310 / lägsta20 1.3112",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T16:06:12.284Z",
+   "m": "Analyserar BTCUSDT (4h, Stochastic 14/3/3): %K 76.0 / %D 67.9",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T16:06:13.456Z",
+   "m": "Analyserar ETHUSDT (4h, Keltner breakout (EMA 20 + 2 ATR)): Pris 2,516.45 / övre 2,611.44 / mitt 2,519.33",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T16:06:13.791Z",
+   "m": "Analyserar SOLUSDT (4h, Donchian 55/20 (Turtle)): Pris 107.39 / högsta55 122.29 / lägsta20 101.69",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T16:06:14.121Z",
+   "m": "Analyserar XRPUSDT (4h, Donchian 55/20 (Turtle)): Pris 1.3705 / högsta55 1.5310 / lägsta20 1.3112",
+   "k": "info"
+  }
+ ],
+ "startedAt": "2026-10-12T17:02:43.259Z",
+ "config": {
+  "enabled": true,
+  "symbols": [
+   "BTCUSDT",
+   "ETHUSDT",
+   "SOLUSDT",
+   "XRPUSDT"
+  ],
+  "interval": "4h",
+  "strategy": "auto",
+  "risk": 4,
+  "maxSpend": 1000,
+  "trendFilter": 200,
+  "noStops": false,
+  "label": ""
+ },
+ "lastRun": "2026-10-13T18:36:11.051Z",
+ "enabled": true,
+ "source": "https://data-api.binance.vision/api/v3",
+ "lastPrice": 82569.63,
+ "lastError": null,
+ "stats": {
+  "winRate": 0,
+  "profitFactor": 0,
+  "sharpe": 0,
+  "drawdown": 0
+ },
+ "markets": {
+  "BTCUSDT": {
+   "interval": "4h",
+   "pos": null,
+   "autoPick": "stoch",
+   "autoMode": "revert",
+   "autoLastPick": 1791820800,
+   "lastEval": 1791892800,
+   "lastPrice": 83048.005,
+   "spreadPct": 0.000012041228437409558
+  },
+  "ETHUSDT": {
+   "interval": "4h",
+   "pos": null,
+   "autoPick": "keltner",
+   "autoMode": "trend",
+   "autoLastPick": 1791820800,
+   "lastEval": 1791892800,
+   "lastPrice": 2502.605,
+   "spreadPct": 0.0003995836338622467
+  },
+  "SOLUSDT": {
+   "interval": "4h",
+   "pos": null,
+   "autoPick": "donchian-55",
+   "autoMode": "trend",
+   "autoLastPick": 1791820800,
+   "lastEval": 1791892800,
+   "lastPrice": 107.625,
+   "spreadPct": 0.009291521486634988
+  },
+  "XRPUSDT": {
+   "interval": "4h",
+   "pos": null,
+   "autoPick": "donchian-55",
+   "autoMode": "trend",
+   "autoLastPick": 1791820800,
+   "lastEval": 1791892800,
+   "lastPrice": 1.3684500000000002,
+   "spreadPct": 0.007307537725162701
+  }
+ },
+ "openPositions": [],
+ "openPositionView": null,
+ "marketsView": [
+  {
+   "symbol": "BTCUSDT",
+   "price": 83048.005,
+   "spreadPct": 0.000012041228437409558,
+   "strat": "stoch",
+   "autoMode": "revert",
+   "inPosition": false
+  },
+  {
+   "symbol": "ETHUSDT",
+   "price": 2502.605,
+   "spreadPct": 0.0003995836338622467,
+   "strat": "keltner",
+   "autoMode": "trend",
+   "inPosition": false
+  },
+  {
+   "symbol": "SOLUSDT",
+   "price": 107.625,
+   "spreadPct": 0.009291521486634988,
+   "strat": "donchian-55",
+   "autoMode": "trend",
+   "inPosition": false
+  },
+  {
+   "symbol": "XRPUSDT",
+   "price": 1.3684500000000002,
+   "spreadPct": 0.007307537725162701,
+   "strat": "donchian-55",
+   "autoMode": "trend",
+   "inPosition": false
+  }
+ ],
+ "baseline": {
+  "BTCUSDT": 82508,
+  "ETHUSDT": 2514.26,
+  "SOLUSDT": 107.7,
+  "XRPUSDT": 1.3593
+ },
+ "equity": [
+  [
+   1791829064157,
+   10000,
+   10000
+  ],
+  [
+   1791835108678,
+   10000,
+   10027.54
+  ],
+  [
+   1791848121900,
+   10000,
+   9816.48
+  ],
+  [
+   1791863278915,
+   10000,
+   10006.45
+  ],
+  [
+   1791886814988,
+   10000,
+   9994.69
+  ],
+  [
+   1791889819662,
+   10000,
+   9935.94
+  ],
+  [
+   1791897374391,
+   10000,
+   9962.77
+  ],
+  [
+   1791900974186,
+   10000,
+   10081.32
+  ],
+  [
+   1791903974479,
+   10000,
+   10057.87
+  ],
+  [
+   1791907574121,
+   10000,
+   10044.96
+  ],
+  [
+   1791911174424,
+   10000,
+   10000.98
+  ],
+  [
+   1791914773998,
+   10000,
+   10020.46
+  ]
+ ],
+ "buyHoldValue": 9999.82
+}

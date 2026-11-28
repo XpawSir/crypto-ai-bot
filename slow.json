@@ -1,0 +1,229 @@
+{
+ "v": 2,
+ "balance": 10000,
+ "peakBalance": 10000,
+ "pnl": 0,
+ "totalTrades": 0,
+ "winningTrades": 0,
+ "totalWinsAmount": 0,
+ "totalLossesAmount": 0,
+ "returnsHistory": [],
+ "maxDrawdownVal": 0,
+ "markets": {
+  "BTCUSDT": {
+   "interval": "1d",
+   "pos": null,
+   "autoPick": null,
+   "autoMode": "any",
+   "autoLastPick": 0,
+   "lastEval": 1791763200,
+   "lastPrice": 83048.005,
+   "spreadPct": 0.000012041228437409558
+  },
+  "ETHUSDT": {
+   "interval": "1d",
+   "pos": null,
+   "autoPick": null,
+   "autoMode": "any",
+   "autoLastPick": 0,
+   "lastEval": 1791763200,
+   "lastPrice": 2502.605,
+   "spreadPct": 0.0003995836338622467
+  },
+  "SOLUSDT": {
+   "interval": "1d",
+   "pos": null,
+   "autoPick": null,
+   "autoMode": "any",
+   "autoLastPick": 0,
+   "lastEval": 1791763200,
+   "lastPrice": 107.625,
+   "spreadPct": 0.009291521486634988
+  },
+  "XRPUSDT": {
+   "interval": "1d",
+   "pos": null,
+   "autoPick": null,
+   "autoMode": "any",
+   "autoLastPick": 0,
+   "lastEval": 1791763200,
+   "lastPrice": 1.3684500000000002,
+   "spreadPct": 0.007307537725162701
+  }
+ },
+ "baseline": {
+  "BTCUSDT": 82508.01,
+  "ETHUSDT": 2514.12,
+  "SOLUSDT": 107.69,
+  "XRPUSDT": 1.359
+ },
+ "equity": [
+  [
+   1791829066935,
+   10000,
+   10000
+  ],
+  [
+   1791835111780,
+   10000,
+   10028.46
+  ],
+  [
+   1791848121586,
+   10000,
+   9817.8
+  ],
+  [
+   1791863279424,
+   10000,
+   10007.02
+  ],
+  [
+   1791886814550,
+   10000,
+   9995.61
+  ],
+  [
+   1791889819525,
+   10000,
+   9936.85
+  ],
+  [
+   1791897374059,
+   10000,
+   9963.69
+  ],
+  [
+   1791900974330,
+   10000,
+   10082.25
+  ],
+  [
+   1791903974476,
+   10000,
+   10058.8
+  ],
+  [
+   1791907574169,
+   10000,
+   10045.89
+  ],
+  [
+   1791911174416,
+   10000,
+   10001.9
+  ],
+  [
+   1791914773890,
+   10000,
+   10021.32
+  ]
+ ],
+ "trades": [],
+ "log": [
+  {
+   "t": "2026-10-12T18:17:45.241Z",
+   "m": "Serverboten bevakar BTCUSDT (1d, strategi SuperTrend 10/3). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T18:17:46.218Z",
+   "m": "Serverboten bevakar ETHUSDT (1d, strategi SuperTrend 10/3). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T18:17:46.641Z",
+   "m": "Serverboten bevakar SOLUSDT (1d, strategi SuperTrend 10/3). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-12T18:17:46.935Z",
+   "m": "Serverboten bevakar XRPUSDT (1d, strategi SuperTrend 10/3). Väntar på nästa signal.",
+   "k": "success"
+  },
+  {
+   "t": "2026-10-13T03:47:57.386Z",
+   "m": "Analyserar BTCUSDT (1d, SuperTrend 10/3): SuperTrend 80,366.90 (upp)",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T03:47:58.588Z",
+   "m": "Analyserar ETHUSDT (1d, SuperTrend 10/3): SuperTrend 2,736.25 (ned)",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T03:47:59.083Z",
+   "m": "Analyserar SOLUSDT (1d, SuperTrend 10/3): SuperTrend 122.50 (ned)",
+   "k": "info"
+  },
+  {
+   "t": "2026-10-13T03:47:59.424Z",
+   "m": "Analyserar XRPUSDT (1d, SuperTrend 10/3): SuperTrend 1.5345 (ned)",
+   "k": "info"
+  }
+ ],
+ "startedAt": "2026-10-12T18:17:44.211Z",
+ "config": {
+  "enabled": true,
+  "symbols": [
+   "BTCUSDT",
+   "ETHUSDT",
+   "SOLUSDT",
+   "XRPUSDT"
+  ],
+  "interval": "1d",
+  "strategy": "supertrend",
+  "risk": 4,
+  "maxSpend": 1000,
+  "trendFilter": 0,
+  "noStops": true,
+  "label": "Dagbot (experiment)"
+ },
+ "lastRun": "2026-10-13T18:36:11.053Z",
+ "enabled": true,
+ "source": "https://data-api.binance.vision/api/v3",
+ "lastError": null,
+ "stats": {
+  "winRate": 0,
+  "profitFactor": 0,
+  "sharpe": 0,
+  "drawdown": 0
+ },
+ "buyHoldValue": 10000.75,
+ "openPositions": [],
+ "openPositionView": null,
+ "marketsView": [
+  {
+   "symbol": "BTCUSDT",
+   "price": 83048.005,
+   "spreadPct": 0.000012041228437409558,
+   "strat": null,
+   "autoMode": "any",
+   "inPosition": false
+  },
+  {
+   "symbol": "ETHUSDT",
+   "price": 2502.605,
+   "spreadPct": 0.0003995836338622467,
+   "strat": null,
+   "autoMode": "any",
+   "inPosition": false
+  },
+  {
+   "symbol": "SOLUSDT",
+   "price": 107.625,
+   "spreadPct": 0.009291521486634988,
+   "strat": null,
+   "autoMode": "any",
+   "inPosition": false
+  },
+  {
+   "symbol": "XRPUSDT",
+   "price": 1.3684500000000002,
+   "spreadPct": 0.007307537725162701,
+   "strat": null,
+   "autoMode": "any",
+   "inPosition": false
+  }
+ ]
+}
